@@ -313,12 +313,32 @@
   /* ── DIVIDER ── */
   .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 20px 0; }
 
-  /* ── BACK NAV ── */
-  .back-nav { display: flex; align-items: center; gap: 10px; padding: 14px 20px 4px; }
-  .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; color: var(--text2); font-size: 13px; font-weight: 700; font-family: 'Nunito', sans-serif; padding: 0; }
-  .back-btn:hover { color: var(--pr); }
-  .back-btn svg { width: 16px; height: 16px; }
-  .back-nav-title { font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 900; color: var(--text); }
+  /* ── BACK NAV — Apple style ── */
+  .back-nav {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 12px 20px 8px;
+    background: rgba(245,242,238,0.9);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 40;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+    margin-bottom: 4px;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 4px; background: none; border: none;
+    cursor: pointer; color: var(--pr); font-size: 14px; font-weight: 700;
+    font-family: 'Outfit', sans-serif; padding: 6px 0; justify-self: start;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .back-btn:active { opacity: 0.6; }
+  .back-btn svg { width: 18px; height: 18px; stroke-width: 2.5; }
+  .back-nav-title {
+    font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 900;
+    color: var(--text); text-align: center; justify-self: center;
+    letter-spacing: -0.3px;
+  }
+  .back-nav-right { justify-self: end; }
 
   /* ── TOAST ── */
   .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--hdr-bg); color: white; border-radius: var(--radius-pill); padding: 11px 22px; font-size: 13px; font-weight: 700; z-index: 999; opacity: 0; transition: all 0.25s; pointer-events: none; white-space: nowrap; box-shadow: var(--shadow-lg); }
@@ -758,8 +778,10 @@
     <div class="back-nav">
       <button class="back-btn" onclick="showScreen('screen-menu')">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
-        Edit order
+        Add more
       </button>
+      <span class="back-nav-title">Your order</span>
+      <span class="back-nav-right"></span>
     </div>
     <div class="page">
       <div class="label">Order summary</div>
@@ -780,6 +802,7 @@
         Back
       </button>
       <span class="back-nav-title">Settings</span>
+      <span class="back-nav-right"></span>
     </div>
     <div class="page">
 
@@ -842,6 +865,7 @@
         Back
       </button>
       <span class="back-nav-title">Today's orders</span>
+      <span class="back-nav-right"></span>
     </div>
     <div class="page">
       <div class="orders-header">
@@ -879,6 +903,7 @@
         Back
       </button>
       <span class="back-nav-title">Order history</span>
+      <span class="back-nav-right"></span>
     </div>
     <div class="page">
       <div class="date-filter-row">
