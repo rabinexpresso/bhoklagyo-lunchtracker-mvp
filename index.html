@@ -157,7 +157,27 @@
   .name-card.sel::after { transform: scaleX(1); }
   .name-card .emoji-avatar { font-size: 28px; display: block; margin-bottom: 7px; line-height: 1; }
   .name-card .nname { font-size: 12px; font-weight: 800; color: var(--text); font-family: 'Outfit', sans-serif; }
-  .add-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  .add-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .name-edit-bar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 14px; }
+  .edit-names-btn {
+    background: none; border: none; font-size: 12px; font-weight: 700;
+    color: var(--text3); cursor: pointer; font-family: 'Outfit', sans-serif;
+    padding: 6px 0; transition: color 0.15s;
+  }
+  .edit-names-btn:hover { color: var(--pr); }
+  .name-del-btn {
+    position: absolute; top: 6px; right: 6px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--error); color: white; border: none;
+    font-size: 10px; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 3; line-height: 1; padding: 0;
+    box-shadow: 0 2px 6px rgba(185,28,28,0.4);
+    transition: transform 0.15s;
+  }
+  .name-del-btn:hover { transform: scale(1.15); }
+  .name-card.edit-mode { cursor: default; }
+  .name-card.edit-mode:hover { transform: none; box-shadow: var(--shadow-sm); }
 
   /* ── INPUTS ── */
   input[type="text"], input[type="number"], input[type="url"], select, textarea {
@@ -698,6 +718,9 @@
         </div>
       </div>
       <div class="name-grid" id="nameGrid"></div>
+      <div class="name-edit-bar">
+        <button class="edit-names-btn" id="editNamesBtn" onclick="toggleNameEditMode()">✏️ Edit names</button>
+      </div>
       <div class="add-row">
         <input type="text" id="newNameInput" placeholder="Add a new name..." />
         <button class="btn-sm" onclick="addNewName()">Add</button>
@@ -893,7 +916,7 @@
 // ═══════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════
-const DEFAULT_NAMES = ['Rabin','Babin','Jeshan','Binay','Prajwal','Aman','Safal','Sajal','Pramesh','Sameer'];
+const DEFAULT_NAMES = ['Aman','Babin','Binay','Jeshan','Prajwal','Pramesh','Rabin','Safal','Sajal','Sameer'];
 const DEFAULT_MENU = [
   {name:'Dal Bhat Set',price:180,cat:'Rice'},
   {name:'Fried Rice',price:150,cat:'Rice'},
@@ -931,7 +954,7 @@ function loadState() {
     const saved = localStorage.getItem('bhok_lagyo_v3');
     if (saved) {
       const d = JSON.parse(saved);
-      if (d.names) state.names = d.names;
+      if (d.names) state.names = d.names.sort((a,b) => a.localeCompare(b));
       if (d.menu) state.menu = d.menu;
       // Use saved URL if set, otherwise keep the baked-in default
       if (d.sheetUrl) state.sheetUrl = d.sheetUrl;
@@ -1004,34 +1027,65 @@ function getNameEmoji(name, idx) {
   return NAME_EMOJIS[name] || FALLBACK_EMOJIS[idx % FALLBACK_EMOJIS.length];
 }
 
+let nameEditMode = false;
+
+function toggleNameEditMode() {
+  nameEditMode = !nameEditMode;
+  renderNames();
+  const btn = document.getElementById('editNamesBtn');
+  if (nameEditMode) {
+    btn.textContent = '✓ Done';
+    btn.style.color = 'var(--success)';
+  } else {
+    btn.textContent = '✏️ Edit names';
+    btn.style.color = '';
+  }
+}
+
 function renderNames() {
   const g = document.getElementById('nameGrid');
   g.innerHTML = '';
   state.names.forEach((name, idx) => {
     const card = document.createElement('div');
-    card.className = 'name-card' + (state.currentUser === name ? ' sel' : '');
+    card.className = 'name-card' + (state.currentUser === name ? ' sel' : '') + (nameEditMode ? ' edit-mode' : '');
     card.innerHTML = `
+      ${nameEditMode ? `<button class="name-del-btn" onclick="event.stopPropagation();deleteName('${name}')" title="Remove ${name}">✕</button>` : ''}
       <span class="emoji-avatar">${getNameEmoji(name, idx)}</span>
       <div class="nname">${name}</div>
     `;
-    card.onclick = () => {
-      state.currentUser = name;
-      renderNames();
-      document.getElementById('startBtn').disabled = false;
-    };
+    if (!nameEditMode) {
+      card.onclick = () => {
+        state.currentUser = name;
+        renderNames();
+        document.getElementById('startBtn').disabled = false;
+      };
+    }
     g.appendChild(card);
   });
 }
 
 function addNewName() {
   const v = document.getElementById('newNameInput').value.trim();
-  if (v && !state.names.includes(v)) {
-    state.names.push(v);
-    saveState();
-    renderNames();
-    document.getElementById('newNameInput').value = '';
-    toast('Added ' + v);
+  if (!v) return;
+  if (state.names.map(n => n.toLowerCase()).includes(v.toLowerCase())) {
+    toast(v + ' already exists');
+    return;
   }
+  state.names.push(v);
+  state.names.sort((a, b) => a.localeCompare(b));
+  saveState();
+  renderNames();
+  document.getElementById('newNameInput').value = '';
+  toast('Added ' + v);
+}
+
+function deleteName(name) {
+  if (state.names.length <= 1) { toast('Need at least one name'); return; }
+  if (state.currentUser === name) { state.currentUser = null; document.getElementById('startBtn').disabled = true; }
+  state.names = state.names.filter(n => n !== name);
+  saveState();
+  renderNames();
+  toast('Removed ' + name);
 }
 
 // ═══════════════════════════════════════
