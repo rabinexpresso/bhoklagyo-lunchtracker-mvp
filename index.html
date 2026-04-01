@@ -350,6 +350,15 @@
   .no-orders .emoji { font-size: 40px; display: block; margin-bottom: 10px; }
   .fetch-error { background: var(--error-bg); color: var(--error); border: 1px solid rgba(185,28,28,0.15); border-radius: var(--radius-sm); padding: 14px; font-size: 13px; line-height: 1.6; margin-bottom: 16px; }
   .orders-date-label { font-size: 13px; color: var(--text3); font-weight: 500; }
+  .opc-actions { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); background: var(--surface2); }
+  .opc-edit-btn, .opc-del-btn {
+    flex: 1; padding: 8px; border-radius: var(--radius-sm); font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; border: 1.5px solid var(--border2);
+  }
+  .opc-edit-btn { background: var(--surface); color: var(--text2); }
+  .opc-edit-btn:hover { border-color: var(--pr); color: var(--pr); background: var(--prll); }
+  .opc-del-btn { background: var(--surface); color: var(--text2); }
+  .opc-del-btn:hover { border-color: var(--error); color: var(--error); background: var(--error-bg); }
 
   /* ── ORDER HISTORY ── */
   .date-filter-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; }
@@ -636,7 +645,7 @@ const DEFAULT_MENU = [
   {name:'Water Bottle',price:25,cat:'Drinks'},
 ];
 
-const SHEET_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbygUov3Ezv5gogQCGoeAlw8zZfJkUhv3EyA2URbQUfPnx9Huei0xsnAFxFJw2Ims6mw/exec';
+const SHEET_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbybhJdlI2-U_QiHTwuN2LGKZDPT0wL3Nj-Lbgy2-xvUXT1rijUDT34_30hiO2WdVC6G/exec';
 
 let state = {
   names: [...DEFAULT_NAMES],
@@ -899,10 +908,10 @@ async function submitOrder() {
   const total = getCartTotal();
   const itemsStr = items.map(i => `${i.name} x${i.qty}`).join(', ');
   const now = new Date();
-  const ts = now.toLocaleString('en-NP', {timeZone: 'Asia/Kathmandu'});
-  // date and day sent as separate params so the sheet has clean sortable columns
+  // Time only for the Time column (no date — date is already in col A)
+  const timeOnly = now.toLocaleTimeString('en-NP', {timeZone: 'Asia/Kathmandu', hour: '2-digit', minute: '2-digit', hour12: true});
   const todayDate = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Kathmandu'}); // YYYY-MM-DD
-  const dayName = now.toLocaleDateString('en-US', {timeZone: 'Asia/Kathmandu', weekday: 'long'}); // e.g. Monday
+  const dayName = now.toLocaleDateString('en-US', {timeZone: 'Asia/Kathmandu', weekday: 'long'});
   const action = state.isEditing ? 'update' : 'add';
 
   const btn = document.getElementById('submitBtn');
@@ -927,7 +936,7 @@ async function submitOrder() {
       `&name=${encodeURIComponent(state.currentUser)}` +
       `&items=${encodeURIComponent(itemsStr)}` +
       `&total=${encodeURIComponent('Rs ' + total)}` +
-      `&timestamp=${encodeURIComponent(ts)}` +
+      `&timestamp=${encodeURIComponent(timeOnly)}` +
       `&date=${encodeURIComponent(todayDate)}&day=${encodeURIComponent(dayName)}`;
 
     await fetch(url, { method: 'GET', mode: 'no-cors' });
@@ -1115,7 +1124,8 @@ function loadTodayOrders() {
       return;
     }
 
-    renderTodayOrders(data.orders || []);
+    todayOrdersCache = data.orders || [];
+    renderTodayOrders(todayOrdersCache);
   };
 
   const script = document.createElement('script');
@@ -1153,11 +1163,9 @@ function renderTodayOrders(orders) {
   document.getElementById('grandTotalAmount').textContent = `Rs ${grandTotal}`;
   document.getElementById('ordersCount').textContent = `${orders.length} order${orders.length !== 1 ? 's' : ''} placed`;
 
-  listEl.innerHTML = orders.map(o => {
-    // Parse items string like "Momo (Steam) x1, Milk Tea x1" into rows
+  listEl.innerHTML = orders.map((o, idx) => {
     const itemParts = o.items.split(',').map(s => s.trim()).filter(Boolean);
     const itemRows = itemParts.map(part => {
-      // Try to extract "Name xN" pattern
       const match = part.match(/^(.+?)\s*x(\d+)$/i);
       if (match) {
         return `<div class="opc-item-row">
@@ -1170,6 +1178,7 @@ function renderTodayOrders(orders) {
 
     const av = (o.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
     const timeStr = o.time || '';
+    const safeIdx = idx;
 
     return `<div class="order-person-card">
       <div class="opc-header">
@@ -1181,8 +1190,58 @@ function renderTodayOrders(orders) {
         <div class="opc-total">${o.total}</div>
       </div>
       <div class="opc-items">${itemRows}</div>
+      <div class="opc-actions">
+        <button class="opc-edit-btn" onclick="editOrderFromToday(${safeIdx})">✏️ Edit</button>
+        <button class="opc-del-btn" onclick="deleteOrderFromToday(${safeIdx})">🗑 Delete</button>
+      </div>
     </div>`;
   }).join('');
+}
+
+function editOrderFromToday(idx) {
+  const order = todayOrdersCache[idx];
+  if (!order) return;
+  // Set the current user and pre-populate cart from this order
+  state.currentUser = order.name;
+  state.isEditing = true;
+  state.cart = {};
+  // Parse items back into cart
+  const parts = order.items.split(',').map(s => s.trim()).filter(Boolean);
+  parts.forEach(part => {
+    const match = part.match(/^(.+?)\s*x(\d+)$/i);
+    if (match) {
+      const itemName = match[1].trim();
+      const qty = parseInt(match[2]) || 1;
+      const menuIdx = state.menu.findIndex(m => m.name === itemName);
+      if (menuIdx >= 0) state.cart[menuIdx] = qty;
+    }
+  });
+  updateUserPill();
+  renderCategoryTabs();
+  renderMenuGrid();
+  updateCartBar();
+  showScreen('screen-menu');
+}
+
+async function deleteOrderFromToday(idx) {
+  const order = todayOrdersCache[idx];
+  if (!order) return;
+  if (!confirm(`Delete ${order.name}'s order (${order.total})?`)) return;
+
+  const now = new Date();
+  const todayDate = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Kathmandu'});
+
+  try {
+    const url = `${state.sheetUrl}?action=delete` +
+      `&name=${encodeURIComponent(order.name)}` +
+      `&date=${encodeURIComponent(todayDate)}`;
+    await fetch(url, {method: 'GET', mode: 'no-cors'});
+    toast(`🗑 ${order.name}'s order deleted`);
+    // Refresh the list
+    setTimeout(() => loadTodayOrders(), 800);
+  } catch(e) {
+    toast('Error deleting — try again');
+  }
 }
 
 // ═══════════════════════════════════════
