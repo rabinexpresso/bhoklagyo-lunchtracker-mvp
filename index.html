@@ -387,6 +387,19 @@
   .opc-del-btn:hover { color: var(--error); background: var(--error-bg); }
   .opc-checkbox { display: flex; align-items: center; justify-content: center; padding: 0 4px 0 4px; }
   .opc-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--pr); cursor: pointer; }
+  .select-all-row {
+    display: flex; align-items: center; margin-bottom: 8px;
+  }
+  .select-all-label {
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    font-size: 13px; font-weight: 700; color: var(--text2);
+    font-family: 'Outfit', sans-serif; user-select: none; -webkit-user-select: none;
+    padding: 4px 0;
+  }
+  .select-all-label input[type="checkbox"] {
+    width: 18px; height: 18px; accent-color: var(--pr); cursor: pointer; flex-shrink: 0;
+  }
+  .select-all-label input[type="checkbox"]:checked + span { color: var(--pr); }
   .bulk-bar { display: none; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border-radius: var(--radius-sm); padding: 11px 14px; margin-bottom: 12px; box-shadow: var(--shadow-md); }
   .bulk-bar.visible { display: flex; }
   .bulk-count { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'Outfit', sans-serif; }
@@ -876,6 +889,12 @@
         </button>
       </div>
       <div class="today-filter-row" id="todayNameFilters"></div>
+      <div class="select-all-row" id="selectAllRow" style="display:none">
+        <label class="select-all-label">
+          <input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)" />
+          <span id="selectAllText">Select all</span>
+        </label>
+      </div>
       <div id="bulkBar" class="bulk-bar">
         <span class="bulk-count" id="bulkCount">0 selected</span>
         <div style="display:flex;gap:8px;align-items:center">
@@ -1596,6 +1615,7 @@ let selectedOrderIndices = new Set();
 function renderTodayOrders(orders, skipCacheReset) {
   const listEl = document.getElementById('ordersList');
   const grandCard = document.getElementById('grandTotalCard');
+  const selectAllRow = document.getElementById('selectAllRow');
   if (!skipCacheReset) {
     selectedOrderIndices = new Set();
     updateBulkBar();
@@ -1604,8 +1624,14 @@ function renderTodayOrders(orders, skipCacheReset) {
   if (!orders.length) {
     listEl.innerHTML = '<div class="no-orders"><span class="emoji">🍽️</span>No orders yet today.<br>Be the first to order!</div>';
     grandCard.style.display = 'none';
+    if (selectAllRow) selectAllRow.style.display = 'none';
     return;
   }
+  if (selectAllRow) selectAllRow.style.display = 'flex';
+  // Reset select-all checkbox state
+  const chk = document.getElementById('selectAllChk');
+  if (chk) chk.checked = false;
+  document.getElementById('selectAllText').textContent = 'Select all';
 
   let grandTotal = 0;
   orders.forEach(o => { grandTotal += parseInt(String(o.total).replace(/[^0-9]/g, '')) || 0; });
@@ -1657,6 +1683,39 @@ function updateBulkBar() {
   } else {
     bar.classList.remove('visible');
   }
+  // Sync the select-all checkbox
+  const chk = document.getElementById('selectAllChk');
+  const txt = document.getElementById('selectAllText');
+  if (!chk || !txt) return;
+  const total = document.querySelectorAll('[id^="opc_"]').length;
+  if (count > 0 && count === total) {
+    chk.checked = true; chk.indeterminate = false;
+    txt.textContent = 'Deselect all';
+  } else if (count > 0) {
+    chk.checked = false; chk.indeterminate = true;
+    txt.textContent = `${count} of ${total} selected`;
+  } else {
+    chk.checked = false; chk.indeterminate = false;
+    txt.textContent = 'Select all';
+  }
+}
+
+function toggleSelectAll(checked) {
+  const cards = document.querySelectorAll('[id^="opc_"]');
+  cards.forEach(card => {
+    const idx = parseInt(card.id.replace('opc_', ''));
+    const cardChk = document.getElementById('chk_' + idx);
+    if (checked) {
+      selectedOrderIndices.add(idx);
+      card.classList.add('selected');
+      if (cardChk) cardChk.checked = true;
+    } else {
+      selectedOrderIndices.delete(idx);
+      card.classList.remove('selected');
+      if (cardChk) cardChk.checked = false;
+    }
+  });
+  updateBulkBar();
 }
 
 function clearBulkSelection() {
@@ -1667,6 +1726,10 @@ function clearBulkSelection() {
     if (card) card.classList.remove('selected');
   });
   selectedOrderIndices = new Set();
+  const allChk = document.getElementById('selectAllChk');
+  if (allChk) { allChk.checked = false; allChk.indeterminate = false; }
+  const txt = document.getElementById('selectAllText');
+  if (txt) txt.textContent = 'Select all';
   updateBulkBar();
 }
 
