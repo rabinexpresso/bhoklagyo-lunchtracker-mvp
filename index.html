@@ -359,6 +359,34 @@
   .opc-edit-btn:hover { border-color: var(--pr); color: var(--pr); background: var(--prll); }
   .opc-del-btn { background: var(--surface); color: var(--text2); }
   .opc-del-btn:hover { border-color: var(--error); color: var(--error); background: var(--error-bg); }
+  .opc-checkbox { display: flex; align-items: center; justify-content: center; padding: 0 4px 0 14px; }
+  .opc-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--pr); cursor: pointer; }
+  .order-person-card.selected { border-color: var(--pr); background: var(--prll); }
+  .bulk-bar {
+    display: none; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--surface); border: 1.5px solid var(--border2); border-radius: var(--radius-sm);
+    padding: 10px 14px; margin-bottom: 12px;
+  }
+  .bulk-bar.visible { display: flex; }
+  .bulk-count { font-size: 13px; font-weight: 600; color: var(--text); font-family: 'Syne', sans-serif; }
+  .bulk-del-btn {
+    background: var(--error-bg); color: var(--error); border: 1.5px solid rgba(185,28,28,0.3);
+    border-radius: var(--radius-sm); padding: 8px 16px; font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+  }
+  .bulk-del-btn:hover { background: var(--error); color: white; }
+  .bulk-clear-btn {
+    background: none; border: none; color: var(--text3); font-size: 12px; cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif; padding: 4px;
+  }
+  .bulk-clear-btn:hover { color: var(--text); }
+  .today-filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .today-filter-chip {
+    border: 1.5px solid var(--border2); border-radius: var(--radius-pill); padding: 5px 12px;
+    font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface2);
+    color: var(--text2); transition: all 0.15s; font-family: 'Syne', sans-serif;
+  }
+  .today-filter-chip.active { background: var(--pr); color: white; border-color: var(--pr); }
 
   /* ── ORDER HISTORY ── */
   .date-filter-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; }
@@ -567,6 +595,14 @@
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8A6 6 0 1 1 8 2"/><path d="M14 2v4h-4"/></svg>
           Refresh
         </button>
+      </div>
+      <div class="today-filter-row" id="todayNameFilters"></div>
+      <div id="bulkBar" class="bulk-bar">
+        <span class="bulk-count" id="bulkCount">0 selected</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="bulk-clear-btn" onclick="clearBulkSelection()">Clear</button>
+          <button class="bulk-del-btn" onclick="bulkDeleteSelected()">🗑 Delete selected</button>
+        </div>
       </div>
       <div id="ordersError" class="fetch-error" style="display:none"></div>
       <div id="grandTotalCard" class="grand-total-card" style="display:none">
@@ -1068,11 +1104,15 @@ function saveSettings() {
 //  TODAY'S ORDERS — read from sheet via JSONP
 // ═══════════════════════════════════════
 
+let todayActiveFilter = 'All';
+
 function goTodayOrders() {
   const now = new Date();
   const todayDate = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Kathmandu'});
   const dayName = now.toLocaleDateString('en-US', {timeZone: 'Asia/Kathmandu', weekday: 'long'});
   document.getElementById('ordersDateLabel').textContent = `${dayName}, ${todayDate}`;
+  todayActiveFilter = 'All';
+  document.getElementById('todayNameFilters').innerHTML = '';
   showScreen('screen-orders');
   loadTodayOrders();
 }
@@ -1125,7 +1165,9 @@ function loadTodayOrders() {
     }
 
     todayOrdersCache = data.orders || [];
-    renderTodayOrders(todayOrdersCache);
+    todayActiveFilter = 'All';
+    renderTodayNameChips();
+    applyTodayFilter();
   };
 
   const script = document.createElement('script');
@@ -1142,9 +1184,46 @@ function loadTodayOrders() {
   setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 12000);
 }
 
-function renderTodayOrders(orders) {
+// ── TODAY NAME FILTER ──
+function renderTodayNameChips() {
+  const names = ['All', ...new Set(todayOrdersCache.map(o => o.name).filter(Boolean))].sort((a,b) => a === 'All' ? -1 : a.localeCompare(b));
+  const row = document.getElementById('todayNameFilters');
+  row.innerHTML = names.map(n =>
+    `<button class="today-filter-chip ${todayActiveFilter === n ? 'active' : ''}" onclick="setTodayFilter('${n}')">${n}</button>`
+  ).join('');
+}
+
+function setTodayFilter(name) {
+  todayActiveFilter = name;
+  renderTodayNameChips();
+  applyTodayFilter();
+}
+
+function applyTodayFilter() {
+  const filtered = todayActiveFilter === 'All'
+    ? todayOrdersCache
+    : todayOrdersCache.filter(o => o.name === todayActiveFilter);
+  renderTodayOrders(filtered, true); // true = skip resetting cache
+}
+
+// Strip date prefix from time if present (handles old rows with full timestamps)
+function cleanTime(t) {
+  if (!t) return '';
+  // If it looks like a full date-time, extract just the time part
+  const m = String(t).match(/(\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?)\s*(?:GMT|Nepal)?/i);
+  if (m) return m[1].trim();
+  return String(t);
+}
+
+let selectedOrderIndices = new Set();
+
+function renderTodayOrders(orders, skipCacheReset) {
   const listEl = document.getElementById('ordersList');
   const grandCard = document.getElementById('grandTotalCard');
+  if (!skipCacheReset) {
+    selectedOrderIndices = new Set();
+    updateBulkBar();
+  }
 
   if (!orders.length) {
     listEl.innerHTML = '<div class="no-orders"><span class="emoji">🍽️</span>No orders yet today.<br>Be the first to order!</div>';
@@ -1152,13 +1231,8 @@ function renderTodayOrders(orders) {
     return;
   }
 
-  // Calculate grand total
   let grandTotal = 0;
-  orders.forEach(o => {
-    const num = parseInt(String(o.total).replace(/[^0-9]/g, '')) || 0;
-    grandTotal += num;
-  });
-
+  orders.forEach(o => { grandTotal += parseInt(String(o.total).replace(/[^0-9]/g, '')) || 0; });
   grandCard.style.display = 'flex';
   document.getElementById('grandTotalAmount').textContent = `Rs ${grandTotal}`;
   document.getElementById('ordersCount').textContent = `${orders.length} order${orders.length !== 1 ? 's' : ''} placed`;
@@ -1166,36 +1240,79 @@ function renderTodayOrders(orders) {
   listEl.innerHTML = orders.map((o, idx) => {
     const itemParts = o.items.split(',').map(s => s.trim()).filter(Boolean);
     const itemRows = itemParts.map(part => {
-      const match = part.match(/^(.+?)\s*x(\d+)$/i);
-      if (match) {
-        return `<div class="opc-item-row">
-          <span class="iname">${match[1].trim()}</span>
-          <span class="iprice">× ${match[2]}</span>
-        </div>`;
-      }
+      const m = part.match(/^(.+?)\s*x(\d+)$/i);
+      if (m) return `<div class="opc-item-row"><span class="iname">${m[1].trim()}</span><span class="iprice">x ${m[2]}</span></div>`;
       return `<div class="opc-item-row"><span class="iname">${part}</span></div>`;
     }).join('');
-
     const av = (o.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
-    const timeStr = o.time || '';
-    const safeIdx = idx;
-
-    return `<div class="order-person-card">
+    return `<div class="order-person-card" id="opc_${idx}">
       <div class="opc-header">
+        <div class="opc-checkbox"><input type="checkbox" id="chk_${idx}" onchange="toggleOrderSelection(${idx})" /></div>
         <div class="opc-avatar">${av}</div>
         <div style="flex:1">
           <div class="opc-name">${o.name || 'Unknown'}</div>
-          ${timeStr ? `<div class="opc-time">${timeStr}</div>` : ''}
+          ${o.time ? `<div class="opc-time">${cleanTime(o.time)}</div>` : ''}
         </div>
         <div class="opc-total">${o.total}</div>
       </div>
       <div class="opc-items">${itemRows}</div>
       <div class="opc-actions">
-        <button class="opc-edit-btn" onclick="editOrderFromToday(${safeIdx})">✏️ Edit</button>
-        <button class="opc-del-btn" onclick="deleteOrderFromToday(${safeIdx})">🗑 Delete</button>
+        <button class="opc-edit-btn" onclick="editOrderFromToday(${idx})">✏️ Edit</button>
+        <button class="opc-del-btn" onclick="deleteOrderFromToday(${idx})">🗑 Delete</button>
       </div>
     </div>`;
   }).join('');
+}
+
+function toggleOrderSelection(idx) {
+  const card = document.getElementById('opc_' + idx);
+  const chk = document.getElementById('chk_' + idx);
+  if (chk.checked) { selectedOrderIndices.add(idx); card.classList.add('selected'); }
+  else { selectedOrderIndices.delete(idx); card.classList.remove('selected'); }
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  const count = selectedOrderIndices.size;
+  if (count > 0) {
+    bar.classList.add('visible');
+    document.getElementById('bulkCount').textContent = `${count} order${count !== 1 ? 's' : ''} selected`;
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+function clearBulkSelection() {
+  selectedOrderIndices.forEach(idx => {
+    const chk = document.getElementById('chk_' + idx);
+    const card = document.getElementById('opc_' + idx);
+    if (chk) chk.checked = false;
+    if (card) card.classList.remove('selected');
+  });
+  selectedOrderIndices = new Set();
+  updateBulkBar();
+}
+
+async function bulkDeleteSelected() {
+  const indices = [...selectedOrderIndices];
+  if (!indices.length) return;
+  const names = indices.map(i => todayOrdersCache[i] && todayOrdersCache[i].name).filter(Boolean).join(', ');
+  if (!confirm('Delete orders for: ' + names + '?')) return;
+  const now = new Date();
+  const todayDate = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Kathmandu'});
+  let deleted = 0;
+  for (const idx of indices) {
+    const order = todayOrdersCache[idx];
+    if (!order) continue;
+    try {
+      await fetch(`${state.sheetUrl}?action=delete&name=${encodeURIComponent(order.name)}&date=${encodeURIComponent(todayDate)}`, {method:'GET',mode:'no-cors'});
+      deleted++;
+    } catch(e) {}
+    await new Promise(r => setTimeout(r, 300));
+  }
+  toast('Deleted ' + deleted + ' order' + (deleted !== 1 ? 's' : ''));
+  setTimeout(() => loadTodayOrders(), 800);
 }
 
 function editOrderFromToday(idx) {
