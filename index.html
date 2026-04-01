@@ -1002,6 +1002,18 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
+  // Reset selected user whenever returning to the name screen
+  if (id === 'screen-name') {
+    state.currentUser = null;
+    state.cart = {};
+    state.isEditing = false;
+    nameEditMode = false;
+    const editBtn = document.getElementById('editNamesBtn');
+    if (editBtn) { editBtn.textContent = '✏️ Edit names'; editBtn.style.color = ''; }
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('userPill').classList.remove('visible');
+    renderNames();
+  }
 }
 
 function toast(msg, duration = 2200) {
