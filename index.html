@@ -776,7 +776,7 @@
   <!-- ═══════════ SCREEN: SUMMARY ═══════════ -->
   <div class="screen" id="screen-summary">
     <div class="back-nav">
-      <button class="back-btn" onclick="showScreen('screen-menu')">
+      <button class="back-btn" onclick="addMoreItems()">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
         Add more
       </button>
@@ -1237,6 +1237,17 @@ function goMenu(isEdit) {
   if (!isEdit) state.cart = {};
   state.activeCategory = 'All';
   updateUserPill();
+  renderCategoryTabs();
+  renderMenuGrid();
+  updateCartBar();
+  showScreen('screen-menu');
+}
+
+function addMoreItems() {
+  // Clear cart so user starts fresh — previously submitted order is already in the sheet
+  state.cart = {};
+  state.isEditing = false;
+  state.activeCategory = 'All';
   renderCategoryTabs();
   renderMenuGrid();
   updateCartBar();
