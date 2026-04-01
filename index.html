@@ -951,10 +951,10 @@ let state = {
 // ── PERSIST ──
 function loadState() {
   try {
-    const saved = localStorage.getItem('bhok_lagyo_v3');
+    const saved = localStorage.getItem('bhok_lagyo_v4');
     if (saved) {
       const d = JSON.parse(saved);
-      if (d.names) state.names = d.names.sort((a,b) => a.localeCompare(b));
+      if (d.names) state.names = d.names.filter(n => n && n.trim().length >= 2).sort((a,b) => a.localeCompare(b));
       if (d.menu) state.menu = d.menu;
       // Use saved URL if set, otherwise keep the baked-in default
       if (d.sheetUrl) state.sheetUrl = d.sheetUrl;
@@ -963,7 +963,7 @@ function loadState() {
 }
 function saveState() {
   try {
-    localStorage.setItem('bhok_lagyo_v3', JSON.stringify({
+    localStorage.setItem('bhok_lagyo_v4', JSON.stringify({
       names: state.names, menu: state.menu, sheetUrl: state.sheetUrl
     }));
   } catch(e) {}
