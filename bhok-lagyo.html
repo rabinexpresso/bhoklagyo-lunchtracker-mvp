@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bhok Lagyo! — Lunch Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --pr: #E8530A;
+    --pr2: #FF6B1A;
+    --prd: #C44507;
+    --prl: #FEF0E8;
+    --prll: #FDF6F2;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface2: #F5F4F1;
+    --surface3: #EEECEA;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #1A1916;
+    --text2: #6B6860;
+    --text3: #9E9B95;
+    --success-bg: #EDFBF3;
+    --success: #1A7A45;
+    --error-bg: #FEF2F2;
+    --error: #B91C1C;
+    --warn-bg: #FFFBEB;
+    --warn: #92400E;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --radius-pill: 100px;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LAYOUT ── */
+  .app { max-width: 480px; margin: 0 auto; padding: 0 0 120px; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 20px 16px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--pr); display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .brand-text h1 { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 800; letter-spacing: -0.3px; color: var(--text); }
+  .brand-text p { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: var(--radius-sm); border: 1px solid var(--border2);
+    background: var(--surface2); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--text2); transition: all 0.15s;
+  }
+  .icon-btn:hover { background: var(--surface3); border-color: var(--border2); }
+  .user-pill {
+    display: none; align-items: center; gap: 6px; margin-top: 12px;
+    background: var(--prl); border-radius: var(--radius-pill); padding: 6px 12px 6px 8px;
+  }
+  .user-pill.visible { display: flex; }
+  .user-avatar {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--pr);
+    color: white; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+  }
+  .user-pill span { font-size: 13px; font-weight: 600; color: var(--prd); }
+  .edit-badge {
+    display: none; margin-left: auto; background: var(--warn-bg); color: var(--warn);
+    border-radius: var(--radius-pill); padding: 3px 10px; font-size: 11px; font-weight: 600;
+    border: 1px solid rgba(146,64,14,0.2);
+  }
+  .edit-badge.visible { display: block; }
+
+  /* ── SCREEN SYSTEM ── */
+  .screen { display: none; animation: fadeUp 0.2s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ── PAGE PADDING ── */
+  .page { padding: 20px; }
+
+  /* ── SECTION LABEL ── */
+  .label {
+    font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 10px;
+  }
+
+  /* ── NAME SCREEN ── */
+  .name-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .name-card {
+    background: var(--surface); border: 1.5px solid var(--border2); border-radius: var(--radius);
+    padding: 14px 8px 12px; cursor: pointer; text-align: center; transition: all 0.15s;
+  }
+  .name-card:hover { border-color: var(--pr); background: var(--prll); transform: translateY(-1px); }
+  .name-card.sel { border-color: var(--pr); background: var(--prl); }
+  .name-card .avatar {
+    width: 36px; height: 36px; border-radius: 50%; margin: 0 auto 8px;
+    background: var(--surface2); display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text2);
+    transition: all 0.15s;
+  }
+  .name-card.sel .avatar { background: var(--pr); color: white; }
+  .name-card .nname { font-size: 12px; font-weight: 600; color: var(--text); }
+  .add-row { display: flex; gap: 8px; margin-bottom: 20px; }
+
+  /* ── INPUTS ── */
+  input[type="text"], input[type="number"], input[type="url"], select, textarea {
+    background: var(--surface); border: 1.5px solid var(--border2); border-radius: var(--radius-sm);
+    padding: 11px 14px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px;
+    color: var(--text); width: 100%; outline: none; transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--pr); }
+  input::placeholder { color: var(--text3); }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    background: var(--pr); color: white; border: none; border-radius: var(--radius-sm);
+    padding: 14px 24px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; width: 100%; transition: all 0.15s; letter-spacing: 0.2px;
+  }
+  .btn-primary:hover { background: var(--prd); transform: translateY(-1px); }
+  .btn-primary:active { transform: none; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-secondary {
+    background: var(--surface); color: var(--text); border: 1.5px solid var(--border2);
+    border-radius: var(--radius-sm); padding: 13px 24px; font-family: 'Syne', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--pr); color: var(--pr); background: var(--prll); }
+  .btn-sm {
+    background: var(--surface2); color: var(--text2); border: 1.5px solid var(--border2);
+    border-radius: var(--radius-sm); padding: 10px 16px; font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-sm:hover { border-color: var(--pr); color: var(--pr); }
+  .btn-gap { display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── CATEGORY TABS ── */
+  .tabs-wrap { overflow-x: auto; margin: 0 -20px; padding: 0 20px 12px; }
+  .tabs-wrap::-webkit-scrollbar { display: none; }
+  .tabs { display: flex; gap: 6px; width: max-content; }
+  .cat-tab {
+    border: 1.5px solid var(--border2); border-radius: var(--radius-pill); padding: 7px 16px;
+    font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface);
+    color: var(--text2); transition: all 0.15s; font-family: 'Syne', sans-serif; white-space: nowrap;
+  }
+  .cat-tab.active { background: var(--pr); color: white; border-color: var(--pr); }
+  .cat-tab:hover:not(.active) { border-color: var(--border2); background: var(--surface3); }
+
+  /* ── MENU GRID ── */
+  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .menu-card {
+    background: var(--surface); border: 1.5px solid var(--border2); border-radius: var(--radius);
+    padding: 14px; cursor: default; transition: all 0.15s; position: relative; overflow: hidden;
+  }
+  .menu-card.active-item { border-color: var(--pr); background: var(--prll); }
+  .menu-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--pr); transform: scaleX(0); transform-origin: left; transition: transform 0.2s;
+  }
+  .menu-card.active-item::before { transform: scaleX(1); }
+  .item-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 4px; }
+  .item-price { font-size: 13px; font-weight: 700; color: var(--pr); }
+  .qty-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .qty-btn {
+    width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border2);
+    background: var(--surface2); cursor: pointer; font-size: 16px; line-height: 1;
+    display: flex; align-items: center; justify-content: center; color: var(--text2);
+    transition: all 0.15s; font-family: 'Plus Jakarta Sans', sans-serif; flex-shrink: 0;
+  }
+  .qty-btn:hover { border-color: var(--pr); color: var(--pr); background: var(--prl); }
+  .qty-num { font-size: 14px; font-weight: 700; color: var(--text); min-width: 18px; text-align: center; }
+  .qty-badge {
+    position: absolute; top: 10px; right: 10px; background: var(--pr); color: white;
+    border-radius: 50%; width: 22px; height: 22px; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif;
+  }
+
+  /* ── CART BAR (sticky bottom) ── */
+  .cart-bar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px; background: var(--surface);
+    border-top: 1px solid var(--border); padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 40;
+  }
+  .cart-info .cart-count { font-size: 12px; color: var(--text3); }
+  .cart-info .cart-total { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--pr); }
+  .cart-bar .btn-primary { width: auto; padding: 13px 28px; }
+
+  /* ── ORDER SUMMARY ── */
+  .summary-card {
+    background: var(--surface); border: 1.5px solid var(--border2); border-radius: var(--radius);
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .summary-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text);
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row.total-row { background: var(--prll); }
+  .summary-row.total-row span:first-child { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); }
+  .summary-row.total-row span:last-child { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--pr); }
+  .item-label { display: flex; align-items: center; gap: 8px; }
+  .item-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pr); flex-shrink: 0; }
+
+  /* ── STATUS MESSAGES ── */
+  .status-msg {
+    border-radius: var(--radius-sm); padding: 14px 16px; font-size: 13px;
+    margin: 12px 0; line-height: 1.6; display: none;
+  }
+  .status-msg.visible { display: block; }
+  .status-msg.success { background: var(--success-bg); color: var(--success); border: 1px solid rgba(26,122,69,0.2); }
+  .status-msg.error { background: var(--error-bg); color: var(--error); border: 1px solid rgba(185,28,28,0.2); }
+  .status-msg.loading { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); }
+  .status-msg strong { font-weight: 700; }
+
+  /* ── SETTINGS ── */
+  .settings-section { margin-bottom: 24px; }
+  .url-field-wrap { position: relative; }
+  .url-clear {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 4px;
+  }
+  .url-clear:hover { color: var(--error); }
+  .team-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .team-row {
+    display: flex; align-items: center; gap: 8px; background: var(--surface);
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px;
+  }
+  .team-row input { border: none; padding: 0; font-size: 13px; font-weight: 600; background: transparent; flex: 1; }
+  .team-row input:focus { outline: none; }
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 14px; padding: 2px 4px; flex-shrink: 0; }
+  .del-btn:hover { color: var(--error); }
+  .menu-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .menu-edit-row {
+    display: flex; align-items: center; gap: 6px; background: var(--surface);
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px;
+  }
+  .menu-edit-row .mn { flex: 1; border: none; font-size: 13px; font-weight: 500; background: transparent; color: var(--text); min-width: 0; }
+  .menu-edit-row .mn:focus { outline: none; }
+  .menu-edit-row .mp { width: 68px; border: none; font-size: 13px; font-weight: 600; color: var(--pr); background: transparent; text-align: right; }
+  .menu-edit-row .mp:focus { outline: none; }
+  .menu-edit-row .mc {
+    border: 1px solid var(--border2); border-radius: 6px; font-size: 11px; padding: 4px 6px;
+    background: var(--surface2); color: var(--text2); font-family: 'Plus Jakarta Sans', sans-serif;
+    cursor: pointer; width: 80px;
+  }
+  .add-item-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .add-item-row input[type="text"] { flex: 1; min-width: 120px; }
+  .add-item-row input[type="number"] { width: 80px; }
+  .add-item-row select { width: 100px; }
+
+  /* ── INFO BANNER ── */
+  .info-banner {
+    background: var(--warn-bg); border: 1px solid rgba(146,64,14,0.2); border-radius: var(--radius-sm);
+    padding: 12px 14px; font-size: 12px; color: var(--warn); line-height: 1.6; margin-bottom: 16px;
+  }
+  .info-banner strong { font-weight: 700; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* ── BACK NAV ── */
+  .back-nav { display: flex; align-items: center; gap: 10px; padding: 14px 20px 4px; }
+  .back-btn {
+    display: flex; align-items: center; gap: 6px; background: none; border: none;
+    cursor: pointer; color: var(--text2); font-size: 13px; font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif; padding: 0;
+  }
+  .back-btn:hover { color: var(--pr); }
+  .back-btn svg { width: 16px; height: 16px; }
+  .back-nav-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--text); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1A1916; color: white; border-radius: var(--radius-pill); padding: 10px 20px;
+    font-size: 13px; font-weight: 600; z-index: 999; opacity: 0; transition: all 0.25s;
+    pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 40px 20px; color: var(--text3); font-size: 14px; }
+  .empty .emoji { font-size: 36px; display: block; margin-bottom: 10px; }
+
+  /* ── SCROLL PAD ── */
+  .scroll-pad { height: 100px; }
+
+  /* ── TODAY'S ORDERS ── */
+  .orders-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .grand-total-card {
+    background: var(--pr); border-radius: var(--radius); padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+  }
+  .grand-total-card .gt-label { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 500; }
+  .grand-total-card .gt-amount { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: white; }
+  .grand-total-card .gt-count { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .order-person-card {
+    background: var(--surface); border: 1.5px solid var(--border2); border-radius: var(--radius);
+    margin-bottom: 10px; overflow: hidden;
+  }
+  .opc-header {
+    display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .opc-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--prl);
+    color: var(--pr); font-size: 11px; font-weight: 700; display: flex; align-items: center;
+    justify-content: center; font-family: 'Syne', sans-serif; flex-shrink: 0;
+  }
+  .opc-name { font-size: 14px; font-weight: 700; color: var(--text); flex: 1; }
+  .opc-total { font-size: 14px; font-weight: 700; color: var(--pr); font-family: 'Syne', sans-serif; }
+  .opc-time { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .opc-items { padding: 10px 14px; }
+  .opc-item-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 0; font-size: 13px; color: var(--text2); border-bottom: 1px solid var(--border);
+  }
+  .opc-item-row:last-child { border-bottom: none; }
+  .opc-item-row .iname { color: var(--text); font-weight: 500; }
+  .opc-item-row .iprice { color: var(--text3); font-size: 12px; }
+  .refresh-btn {
+    display: flex; align-items: center; gap: 6px; background: var(--surface2);
+    border: 1.5px solid var(--border2); border-radius: var(--radius-sm);
+    padding: 8px 14px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600;
+    color: var(--text2); cursor: pointer; transition: all 0.15s;
+  }
+  .refresh-btn:hover { border-color: var(--pr); color: var(--pr); }
+  .refresh-btn.spinning svg { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .no-orders { text-align: center; padding: 40px 20px; color: var(--text3); }
+  .no-orders .emoji { font-size: 40px; display: block; margin-bottom: 10px; }
+  .fetch-error { background: var(--error-bg); color: var(--error); border: 1px solid rgba(185,28,28,0.15); border-radius: var(--radius-sm); padding: 14px; font-size: 13px; line-height: 1.6; margin-bottom: 16px; }
+  .orders-date-label { font-size: 13px; color: var(--text3); font-weight: 500; }
+
+  /* ── ORDER HISTORY ── */
+  .date-filter-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; }
+  .date-filter-row .field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+  .date-filter-row label { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; font-family: 'Syne', sans-serif; }
+  .date-filter-row input[type="date"] { padding: 10px 12px; font-size: 13px; }
+  .hist-day-group { margin-bottom: 20px; }
+  .hist-day-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; background: var(--surface2); border-radius: var(--radius-sm);
+    margin-bottom: 8px; cursor: pointer; border: 1.5px solid var(--border);
+  }
+  .hist-day-header:hover { border-color: var(--pr); }
+  .hist-day-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
+  .hist-day-meta { display: flex; align-items: center; gap: 10px; }
+  .hist-day-total { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: var(--pr); }
+  .hist-day-count { font-size: 11px; color: var(--text3); }
+  .hist-day-chevron { font-size: 12px; color: var(--text3); transition: transform 0.2s; }
+  .hist-day-chevron.open { transform: rotate(180deg); }
+  .hist-day-body { display: none; }
+  .hist-day-body.open { display: block; }
+  .hist-summary-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+  }
+  .hist-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--prl); color: var(--pr); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; flex-shrink: 0; }
+  .hist-name { font-size: 13px; font-weight: 600; color: var(--text); min-width: 64px; }
+  .hist-items { font-size: 12px; color: var(--text3); flex: 1; line-height: 1.4; }
+  .hist-total { font-size: 13px; font-weight: 700; color: var(--pr); white-space: nowrap; font-family: 'Syne', sans-serif; }
+  .hist-stats-card {
+    background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 16px;
+  }
+  .hist-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .hist-stat { text-align: center; }
+  .hist-stat .sv { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--pr); }
+  .hist-stat .sl { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .name-filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .name-filter-chip {
+    border: 1.5px solid var(--border2); border-radius: var(--radius-pill); padding: 5px 12px;
+    font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface2);
+    color: var(--text2); transition: all 0.15s; font-family: 'Syne', sans-serif;
+  }
+  .name-filter-chip.active { background: var(--pr); color: white; border-color: var(--pr); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-icon">🍱</div>
+        <div class="brand-text">
+          <h1>Bhok Lagyo!</h1>
+          <p>भोक लाग्यो · Alaya Lunch Tracker</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="goTodayOrders()" title="Today's orders">📋</button>
+        <button class="icon-btn" onclick="goHistory()" title="Order history">📅</button>
+        <button class="icon-btn" onclick="goSettings()" title="Settings">⚙️</button>
+      </div>
+    </div>
+    <div class="user-pill" id="userPill">
+      <div class="user-avatar" id="userAvatar"></div>
+      <span id="userPillName"></span>
+      <span class="edit-badge" id="editBadge">✏️ editing</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCREEN: NAME ═══════════ -->
+  <div class="screen active" id="screen-name">
+    <div class="page">
+      <div class="label" style="margin-top:4px">Who are you today?</div>
+      <div class="name-grid" id="nameGrid"></div>
+      <div class="add-row">
+        <input type="text" id="newNameInput" placeholder="Add a new name..." />
+        <button class="btn-sm" onclick="addNewName()">Add</button>
+      </div>
+      <div class="btn-gap">
+        <button class="btn-primary" id="startBtn" onclick="goMenu(false)" disabled>
+          Start ordering →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCREEN: MENU ═══════════ -->
+  <div class="screen" id="screen-menu">
+    <div class="page" style="padding-bottom:0">
+      <div class="tabs-wrap">
+        <div class="tabs" id="catTabs"></div>
+      </div>
+    </div>
+    <div class="page" style="padding-top:4px">
+      <div class="menu-grid" id="menuGrid"></div>
+      <div class="scroll-pad"></div>
+    </div>
+    <div class="cart-bar" id="cartBar">
+      <div class="cart-info">
+        <div class="cart-count" id="cartCount">0 items</div>
+        <div class="cart-total" id="cartTotal">Rs 0</div>
+      </div>
+      <button class="btn-primary" onclick="goSummary()" style="width:auto">Review order →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCREEN: SUMMARY ═══════════ -->
+  <div class="screen" id="screen-summary">
+    <div class="back-nav">
+      <button class="back-btn" onclick="showScreen('screen-menu')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
+        Edit order
+      </button>
+    </div>
+    <div class="page">
+      <div class="label">Order summary</div>
+      <div id="summaryCard" class="summary-card"></div>
+      <div class="status-msg" id="statusMsg"></div>
+      <div class="btn-gap">
+        <button class="btn-primary" id="submitBtn" onclick="submitOrder()">Submit &amp; save to sheet →</button>
+        <button class="btn-secondary" onclick="showScreen('screen-name')">Order for someone else</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCREEN: SETTINGS ═══════════ -->
+  <div class="screen" id="screen-settings">
+    <div class="back-nav">
+      <button class="back-btn" onclick="showScreen('screen-name')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
+        Back
+      </button>
+      <span class="back-nav-title">Settings</span>
+    </div>
+    <div class="page">
+
+      <div class="settings-section">
+        <div class="label">Google Sheets connection</div>
+        <div class="info-banner">
+          Paste your <strong>Apps Script Web App URL</strong> below. Deploy with
+          <strong>Execute as: Me</strong> and <strong>Who has access: Anyone</strong>.
+          Orders will sync here from anywhere — Claude artifact, GitHub Pages, etc.
+        </div>
+        <div class="url-field-wrap">
+          <input type="url" id="sheetUrl" placeholder="https://script.google.com/macros/s/.../exec" />
+          <button class="url-clear" onclick="clearUrl()" title="Clear URL">×</button>
+        </div>
+        <div style="margin-top:8px">
+          <button class="btn-sm" onclick="testConnection()" id="testBtn">🔗 Test connection</button>
+        </div>
+        <div class="status-msg" id="testStatus"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="settings-section">
+        <div class="label">Team members</div>
+        <div class="team-list" id="teamList"></div>
+        <div class="add-row">
+          <input type="text" id="settingsNameInput" placeholder="Add team member..." />
+          <button class="btn-sm" onclick="addNameSettings()">Add</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="settings-section">
+        <div class="label">Menu items</div>
+        <div class="menu-list" id="menuEditList"></div>
+        <div class="add-item-row">
+          <input type="text" id="newItemName" placeholder="Item name" />
+          <input type="number" id="newItemPrice" placeholder="Rs" min="0" />
+          <select id="newItemCat">
+            <option>Rice</option><option>Noodles</option><option>Snacks</option>
+            <option>Drinks</option><option>Other</option>
+          </select>
+          <button class="btn-sm" onclick="addMenuItem()" style="width:100%">+ Add item</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <button class="btn-primary" onclick="saveSettings()">Save settings</button>
+      <div style="height:40px"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCREEN: TODAY'S ORDERS ═══════════ -->
+  <div class="screen" id="screen-orders">
+    <div class="back-nav">
+      <button class="back-btn" onclick="showScreen('screen-name')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
+        Back
+      </button>
+      <span class="back-nav-title">Today's orders</span>
+    </div>
+    <div class="page">
+      <div class="orders-header">
+        <span class="orders-date-label" id="ordersDateLabel"></span>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadTodayOrders()">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8A6 6 0 1 1 8 2"/><path d="M14 2v4h-4"/></svg>
+          Refresh
+        </button>
+      </div>
+      <div id="ordersError" class="fetch-error" style="display:none"></div>
+      <div id="grandTotalCard" class="grand-total-card" style="display:none">
+        <div>
+          <div class="gt-label">Today's grand total</div>
+          <div class="gt-count" id="ordersCount"></div>
+        </div>
+        <div class="gt-amount" id="grandTotalAmount"></div>
+      </div>
+      <div id="ordersList"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCREEN: ORDER HISTORY ═══════════ -->
+  <div class="screen" id="screen-history">
+    <div class="back-nav">
+      <button class="back-btn" onclick="showScreen('screen-name')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
+        Back
+      </button>
+      <span class="back-nav-title">Order history</span>
+    </div>
+    <div class="page">
+      <div class="date-filter-row">
+        <div class="field">
+          <label>From</label>
+          <input type="date" id="histFromDate" onchange="applyHistoryFilter()" />
+        </div>
+        <div class="field">
+          <label>To</label>
+          <input type="date" id="histToDate" onchange="applyHistoryFilter()" />
+        </div>
+        <button class="refresh-btn" id="histRefreshBtn" onclick="loadHistory()" style="margin-bottom:1px">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8A6 6 0 1 1 8 2"/><path d="M14 2v4h-4"/></svg>
+          Load
+        </button>
+      </div>
+      <div class="name-filter-row" id="histNameFilters"></div>
+      <div id="histError" class="fetch-error" style="display:none"></div>
+      <div id="histStatsCard" class="hist-stats-card" style="display:none">
+        <div class="hist-stats-grid">
+          <div class="hist-stat"><div class="sv" id="hStatDays">0</div><div class="sl">days</div></div>
+          <div class="hist-stat"><div class="sv" id="hStatOrders">0</div><div class="sl">orders</div></div>
+          <div class="hist-stat"><div class="sv" id="hStatTotal">Rs 0</div><div class="sl">total spend</div></div>
+        </div>
+      </div>
+      <div id="histList"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+const DEFAULT_NAMES = ['Rabin','Babin','Jeshan','Binay','Prajwal','Aman','Safal','Sajal','Pramesh','Sameer'];
+const DEFAULT_MENU = [
+  {name:'Dal Bhat Set',price:180,cat:'Rice'},
+  {name:'Fried Rice',price:150,cat:'Rice'},
+  {name:'Veg Fried Rice',price:130,cat:'Rice'},
+  {name:'Chicken Chowmein',price:160,cat:'Noodles'},
+  {name:'Veg Noodles',price:130,cat:'Noodles'},
+  {name:'Thukpa',price:150,cat:'Noodles'},
+  {name:'Momo (Steam)',price:140,cat:'Snacks'},
+  {name:'Momo (Fry)',price:150,cat:'Snacks'},
+  {name:'Samosa (2pc)',price:40,cat:'Snacks'},
+  {name:'Spring Roll',price:60,cat:'Snacks'},
+  {name:'Pakoda',price:50,cat:'Snacks'},
+  {name:'Milk Tea',price:30,cat:'Drinks'},
+  {name:'Black Tea',price:20,cat:'Drinks'},
+  {name:'Cold Drink',price:60,cat:'Drinks'},
+  {name:'Lassi',price:80,cat:'Drinks'},
+  {name:'Water Bottle',price:25,cat:'Drinks'},
+];
+
+const SHEET_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycby4TaU2kjGlNx8nXnMcRk0-7CcON78T8AqHEy-gRozc3koQnDOLCFJX470ePfiZKq1z/exec';
+
+let state = {
+  names: [...DEFAULT_NAMES],
+  menu: JSON.parse(JSON.stringify(DEFAULT_MENU)),
+  sheetUrl: SHEET_URL_DEFAULT,
+  currentUser: null,
+  cart: {},
+  activeCategory: 'All',
+  isEditing: false,
+};
+
+// ── PERSIST ──
+function loadState() {
+  try {
+    const saved = localStorage.getItem('bhok_lagyo_v3');
+    if (saved) {
+      const d = JSON.parse(saved);
+      if (d.names) state.names = d.names;
+      if (d.menu) state.menu = d.menu;
+      // Use saved URL if set, otherwise keep the baked-in default
+      if (d.sheetUrl) state.sheetUrl = d.sheetUrl;
+    }
+  } catch(e) {}
+}
+function saveState() {
+  try {
+    localStorage.setItem('bhok_lagyo_v3', JSON.stringify({
+      names: state.names, menu: state.menu, sheetUrl: state.sheetUrl
+    }));
+  } catch(e) {}
+}
+loadState();
+
+// ═══════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function toast(msg, duration = 2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+}
+
+function getCategories() {
+  return ['All', ...new Set(state.menu.map(m => m.cat))];
+}
+
+function getCartItems() {
+  return Object.entries(state.cart)
+    .filter(([,q]) => q > 0)
+    .map(([i, q]) => ({
+      name: state.menu[i].name,
+      price: state.menu[i].price,
+      qty: q,
+      subtotal: state.menu[i].price * q
+    }));
+}
+
+function getCartTotal() {
+  return getCartItems().reduce((s, i) => s + i.subtotal, 0);
+}
+
+function getCartCount() {
+  return getCartItems().reduce((s, i) => s + i.qty, 0);
+}
+
+// ═══════════════════════════════════════
+//  RENDER: NAME SCREEN
+// ═══════════════════════════════════════
+function renderNames() {
+  const g = document.getElementById('nameGrid');
+  g.innerHTML = '';
+  state.names.forEach(name => {
+    const card = document.createElement('div');
+    card.className = 'name-card' + (state.currentUser === name ? ' sel' : '');
+    card.innerHTML = `
+      <div class="avatar">${initials(name)}</div>
+      <div class="nname">${name}</div>
+    `;
+    card.onclick = () => {
+      state.currentUser = name;
+      renderNames();
+      document.getElementById('startBtn').disabled = false;
+    };
+    g.appendChild(card);
+  });
+}
+
+function addNewName() {
+  const v = document.getElementById('newNameInput').value.trim();
+  if (v && !state.names.includes(v)) {
+    state.names.push(v);
+    saveState();
+    renderNames();
+    document.getElementById('newNameInput').value = '';
+    toast('Added ' + v);
+  }
+}
+
+// ═══════════════════════════════════════
+//  RENDER: MENU SCREEN
+// ═══════════════════════════════════════
+function renderCategoryTabs() {
+  const wrap = document.getElementById('catTabs');
+  wrap.innerHTML = '';
+  getCategories().forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab' + (state.activeCategory === cat ? ' active' : '');
+    btn.textContent = cat;
+    btn.onclick = () => { state.activeCategory = cat; renderCategoryTabs(); renderMenuGrid(); };
+    wrap.appendChild(btn);
+  });
+}
+
+function renderMenuGrid() {
+  const g = document.getElementById('menuGrid');
+  g.innerHTML = '';
+  const items = state.activeCategory === 'All'
+    ? state.menu
+    : state.menu.filter(m => m.cat === state.activeCategory);
+
+  if (!items.length) {
+    g.innerHTML = '<div class="empty" style="grid-column:span 2"><span class="emoji">🍽️</span>No items in this category</div>';
+    return;
+  }
+
+  items.forEach(item => {
+    const realIdx = state.menu.indexOf(item);
+    const qty = state.cart[realIdx] || 0;
+    const card = document.createElement('div');
+    card.className = 'menu-card' + (qty > 0 ? ' active-item' : '');
+    card.innerHTML = `
+      <div class="item-name">${item.name}</div>
+      <div class="item-price">Rs ${item.price}</div>
+      ${qty > 0 ? `<div class="qty-badge">${qty}</div>` : ''}
+      <div class="qty-row">
+        <button class="qty-btn" onclick="changeQty(${realIdx}, -1)">−</button>
+        <span class="qty-num">${qty}</span>
+        <button class="qty-btn" onclick="changeQty(${realIdx}, 1)">+</button>
+      </div>
+    `;
+    g.appendChild(card);
+  });
+}
+
+function changeQty(idx, delta) {
+  state.cart[idx] = (state.cart[idx] || 0) + delta;
+  if (state.cart[idx] <= 0) delete state.cart[idx];
+  renderMenuGrid();
+  updateCartBar();
+}
+
+function updateCartBar() {
+  const count = getCartCount();
+  const total = getCartTotal();
+  document.getElementById('cartCount').textContent = `${count} item${count !== 1 ? 's' : ''} selected`;
+  document.getElementById('cartTotal').textContent = `Rs ${total}`;
+}
+
+// ═══════════════════════════════════════
+//  RENDER: SUMMARY SCREEN
+// ═══════════════════════════════════════
+function renderSummary() {
+  const items = getCartItems();
+  const total = getCartTotal();
+  const card = document.getElementById('summaryCard');
+  const btn = document.getElementById('submitBtn');
+
+  if (!items.length) {
+    card.innerHTML = '<div class="empty"><span class="emoji">🛒</span>No items selected yet.<br>Go back and add something!</div>';
+    btn.disabled = true;
+  } else {
+    card.innerHTML =
+      items.map(i => `
+        <div class="summary-row">
+          <span class="item-label"><span class="item-dot"></span>${i.name} × ${i.qty}</span>
+          <span>Rs ${i.subtotal}</span>
+        </div>
+      `).join('') +
+      `<div class="summary-row total-row"><span>Total</span><span>Rs ${total}</span></div>`;
+    btn.disabled = false;
+    btn.textContent = state.isEditing ? 'Update order in sheet →' : 'Submit & save to sheet →';
+  }
+
+  hideStatus();
+}
+
+function hideStatus() {
+  const s = document.getElementById('statusMsg');
+  s.className = 'status-msg';
+  s.innerHTML = '';
+}
+
+function showStatus(type, html) {
+  const s = document.getElementById('statusMsg');
+  s.className = `status-msg ${type} visible`;
+  s.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+//  NAVIGATION HELPERS
+// ═══════════════════════════════════════
+function updateUserPill() {
+  const pill = document.getElementById('userPill');
+  const av = document.getElementById('userAvatar');
+  const nm = document.getElementById('userPillName');
+  const eb = document.getElementById('editBadge');
+  if (state.currentUser) {
+    av.textContent = initials(state.currentUser);
+    nm.textContent = state.currentUser;
+    pill.classList.add('visible');
+    eb.classList.toggle('visible', state.isEditing);
+  } else {
+    pill.classList.remove('visible');
+  }
+}
+
+function goMenu(isEdit) {
+  if (!state.currentUser) return;
+  state.isEditing = isEdit || false;
+  if (!isEdit) state.cart = {};
+  state.activeCategory = 'All';
+  updateUserPill();
+  renderCategoryTabs();
+  renderMenuGrid();
+  updateCartBar();
+  showScreen('screen-menu');
+}
+
+function goSummary() {
+  renderSummary();
+  showScreen('screen-summary');
+}
+
+function goSettings() {
+  document.getElementById('sheetUrl').value = state.sheetUrl || '';
+  renderTeamList();
+  renderMenuEditList();
+  document.getElementById('testStatus').className = 'status-msg';
+  showScreen('screen-settings');
+}
+
+// ═══════════════════════════════════════
+//  SUBMIT ORDER
+// ═══════════════════════════════════════
+async function submitOrder() {
+  const items = getCartItems();
+  if (!items.length) { showStatus('error', 'Please add at least one item.'); return; }
+
+  const total = getCartTotal();
+  const itemsStr = items.map(i => `${i.name} x${i.qty}`).join(', ');
+  const now = new Date();
+  const ts = now.toLocaleString('en-NP', {timeZone: 'Asia/Kathmandu'});
+  // date and day sent as separate params so the sheet has clean sortable columns
+  const todayDate = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Kathmandu'}); // YYYY-MM-DD
+  const dayName = now.toLocaleDateString('en-US', {timeZone: 'Asia/Kathmandu', weekday: 'long'}); // e.g. Monday
+  const action = state.isEditing ? 'update' : 'add';
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  showStatus('loading', '⏳ Sending to Google Sheets...');
+
+  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) {
+    setTimeout(() => {
+      showStatus('error',
+        `<strong>No Apps Script URL set.</strong><br>Go to ⚙️ Settings and paste your URL first.<br><br>` +
+        `<strong>Order preview:</strong> ${state.currentUser} — ${itemsStr} — Rs ${total}`
+      );
+      btn.disabled = false;
+      btn.textContent = state.isEditing ? 'Update order →' : 'Submit & save to sheet →';
+    }, 600);
+    return;
+  }
+
+  try {
+    const url = `${state.sheetUrl}?action=${action}` +
+      `&name=${encodeURIComponent(state.currentUser)}` +
+      `&items=${encodeURIComponent(itemsStr)}` +
+      `&total=${encodeURIComponent('Rs ' + total)}` +
+      `&timestamp=${encodeURIComponent(ts)}` +
+      `&date=${encodeURIComponent(todayDate)}&day=${encodeURIComponent(dayName)}`;
+
+    await fetch(url, { method: 'GET', mode: 'no-cors' });
+
+    const verb = state.isEditing ? 'updated' : 'saved';
+    showStatus('success',
+      `✅ <strong>Order ${verb} in Google Sheets!</strong><br>` +
+      `<strong>${state.currentUser}</strong> — ${itemsStr}<br>` +
+      `Total: <strong>Rs ${total}</strong>`
+    );
+    btn.textContent = state.isEditing ? '✓ Updated' : '✓ Submitted';
+    state.isEditing = false;
+    updateUserPill();
+  } catch(e) {
+    showStatus('error', `❌ Error: ${e.message}<br>Check your Apps Script URL in Settings.`);
+    btn.disabled = false;
+    btn.textContent = 'Retry →';
+  }
+}
+
+// ═══════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════
+function renderTeamList() {
+  const list = document.getElementById('teamList');
+  list.innerHTML = '';
+  state.names.forEach((name, i) => {
+    const row = document.createElement('div');
+    row.className = 'team-row';
+    row.innerHTML = `
+      <div class="user-avatar" style="width:28px;height:28px;font-size:10px;background:var(--surface3);color:var(--text2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0">${initials(name)}</div>
+      <input type="text" value="${name}" onchange="state.names[${i}]=this.value" style="flex:1;border:none;padding:0;font-size:13px;font-weight:600;background:transparent;outline:none;color:var(--text)">
+      <button class="del-btn" onclick="removeName(${i})">✕</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function addNameSettings() {
+  const v = document.getElementById('settingsNameInput').value.trim();
+  if (v && !state.names.includes(v)) {
+    state.names.push(v);
+    renderTeamList();
+    document.getElementById('settingsNameInput').value = '';
+  }
+}
+
+function removeName(i) {
+  state.names.splice(i, 1);
+  renderTeamList();
+}
+
+function renderMenuEditList() {
+  const list = document.getElementById('menuEditList');
+  list.innerHTML = '';
+  state.menu.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'menu-edit-row';
+    row.innerHTML = `
+      <input class="mn" type="text" value="${item.name}" onchange="state.menu[${i}].name=this.value">
+      <input class="mp" type="number" value="${item.price}" onchange="state.menu[${i}].price=parseInt(this.value)||0">
+      <select class="mc" onchange="state.menu[${i}].cat=this.value">
+        ${['Rice','Noodles','Snacks','Drinks','Other'].map(c=>`<option ${item.cat===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <button class="del-btn" onclick="removeMenuItem(${i})">✕</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function addMenuItem() {
+  const n = document.getElementById('newItemName').value.trim();
+  const p = parseInt(document.getElementById('newItemPrice').value) || 0;
+  const c = document.getElementById('newItemCat').value;
+  if (n && p > 0) {
+    state.menu.push({name: n, price: p, cat: c});
+    renderMenuEditList();
+    document.getElementById('newItemName').value = '';
+    document.getElementById('newItemPrice').value = '';
+    toast('Added ' + n);
+  }
+}
+
+function removeMenuItem(i) {
+  state.menu.splice(i, 1);
+  renderMenuEditList();
+}
+
+function clearUrl() {
+  document.getElementById('sheetUrl').value = '';
+  state.sheetUrl = '';
+}
+
+async function testConnection() {
+  const url = document.getElementById('sheetUrl').value.trim();
+  const statusEl = document.getElementById('testStatus');
+
+  if (!url || !url.includes('script.google.com')) {
+    statusEl.className = 'status-msg error visible';
+    statusEl.textContent = 'Please enter a valid Apps Script URL first.';
+    return;
+  }
+
+  // Because of browser security (CORS/no-cors), fetch() can't confirm a response
+  // from a local file:// or cross-origin context. The real test is opening the URL directly.
+  const testUrl = `${url}?action=add&name=TEST_CONNECTION&items=Connection+Test&total=Rs+0&timestamp=${encodeURIComponent(new Date().toLocaleString('en-NP',{timeZone:'Asia/Kathmandu'}))}`;
+
+  statusEl.className = 'status-msg success visible';
+  statusEl.innerHTML =
+    `<strong>Opening test URL in new tab...</strong><br>` +
+    `Check your Google Sheet — if a <strong>TEST_CONNECTION</strong> row appears, your URL is working perfectly! ` +
+    `<br><br>` +
+    `<a href="${testUrl}" target="_blank" style="color:var(--success);font-weight:700;text-decoration:underline">` +
+    `↗ Click here if it didn't open automatically</a>`;
+
+  // Open the test URL directly — this bypasses CORS entirely
+  window.open(testUrl, '_blank');
+}
+
+function saveSettings() {
+  state.sheetUrl = document.getElementById('sheetUrl').value.trim();
+  saveState();
+  renderNames();
+  showScreen('screen-name');
+  toast('✅ Settings saved!');
+}
+
+// ═══════════════════════════════════════
+//  TODAY'S ORDERS — read from sheet via JSONP
+// ═══════════════════════════════════════
+
+function goTodayOrders() {
+  const now = new Date();
+  const todayDate = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Kathmandu'});
+  const dayName = now.toLocaleDateString('en-US', {timeZone: 'Asia/Kathmandu', weekday: 'long'});
+  document.getElementById('ordersDateLabel').textContent = `${dayName}, ${todayDate}`;
+  showScreen('screen-orders');
+  loadTodayOrders();
+}
+
+function loadTodayOrders() {
+  const btn = document.getElementById('refreshBtn');
+  const listEl = document.getElementById('ordersList');
+  const errorEl = document.getElementById('ordersError');
+  const grandCard = document.getElementById('grandTotalCard');
+
+  btn.classList.add('spinning');
+  listEl.innerHTML = '<div class="no-orders"><span class="emoji">⏳</span>Loading orders...</div>';
+  errorEl.style.display = 'none';
+  grandCard.style.display = 'none';
+
+  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) {
+    btn.classList.remove('spinning');
+    errorEl.style.display = 'block';
+    errorEl.innerHTML = '<strong>No Apps Script URL set.</strong> Go to ⚙️ Settings and add your URL first.';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  const now = new Date();
+  const todayDate = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Kathmandu'});
+
+  // JSONP: inject a script tag that calls our callback with the data
+  const callbackName = 'bhokLagyoCallback_' + Date.now();
+  const url = `${state.sheetUrl}?action=getToday&date=${encodeURIComponent(todayDate)}&callback=${callbackName}`;
+
+  // Timeout in case script never loads
+  const timeout = setTimeout(() => {
+    btn.classList.remove('spinning');
+    errorEl.style.display = 'block';
+    errorEl.innerHTML = '<strong>Request timed out.</strong> Check that your Apps Script is deployed correctly and the URL is valid.';
+    listEl.innerHTML = '';
+    delete window[callbackName];
+  }, 10000);
+
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    btn.classList.remove('spinning');
+    delete window[callbackName];
+
+    if (data.status === 'error') {
+      errorEl.style.display = 'block';
+      errorEl.textContent = 'Error from sheet: ' + data.msg;
+      listEl.innerHTML = '';
+      return;
+    }
+
+    renderTodayOrders(data.orders || []);
+  };
+
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = () => {
+    clearTimeout(timeout);
+    btn.classList.remove('spinning');
+    errorEl.style.display = 'block';
+    errorEl.innerHTML = '<strong>Could not reach Apps Script.</strong> Make sure the script is deployed as a Web App with access set to <strong>Anyone</strong>, then try again.';
+    listEl.innerHTML = '';
+    delete window[callbackName];
+  };
+  document.head.appendChild(script);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 12000);
+}
+
+function renderTodayOrders(orders) {
+  const listEl = document.getElementById('ordersList');
+  const grandCard = document.getElementById('grandTotalCard');
+
+  if (!orders.length) {
+    listEl.innerHTML = '<div class="no-orders"><span class="emoji">🍽️</span>No orders yet today.<br>Be the first to order!</div>';
+    grandCard.style.display = 'none';
+    return;
+  }
+
+  // Calculate grand total
+  let grandTotal = 0;
+  orders.forEach(o => {
+    const num = parseInt(String(o.total).replace(/[^0-9]/g, '')) || 0;
+    grandTotal += num;
+  });
+
+  grandCard.style.display = 'flex';
+  document.getElementById('grandTotalAmount').textContent = `Rs ${grandTotal}`;
+  document.getElementById('ordersCount').textContent = `${orders.length} order${orders.length !== 1 ? 's' : ''} placed`;
+
+  listEl.innerHTML = orders.map(o => {
+    // Parse items string like "Momo (Steam) x1, Milk Tea x1" into rows
+    const itemParts = o.items.split(',').map(s => s.trim()).filter(Boolean);
+    const itemRows = itemParts.map(part => {
+      // Try to extract "Name xN" pattern
+      const match = part.match(/^(.+?)\s*x(\d+)$/i);
+      if (match) {
+        return `<div class="opc-item-row">
+          <span class="iname">${match[1].trim()}</span>
+          <span class="iprice">× ${match[2]}</span>
+        </div>`;
+      }
+      return `<div class="opc-item-row"><span class="iname">${part}</span></div>`;
+    }).join('');
+
+    const av = (o.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    const timeStr = o.time || '';
+
+    return `<div class="order-person-card">
+      <div class="opc-header">
+        <div class="opc-avatar">${av}</div>
+        <div style="flex:1">
+          <div class="opc-name">${o.name || 'Unknown'}</div>
+          ${timeStr ? `<div class="opc-time">${timeStr}</div>` : ''}
+        </div>
+        <div class="opc-total">${o.total}</div>
+      </div>
+      <div class="opc-items">${itemRows}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+//  ORDER HISTORY
+// ═══════════════════════════════════════
+
+let historyAllOrders = []; // full unfiltered data from sheet
+let historyActiveFilter = 'All'; // name filter
+
+function goHistory() {
+  // Default: from 30 days ago to today
+  const now = new Date();
+  const todayStr = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Kathmandu'});
+  const past = new Date(now);
+  past.setDate(past.getDate() - 30);
+  const pastStr = past.toLocaleDateString('en-CA', {timeZone: 'Asia/Kathmandu'});
+
+  document.getElementById('histFromDate').value = pastStr;
+  document.getElementById('histToDate').value = todayStr;
+  document.getElementById('histError').style.display = 'none';
+  document.getElementById('histStatsCard').style.display = 'none';
+  document.getElementById('histList').innerHTML = '';
+  historyAllOrders = [];
+  historyActiveFilter = 'All';
+
+  // Show name chips immediately from known team list — updates again after data loads
+  renderNameFilterChips(state.names);
+
+  showScreen('screen-history');
+  loadHistory();
+}
+
+function loadHistory() {
+  const fromDate = document.getElementById('histFromDate').value;
+  const toDate = document.getElementById('histToDate').value;
+  const btn = document.getElementById('histRefreshBtn');
+  const errorEl = document.getElementById('histError');
+  const listEl = document.getElementById('histList');
+
+  if (!fromDate || !toDate) {
+    errorEl.style.display = 'block';
+    errorEl.textContent = 'Please select both a start and end date.';
+    return;
+  }
+  if (fromDate > toDate) {
+    errorEl.style.display = 'block';
+    errorEl.textContent = 'Start date must be before end date.';
+    return;
+  }
+
+  btn.classList.add('spinning');
+  errorEl.style.display = 'none';
+  listEl.innerHTML = '<div class="no-orders"><span class="emoji">⏳</span>Loading history...</div>';
+  document.getElementById('histStatsCard').style.display = 'none';
+  document.getElementById('histNameFilters').innerHTML = '';
+
+  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) {
+    btn.classList.remove('spinning');
+    errorEl.style.display = 'block';
+    errorEl.innerHTML = '<strong>No Apps Script URL set.</strong> Go to ⚙️ Settings first.';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  const callbackName = 'bhokHistCallback_' + Date.now();
+  const url = `${state.sheetUrl}?action=getRange&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}&callback=${callbackName}`;
+
+  const timeout = setTimeout(() => {
+    btn.classList.remove('spinning');
+    errorEl.style.display = 'block';
+    errorEl.innerHTML = '<strong>Request timed out.</strong> Check your Apps Script deployment.';
+    listEl.innerHTML = '';
+    delete window[callbackName];
+  }, 12000);
+
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    btn.classList.remove('spinning');
+    delete window[callbackName];
+
+    if (data.status === 'error') {
+      errorEl.style.display = 'block';
+      errorEl.textContent = 'Error: ' + data.msg;
+      listEl.innerHTML = '';
+      return;
+    }
+
+    historyAllOrders = data.orders || [];
+    historyActiveFilter = 'All';
+    renderNameFilterChips(); // re-render from actual sheet data
+    applyHistoryFilter();
+  };
+
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = () => {
+    clearTimeout(timeout);
+    btn.classList.remove('spinning');
+    errorEl.style.display = 'block';
+    errorEl.innerHTML = '<strong>Could not reach Apps Script.</strong> Make sure it is deployed with access set to <strong>Anyone</strong>.';
+    document.getElementById('histList').innerHTML = '';
+    delete window[callbackName];
+  };
+  document.head.appendChild(script);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 14000);
+}
+
+function renderNameFilterChips(nameList) {
+  // If a nameList is passed (e.g. from state.names), use it; 
+  // otherwise derive unique names from loaded order data
+  const source = nameList 
+    ? nameList 
+    : [...new Set(historyAllOrders.map(o => o.name).filter(Boolean))].sort();
+  const names = ['All', ...source.filter(n => n !== 'All')];
+  const row = document.getElementById('histNameFilters');
+  row.innerHTML = names.map(n =>
+    `<button class="name-filter-chip ${historyActiveFilter === n ? 'active' : ''}" onclick="setHistoryFilter('${n}')">${n}</button>`
+  ).join('');
+}
+
+function setHistoryFilter(name) {
+  historyActiveFilter = name;
+  renderNameFilterChips();
+  applyHistoryFilter();
+}
+
+function applyHistoryFilter() {
+  const fromDate = document.getElementById('histFromDate').value;
+  const toDate = document.getElementById('histToDate').value;
+  if (!historyAllOrders.length && fromDate && toDate) return; // not loaded yet
+
+  const filtered = historyAllOrders.filter(o => {
+    const nameMatch = historyActiveFilter === 'All' || o.name === historyActiveFilter;
+    const dateMatch = (!fromDate || o.date >= fromDate) && (!toDate || o.date <= toDate);
+    return nameMatch && dateMatch;
+  });
+
+  renderHistoryList(filtered);
+}
+
+function renderHistoryList(orders) {
+  const listEl = document.getElementById('histList');
+  const statsCard = document.getElementById('histStatsCard');
+
+  if (!orders.length) {
+    listEl.innerHTML = '<div class="no-orders"><span class="emoji">📭</span>No orders found for this period.</div>';
+    statsCard.style.display = 'none';
+    return;
+  }
+
+  // Stats
+  const totalSpend = orders.reduce((s, o) => s + (parseInt(String(o.total).replace(/[^0-9]/g, '')) || 0), 0);
+  const uniqueDays = new Set(orders.map(o => o.date)).size;
+  statsCard.style.display = 'block';
+  document.getElementById('hStatDays').textContent = uniqueDays;
+  document.getElementById('hStatOrders').textContent = orders.length;
+  document.getElementById('hStatTotal').textContent = 'Rs ' + totalSpend.toLocaleString();
+
+  // Group by date descending
+  const byDate = {};
+  orders.forEach(o => {
+    const key = o.date;
+    if (!byDate[key]) byDate[key] = { date: o.date, day: o.day, orders: [] };
+    byDate[key].orders.push(o);
+  });
+
+  const sortedDates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+
+  listEl.innerHTML = sortedDates.map((dateKey, idx) => {
+    const group = byDate[dateKey];
+    const dayTotal = group.orders.reduce((s, o) => s + (parseInt(String(o.total).replace(/[^0-9]/g, '')) || 0), 0);
+    const isOpen = idx === 0; // first group open by default
+
+    const rows = group.orders.map(o => {
+      const av = (o.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      return `<div class="hist-summary-row">
+        <div class="hist-avatar">${av}</div>
+        <div class="hist-name">${o.name || '—'}</div>
+        <div class="hist-items">${o.items || '—'}</div>
+        <div class="hist-total">${o.total}</div>
+      </div>`;
+    }).join('');
+
+    const groupId = 'hg_' + dateKey.replace(/-/g, '');
+    const chevronId = 'hc_' + dateKey.replace(/-/g, '');
+
+    return `<div class="hist-day-group">
+      <div class="hist-day-header" onclick="toggleHistGroup('${groupId}','${chevronId}')">
+        <div>
+          <div class="hist-day-title">${group.day || ''} &nbsp;·&nbsp; ${group.date}</div>
+          <div class="hist-day-count">${group.orders.length} order${group.orders.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div class="hist-day-meta">
+          <div class="hist-day-total">Rs ${dayTotal.toLocaleString()}</div>
+          <div class="hist-day-chevron ${isOpen ? 'open' : ''}" id="${chevronId}">▼</div>
+        </div>
+      </div>
+      <div class="hist-day-body ${isOpen ? 'open' : ''}" id="${groupId}">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleHistGroup(bodyId, chevronId) {
+  const body = document.getElementById(bodyId);
+  const chevron = document.getElementById(chevronId);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chevron.classList.toggle('open', !isOpen);
+}
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+renderNames();
+</script>
+</body>
+</html>
