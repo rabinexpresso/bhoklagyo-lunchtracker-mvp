@@ -540,55 +540,6 @@
   /* Scroll padding so sticky header doesn't cover content */
   html { scroll-padding-top: 70px; }
 
-  /* ── CONFIRM MODAL ── */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; z-index: 200;
-    background: rgba(0,0,0,0.45);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    align-items: center; justify-content: center; padding: 24px;
-  }
-  .modal-overlay.visible { display: flex; animation: modalIn 0.2s ease; }
-  @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.94); }
-    to   { opacity: 1; transform: scale(1); }
-  }
-  .modal-box {
-    background: var(--surface); border-radius: 24px;
-    width: 100%; max-width: 320px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.1);
-    overflow: hidden;
-  }
-  .modal-body {
-    padding: 28px 24px 20px; text-align: center;
-  }
-  .modal-icon {
-    font-size: 38px; display: block; margin-bottom: 14px;
-    filter: drop-shadow(0 4px 8px rgba(185,28,28,0.3));
-  }
-  .modal-title {
-    font-family: 'Outfit', sans-serif; font-size: 17px; font-weight: 900;
-    color: var(--text); letter-spacing: -0.3px; margin-bottom: 8px;
-  }
-  .modal-desc {
-    font-size: 13px; color: var(--text3); line-height: 1.6;
-    font-family: 'Nunito', sans-serif;
-  }
-  .modal-desc strong { color: var(--text2); font-weight: 700; }
-  .modal-actions {
-    display: grid; grid-template-columns: 1fr 1fr;
-    border-top: 1px solid rgba(0,0,0,0.07);
-  }
-  .modal-btn {
-    padding: 16px 12px; border: none; background: none; cursor: pointer;
-    font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700;
-    transition: background 0.12s; -webkit-tap-highlight-color: transparent;
-  }
-  .modal-btn:active { background: var(--surface2); }
-  .modal-btn.cancel { color: var(--text2); border-right: 1px solid rgba(0,0,0,0.07); }
-  .modal-btn.cancel:hover { background: var(--surface2); }
-  .modal-btn.confirm { color: var(--error); }
-  .modal-btn.confirm:hover { background: var(--error-bg); }
-
 </style>
 </head>
 <body>
@@ -1001,21 +952,6 @@
     </div>
   </div>
 
-  <!-- ═══════════ CONFIRM MODAL ═══════════ -->
-  <div class="modal-overlay" id="confirmModal">
-    <div class="modal-box">
-      <div class="modal-body">
-        <span class="modal-icon">🗑️</span>
-        <div class="modal-title" id="modalTitle">Delete order?</div>
-        <div class="modal-desc" id="modalDesc"></div>
-      </div>
-      <div class="modal-actions">
-        <button class="modal-btn cancel" onclick="modalResolve(false)">Cancel</button>
-        <button class="modal-btn confirm" onclick="modalResolve(true)">Delete</button>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1062,12 +998,16 @@ function loadState() {
     const saved = localStorage.getItem('bhok_lagyo_v4');
     if (saved) {
       const d = JSON.parse(saved);
-      if (d.names) state.names = d.names.filter(n => n && n.trim().length >= 2).sort((a,b) => a.localeCompare(b));
-      if (d.menu) state.menu = d.menu;
-      // Use saved URL if set, otherwise keep the baked-in default
+      const cleanNames = d.names ? d.names.filter(n => n && n.trim().length >= 2).sort((a,b) => a.localeCompare(b)) : [];
+      // Only use saved names if we actually have some — otherwise fall back to defaults
+      if (cleanNames.length > 0) state.names = cleanNames;
+      if (d.menu && d.menu.length > 0) state.menu = d.menu;
       if (d.sheetUrl) state.sheetUrl = d.sheetUrl;
     }
-  } catch(e) {}
+  } catch(e) {
+    // Corrupt storage — clear it and start fresh
+    try { localStorage.removeItem('bhok_lagyo_v4'); } catch(e2) {}
+  }
 }
 function saveState() {
   try {
@@ -1081,27 +1021,6 @@ loadState();
 // ═══════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════
-
-// Custom confirm modal — replaces browser confirm()
-let _modalResolve = null;
-function showConfirmModal(title, desc) {
-  return new Promise(resolve => {
-    _modalResolve = resolve;
-    document.getElementById('modalTitle').textContent = title;
-    document.getElementById('modalDesc').innerHTML = desc;
-    document.getElementById('confirmModal').classList.add('visible');
-  });
-}
-function modalResolve(result) {
-  document.getElementById('confirmModal').classList.remove('visible');
-  if (_modalResolve) { _modalResolve(result); _modalResolve = null; }
-}
-// Tap overlay background to cancel
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('confirmModal').addEventListener('click', function(e) {
-    if (e.target === this) modalResolve(false);
-  });
-});
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1824,12 +1743,7 @@ async function bulkDeleteSelected() {
   if (!indices.length) return;
   const orders = indices.map(i => todayOrdersCache[i]).filter(Boolean);
   const names = orders.map(o => o.name).join(', ');
-  const countStr = orders.length === 1 ? '1 order' : orders.length + ' orders';
-  const confirmed = await showConfirmModal(
-    'Delete ' + countStr + '?',
-    'This will permanently remove <strong>' + names + '</strong> from today's sheet.'
-  );
-  if (!confirmed) return;
+  if (!confirm('Delete orders for: ' + names + '?')) return;
 
   const { date: todayDate } = getNPTDate();
 
@@ -1882,11 +1796,7 @@ function editOrderFromToday(idx) {
 async function deleteOrderFromToday(idx) {
   const order = todayOrdersCache[idx];
   if (!order) return;
-  const confirmed = await showConfirmModal(
-    'Delete order?',
-    'Remove <strong>' + order.name + '</strong>'s order of <strong>' + order.total + '</strong> from today's sheet.'
-  );
-  if (!confirmed) return;
+  if (!confirm(`Delete ${order.name}'s order (${order.total})?`)) return;
 
   const { date: todayDate } = getNPTDate();
 
@@ -2115,6 +2025,7 @@ function toggleHistGroup(bodyId, chevronId) {
 // ═══════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════
+saveState();   // persist defaults immediately so next load always has names
 renderNames();
 </script>
 </body>
