@@ -2615,7 +2615,7 @@ function confirmSplit(idx) {
   if (sel.size === 0) return;
 
   const total = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
-  const people = sel.size + 1;
+  const people = sel.size + 1; // payer + sharers
   const share = Math.ceil(total / people);
   const { date, day } = getNPTDate();
   const now = new Date();
@@ -2625,11 +2625,27 @@ function confirmSplit(idx) {
   const mm = String(npt.getMinutes()).padStart(2,'0');
   const ampm = npt.getHours() >= 12 ? 'PM' : 'AM';
   const timeOnly = `${hh}:${mm} ${ampm}`;
+  const sharers = [...sel];
 
+  // Step 1: Delete the payer's original full-amount row from the sheet
+  writeSplitToSheet('delete', order.name, 0, date, day, timeOnly);
+
+  // Small delay to let delete complete before adding new rows
+  setTimeout(() => {
+    // Step 2: Add payer's new row with their share only
+    const payerNote = `${order.items} [split ${people} ways with ${sharers.join(', ')}]`;
+    writeSplitToSheet('add', order.name, share, date, day, timeOnly, payerNote);
+
+    // Step 3: Add a row for each sharer with their share
+    sharers.forEach(person => {
+      const sharerNote = `${order.items} [split cost, paid by ${order.name}]`;
+      writeSplitToSheet('add', person, share, date, day, timeOnly, sharerNote);
+    });
+  }, 600);
+
+  // Record debts locally
   const debts = getDebts();
-  const splitNote = `[SPLIT] Shared with ${order.name} (${people} people) — ${order.items}`;
-
-  [...sel].forEach(person => {
+  sharers.forEach(person => {
     debts.push({
       id: Date.now() + Math.random(),
       from: person,
@@ -2638,18 +2654,7 @@ function confirmSplit(idx) {
       date,
       settled: false
     });
-    // Write split entry to Orders sheet for each person who owes
-    writeSplitToSheet(person, splitNote, share, date, day, timeOnly);
   });
-  // Update payer's share in sheet (they paid full but their real cost is their share)
-  writeSplitToSheet(
-    order.name,
-    `[PAID] Paid for ${[...sel].join('+')} — ${order.items}`,
-    share,
-    date, day, timeOnly,
-    true // mark as update
-  );
-
   saveDebts(debts);
 
   // Close panel
@@ -2658,19 +2663,26 @@ function confirmSplit(idx) {
   delete splitSelections[idx];
 
   renderDebtsCard();
-  toast(`Split recorded — ${[...sel].join(', ')} each owe Rs ${share} to ${order.name}`);
+  setTimeout(() => loadTodayOrders(), 1500); // refresh to show updated rows
+  toast(`Split recorded — ${sharers.join(', ')} each owe Rs ${share} to ${order.name}`);
 }
 
-function writeSplitToSheet(name, items, total, date, day, time, isUpdate) {
+function writeSplitToSheet(action, name, total, date, day, time, items) {
   if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
-  const action = isUpdate ? 'update' : 'add';
-  const url = `${state.sheetUrl}?action=${action}` +
-    `&name=${encodeURIComponent(name)}` +
-    `&items=${encodeURIComponent(items)}` +
-    `&total=${encodeURIComponent('Rs ' + total)}` +
-    `&date=${encodeURIComponent(date)}` +
-    `&day=${encodeURIComponent(day)}` +
-    `&timestamp=${encodeURIComponent(time)}`;
+  let url;
+  if (action === 'delete') {
+    url = `${state.sheetUrl}?action=delete` +
+      `&name=${encodeURIComponent(name)}` +
+      `&date=${encodeURIComponent(date)}`;
+  } else {
+    url = `${state.sheetUrl}?action=add` +
+      `&name=${encodeURIComponent(name)}` +
+      `&items=${encodeURIComponent(items || '')}` +
+      `&total=${encodeURIComponent('Rs ' + total)}` +
+      `&date=${encodeURIComponent(date)}` +
+      `&day=${encodeURIComponent(day)}` +
+      `&timestamp=${encodeURIComponent(time)}`;
+  }
   fetch(url, { method: 'GET', mode: 'no-cors' }).catch(() => {});
 }
 
@@ -2728,8 +2740,11 @@ renderNames();
 // Sync locations from sheet on startup (sheet is master)
 setTimeout(() => {
   syncLocationsFromSheet();
-  syncUsersToSheet(); // keep Users sheet up to date
 }, 1200);
+// Sync users once after a short delay (separate to avoid race conditions)
+setTimeout(() => {
+  syncUsersToSheet();
+}, 2000);
 </script>
 </body>
 </html>
