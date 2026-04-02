@@ -599,6 +599,61 @@
     letter-spacing: 1px; font-family: 'Outfit', sans-serif; margin-bottom: 8px;
   }
 
+  /* ── SPLIT BILL ── */
+  .opc-split-btn {
+    flex: 1; padding: 9px; border-radius: var(--radius-sm); font-family: 'Outfit', sans-serif;
+    font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; border: none;
+    box-shadow: var(--shadow-sm); background: var(--surface); color: var(--text2);
+  }
+  .opc-split-btn:hover { color: var(--gold-dark); background: var(--gold-light); box-shadow: var(--shadow-gold); }
+  .split-panel {
+    padding: 14px; background: var(--gold-light); border-top: 1px solid rgba(232,160,32,0.2);
+    display: none;
+  }
+  .split-panel.open { display: block; }
+  .split-panel-title { font-size: 12px; font-weight: 800; color: var(--gold-dark); font-family: 'Outfit', sans-serif; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+  .split-people { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .split-person-chip {
+    border: none; border-radius: var(--radius-pill); padding: 6px 12px; font-size: 12px;
+    font-weight: 700; cursor: pointer; background: var(--surface); color: var(--text2);
+    font-family: 'Outfit', sans-serif; box-shadow: var(--shadow-sm); transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .split-person-chip.sel { background: var(--gold); color: #1C0A06; box-shadow: var(--shadow-gold); }
+  .split-preview { font-size: 13px; color: var(--gold-dark); font-weight: 700; margin-bottom: 10px; font-family: 'Outfit', sans-serif; }
+  .split-confirm-btn {
+    width: 100%; padding: 11px; border: none; border-radius: var(--radius-sm);
+    background: var(--gold); color: #1C0A06; font-family: 'Outfit', sans-serif;
+    font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.15s;
+    box-shadow: var(--shadow-gold);
+  }
+  .split-confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .split-confirm-btn:active { transform: scale(0.98); }
+
+  /* ── DEBTS PANEL ── */
+  .debts-card {
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md);
+    margin-bottom: 16px; overflow: hidden; display: none;
+  }
+  .debts-card.visible { display: block; }
+  .debts-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: var(--hdr-bg);
+  }
+  .debts-title { font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 800; color: var(--gold); }
+  .debts-clear-btn { background: none; border: none; color: rgba(255,255,255,0.4); font-size: 11px; cursor: pointer; font-family: 'Outfit', sans-serif; font-weight: 700; }
+  .debts-clear-btn:hover { color: var(--gold); }
+  .debt-row {
+    display: flex; align-items: center; padding: 11px 16px; border-bottom: 1px solid rgba(0,0,0,0.05);
+    gap: 10px;
+  }
+  .debt-row:last-child { border-bottom: none; }
+  .debt-from { font-size: 13px; font-weight: 800; color: var(--text); font-family: 'Outfit', sans-serif; min-width: 60px; }
+  .debt-arrow { font-size: 12px; color: var(--text3); }
+  .debt-to { font-size: 13px; font-weight: 800; color: var(--text); font-family: 'Outfit', sans-serif; flex: 1; }
+  .debt-amount { font-size: 14px; font-weight: 900; color: var(--pr); font-family: 'Outfit', sans-serif; }
+  .debt-settle-btn { background: var(--success-bg); color: var(--success); border: none; border-radius: var(--radius-sm); padding: 5px 10px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'Outfit', sans-serif; }
+
 </style>
 </head>
 <body>
@@ -1000,6 +1055,13 @@
           <div class="gt-count" id="ordersCount"></div>
         </div>
         <div class="gt-amount" id="grandTotalAmount"></div>
+      </div>
+      <div class="debts-card" id="debtsCard">
+        <div class="debts-header">
+          <span class="debts-title">💸 Who owes who</span>
+          <button class="debts-clear-btn" onclick="clearAllDebts()">Clear all</button>
+        </div>
+        <div id="debtsList"></div>
       </div>
       <div id="ordersList"></div>
     </div>
@@ -1899,6 +1961,7 @@ function renderTodayOrders(orders, skipCacheReset) {
     return;
   }
   if (selectAllRow) selectAllRow.style.display = 'flex';
+  renderDebtsCard();
   // Reset select-all checkbox state
   const chk = document.getElementById('selectAllChk');
   if (chk) chk.checked = false;
@@ -1931,7 +1994,16 @@ function renderTodayOrders(orders, skipCacheReset) {
       <div class="opc-items">${itemRows}</div>
       <div class="opc-actions">
         <button class="opc-edit-btn" onclick="editOrderFromToday(${idx})">✏️ Edit</button>
+        <button class="opc-split-btn" onclick="toggleSplitPanel(${idx})">💸 Split</button>
         <button class="opc-del-btn" onclick="deleteOrderFromToday(${idx})">🗑 Delete</button>
+      </div>
+      <div class="split-panel" id="splitPanel_${idx}">
+        <div class="split-panel-title">Who's sharing this bill?</div>
+        <div class="split-people" id="splitPeople_${idx}"></div>
+        <div class="split-preview" id="splitPreview_${idx}"></div>
+        <button class="split-confirm-btn" id="splitConfirm_${idx}" onclick="confirmSplit(${idx})" disabled>
+          Record split
+        </button>
       </div>
     </div>`;
   }).join('');
@@ -2461,6 +2533,157 @@ function syncLocationsFromSheet(fromSettings) {
 function updateLocSyncLabel(text) {
   const el = document.getElementById('locSyncLabel');
   if (el) el.textContent = text;
+}
+
+// ═══════════════════════════════════════
+//  SPLIT BILL
+// ═══════════════════════════════════════
+
+// debts stored as: { id, from, to, amount, date, settled }
+function getDebts() {
+  try { return JSON.parse(localStorage.getItem('bhok_debts') || '[]'); } catch(e) { return []; }
+}
+function saveDebts(debts) {
+  try { localStorage.setItem('bhok_debts', JSON.stringify(debts)); } catch(e) {}
+}
+
+let splitSelections = {}; // { idx: Set of selected names }
+
+function toggleSplitPanel(idx) {
+  const panel = document.getElementById('splitPanel_' + idx);
+  if (!panel) return;
+  const isOpen = panel.classList.contains('open');
+  // Close all other panels first
+  document.querySelectorAll('.split-panel.open').forEach(p => p.classList.remove('open'));
+  if (!isOpen) {
+    panel.classList.add('open');
+    splitSelections[idx] = new Set();
+    renderSplitPeople(idx);
+  }
+}
+
+function renderSplitPeople(idx) {
+  const order = todayOrdersCache[idx];
+  if (!order) return;
+  const container = document.getElementById('splitPeople_' + idx);
+  if (!container) return;
+  // Show all team members except the payer
+  const others = state.names.filter(n => n !== order.name);
+  container.innerHTML = others.map(n =>
+    `<button class="split-person-chip ${splitSelections[idx]?.has(n) ? 'sel' : ''}"
+      onclick="toggleSplitPerson(${idx}, '${n.replace(/'/g, "\'")}')">
+      ${getNameEmoji(n, state.names.indexOf(n))} ${n}
+    </button>`
+  ).join('');
+  updateSplitPreview(idx);
+}
+
+function toggleSplitPerson(idx, name) {
+  if (!splitSelections[idx]) splitSelections[idx] = new Set();
+  if (splitSelections[idx].has(name)) splitSelections[idx].delete(name);
+  else splitSelections[idx].add(name);
+  renderSplitPeople(idx);
+}
+
+function updateSplitPreview(idx) {
+  const order = todayOrdersCache[idx];
+  const preview = document.getElementById('splitPreview_' + idx);
+  const btn = document.getElementById('splitConfirm_' + idx);
+  if (!order || !preview || !btn) return;
+
+  const sel = splitSelections[idx] || new Set();
+  const total = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
+  const people = sel.size + 1; // +1 for the payer
+
+  if (sel.size === 0) {
+    preview.textContent = 'Select people to split with';
+    btn.disabled = true;
+    return;
+  }
+
+  const share = Math.ceil(total / people);
+  const names = [...sel].join(', ');
+  preview.textContent = `${order.name} paid Rs ${total} → each person owes Rs ${share} (${people} people)`;
+  btn.disabled = false;
+}
+
+function confirmSplit(idx) {
+  const order = todayOrdersCache[idx];
+  if (!order) return;
+  const sel = splitSelections[idx] || new Set();
+  if (sel.size === 0) return;
+
+  const total = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
+  const people = sel.size + 1;
+  const share = Math.ceil(total / people);
+  const { date } = getNPTDate();
+
+  const debts = getDebts();
+  [...sel].forEach(person => {
+    debts.push({
+      id: Date.now() + Math.random(),
+      from: person,
+      to: order.name,
+      amount: share,
+      date,
+      settled: false
+    });
+  });
+  saveDebts(debts);
+
+  // Close panel
+  const panel = document.getElementById('splitPanel_' + idx);
+  if (panel) panel.classList.remove('open');
+  delete splitSelections[idx];
+
+  renderDebtsCard();
+  toast(`Split recorded — ${[...sel].join(', ')} each owe Rs ${share} to ${order.name}`);
+}
+
+function renderDebtsCard() {
+  const card = document.getElementById('debtsCard');
+  const list = document.getElementById('debtsList');
+  if (!card || !list) return;
+
+  const debts = getDebts().filter(d => !d.settled);
+  if (debts.length === 0) { card.classList.remove('visible'); return; }
+
+  card.classList.add('visible');
+
+  // Consolidate: sum up what each person owes each other
+  const consolidated = {};
+  debts.forEach(d => {
+    const key = d.from + '→' + d.to;
+    if (!consolidated[key]) consolidated[key] = { from: d.from, to: d.to, amount: 0 };
+    consolidated[key].amount += d.amount;
+  });
+
+  list.innerHTML = Object.values(consolidated).map(d =>
+    `<div class="debt-row">
+      <span class="debt-from">${getNameEmoji(d.from, state.names.indexOf(d.from))} ${d.from}</span>
+      <span class="debt-arrow">owes</span>
+      <span class="debt-to">${d.to}</span>
+      <span class="debt-amount">Rs ${d.amount}</span>
+      <button class="debt-settle-btn" onclick="settleDebt('${d.from}','${d.to}')">✓ Settled</button>
+    </div>`
+  ).join('');
+}
+
+function settleDebt(from, to) {
+  const debts = getDebts().map(d => {
+    if (d.from === from && d.to === to && !d.settled) return { ...d, settled: true };
+    return d;
+  });
+  saveDebts(debts);
+  renderDebtsCard();
+  toast(`${from} settled up with ${to} ✓`);
+}
+
+function clearAllDebts() {
+  if (!confirm('Clear all debt records?')) return;
+  saveDebts([]);
+  renderDebtsCard();
+  toast('All debts cleared');
 }
 
 // ═══════════════════════════════════════
