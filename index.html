@@ -888,7 +888,11 @@
 
       <div class="settings-section">
         <div class="label">Menu locations</div>
-        <div class="info-banner">Menus are shared across all devices via Google Sheet. Changes sync instantly for everyone.</div>
+        <div class="info-banner">Google Sheet is the master. The app syncs from the sheet on load. Add locations here to create new sheet tabs, or delete them to remove the sheet tab.</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:12px;color:var(--text3)" id="locSyncLabel">Loading from sheet...</span>
+          <button class="btn-sm" onclick="syncLocationsFromSheet(true)" style="font-size:11px;padding:7px 12px">↻ Sync from sheet</button>
+        </div>
         <div class="loc-tab-row" id="settingsLocTabs"></div>
         <div class="add-location-row">
           <input type="text" id="newLocName" placeholder="New location name (e.g. Samjhana)" />
@@ -2311,56 +2315,62 @@ function loadAllLocationMenus() {
   });
 }
 
-// ── 2-WAY SYNC: fetch all location tabs from sheet and merge with app ──
-function syncLocationsFromSheet() {
-  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
+// ── SHEET-MASTER SYNC: sheet is always the source of truth for locations ──
+function syncLocationsFromSheet(fromSettings) {
+  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) {
+    updateLocSyncLabel('No sheet URL set');
+    return;
+  }
+
+  updateLocSyncLabel('Syncing...');
   const callbackName = 'syncLocsCallback_' + Date.now();
   const url = `${state.sheetUrl}?action=getLocations&callback=${callbackName}`;
 
-  const timeout = setTimeout(() => { delete window[callbackName]; }, 8000);
+  const timeout = setTimeout(() => {
+    delete window[callbackName];
+    updateLocSyncLabel('Sync timed out');
+    loadAllLocationMenus();
+  }, 8000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
     delete window[callbackName];
-    if (data.status !== 'ok' || !data.locations) return;
 
-    const sheetLocs = data.locations; // e.g. ['Samjhana', 'XO Coffee Palace']
-    let changed = false;
-
-    // Add any locations in sheet that aren't in the app
-    sheetLocs.forEach(loc => {
-      if (!state.locations.includes(loc)) {
-        state.locations.push(loc);
-        changed = true;
-      }
-    });
-
-    // Remove any locations in app that no longer exist in sheet
-    // (keep Generic always — it's the default and has no sheet tab)
-    const toRemove = state.locations.filter(loc =>
-      loc !== 'Generic' && !sheetLocs.includes(loc)
-    );
-    toRemove.forEach(loc => {
-      state.locations = state.locations.filter(l => l !== loc);
-      delete state.locationMenus[loc];
-      changed = true;
-    });
-
-    if (changed) {
-      saveState();
-      // Re-render if settings screen is open
-      renderSettingsLocTabs();
-      renderLocationBar();
-      // Load menus for any newly discovered locations
-      sheetLocs.forEach(loc => {
-        if (!state.locationMenus[loc] || state.locationMenus[loc].length === 0) {
-          loadLocationMenuFromSheet(loc);
-        }
-      });
-    } else {
-      // Still load menus even if no location changes
+    if (data.status !== 'ok' || !Array.isArray(data.locations)) {
+      updateLocSyncLabel('Sync failed');
       loadAllLocationMenus();
+      return;
     }
+
+    // Sheet is master — replace app locations with exactly what sheet has
+    // Always keep Generic as the first item (it has no sheet tab)
+    const sheetLocs = data.locations;
+
+    // Remove location menus for locations no longer in sheet
+    state.locations
+      .filter(l => l !== 'Generic' && !sheetLocs.includes(l))
+      .forEach(l => { delete state.locationMenus[l]; });
+
+    // Set locations = Generic + whatever sheet has
+    state.locations = ['Generic', ...sheetLocs];
+
+    // If currently selected location was removed, reset to Generic
+    if (!state.locations.includes(state.activeLocation)) state.activeLocation = 'Generic';
+    if (!state.locations.includes(state.settingsLocation)) state.settingsLocation = 'Generic';
+
+    saveState();
+    renderSettingsLocTabs();
+    renderLocationBar();
+
+    const count = sheetLocs.length;
+    updateLocSyncLabel('Synced — ' + count + ' location' + (count !== 1 ? 's' : '') + ' from sheet');
+
+    if (fromSettings) toast('Locations synced from sheet');
+
+    // Load menus for all sheet locations
+    sheetLocs.forEach(loc => {
+      loadLocationMenuFromSheet(loc);
+    });
   };
 
   const script = document.createElement('script');
@@ -2368,11 +2378,16 @@ function syncLocationsFromSheet() {
   script.onerror = () => {
     clearTimeout(timeout);
     delete window[callbackName];
-    // Fall back to loading menus from known locations
+    updateLocSyncLabel('Could not reach sheet');
     loadAllLocationMenus();
   };
   document.head.appendChild(script);
   setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 10000);
+}
+
+function updateLocSyncLabel(text) {
+  const el = document.getElementById('locSyncLabel');
+  if (el) el.textContent = text;
 }
 
 // ═══════════════════════════════════════
