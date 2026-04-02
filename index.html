@@ -576,6 +576,29 @@
   }
   .loc-del-btn:hover { color: var(--error); background: var(--error-bg); }
 
+  /* ── NAME SCREEN STEPS ── */
+  .step-hint {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    padding: 10px 14px; background: var(--surface); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+  }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--pr);
+    color: white; font-size: 11px; font-weight: 900; display: flex; align-items: center;
+    justify-content: center; font-family: 'Outfit', sans-serif; flex-shrink: 0;
+  }
+  .step-num.done { background: var(--success); }
+  .step-text { font-size: 13px; font-weight: 600; color: var(--text2); font-family: 'Outfit', sans-serif; }
+  .step-text strong { color: var(--text); }
+  .add-name-section {
+    margin-top: 6px; padding-top: 14px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+  .add-name-label {
+    font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase;
+    letter-spacing: 1px; font-family: 'Outfit', sans-serif; margin-bottom: 8px;
+  }
+
 </style>
 </head>
 <body>
@@ -786,18 +809,34 @@
           </div>
         </div>
       </div>
+      <!-- Step 1 -->
+      <div class="step-hint" id="step1hint">
+        <div class="step-num" id="step1num">1</div>
+        <div class="step-text"><strong>Tap your name</strong> to select who's ordering</div>
+      </div>
       <div class="name-grid" id="nameGrid"></div>
-      <div class="name-edit-bar">
-        <button class="edit-names-btn" id="editNamesBtn" onclick="toggleNameEditMode()">✏️ Edit names</button>
+
+      <!-- Step 2 — only highlighted once a name is selected -->
+      <div class="step-hint" id="step2hint" style="opacity:0.4">
+        <div class="step-num" id="step2num">2</div>
+        <div class="step-text"><strong>Press Start ordering</strong> to browse the menu</div>
       </div>
-      <div class="add-row">
-        <input type="text" id="newNameInput" placeholder="Add a new name..." />
-        <button class="btn-sm" onclick="addNewName()">Add</button>
-      </div>
-      <div class="btn-gap">
+      <div class="btn-gap" style="margin-bottom:16px">
         <button class="btn-primary" id="startBtn" onclick="goMenu(false)" disabled>
           Start ordering →
         </button>
+      </div>
+
+      <!-- Add name — clearly separated and labelled -->
+      <div class="add-name-section">
+        <div class="add-name-label">➕ Add a team member</div>
+        <div class="add-row">
+          <input type="text" id="newNameInput" placeholder="Enter person's name..." />
+          <button class="btn-sm" onclick="addNewName()">Add</button>
+        </div>
+      </div>
+      <div class="name-edit-bar">
+        <button class="edit-names-btn" id="editNamesBtn" onclick="toggleNameEditMode()">✏️ Edit names</button>
       </div>
     </div>
   </div>
