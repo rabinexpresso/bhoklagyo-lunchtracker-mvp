@@ -588,6 +588,69 @@
   ════════════════════════════════════ */
   .add-row { display: flex; gap: 8px; margin-bottom: 10px; }
   .name-edit-bar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 14px; }
+  /* ════════════════════════════════════
+     CONFIRM MODAL
+  ════════════════════════════════════ */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(44,26,14,0.5);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    align-items: center; justify-content: center; padding: 28px;
+  }
+  .modal-overlay.open { display: flex; animation: modalFadeIn 0.22s cubic-bezier(0.22,1,0.36,1); }
+  @keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .modal-box {
+    background: var(--surface); border-radius: 24px;
+    width: 100%; max-width: 320px; overflow: hidden;
+    box-shadow: 0 24px 64px rgba(44,26,14,0.28), 0 4px 16px rgba(44,26,14,0.12);
+    animation: modalSlideUp 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    border: 1.5px solid var(--surface3);
+  }
+  @keyframes modalSlideUp {
+    from { transform: translateY(28px) scale(0.94); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  .modal-body { padding: 30px 24px 22px; text-align: center; }
+  .modal-icon {
+    font-size: 42px; display: block; margin-bottom: 16px;
+    animation: modalIconBounce 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
+  }
+  @keyframes modalIconBounce {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .modal-title {
+    font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.4px; margin-bottom: 8px;
+  }
+  .modal-desc {
+    font-size: 14px; color: var(--text2); line-height: 1.6;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .modal-desc strong { color: var(--text); font-weight: 700; }
+  .modal-actions {
+    display: grid; grid-template-columns: 1fr 1fr;
+    border-top: 1px solid var(--surface3);
+  }
+  .modal-btn {
+    padding: 17px 12px; border: none; background: none; cursor: pointer;
+    font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700;
+    transition: background 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .modal-btn.cancel {
+    color: var(--text2); border-right: 1px solid var(--surface3);
+    border-radius: 0 0 0 24px;
+  }
+  .modal-btn.cancel:hover { background: var(--surface2); }
+  .modal-btn.cancel:active { background: var(--surface3); }
+  .modal-btn.confirm { color: var(--pr); border-radius: 0 0 24px 0; }
+  .modal-btn.confirm:hover { background: var(--prl); }
+  .modal-btn.confirm:active { background: var(--prl); }
+
+
 </style>
 </head>
 <body>
@@ -1039,6 +1102,21 @@
     </div>
   </div>
 
+  <!-- ═══════════ CONFIRM MODAL ═══════════ -->
+  <div class="modal-overlay" id="confirmModal" onclick="handleModalOverlayClick(event)">
+    <div class="modal-box">
+      <div class="modal-body">
+        <span class="modal-icon" id="modalIcon">🗑️</span>
+        <div class="modal-title" id="modalTitle">Are you sure?</div>
+        <div class="modal-desc" id="modalDesc"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" onclick="resolveModal(false)">Cancel</button>
+        <button class="modal-btn confirm" id="modalConfirmBtn" onclick="resolveModal(true)">Delete</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1484,9 +1562,10 @@ function addLocation() {
   pushLocationMenuToSheet(v, []);
 }
 
-function deleteLocation(loc) {
+async function deleteLocation(loc) {
   if (loc === 'Generic') { toast('Cannot remove Generic menu'); return; }
-  if (!confirm('Remove ' + loc + ' and its menu from the app and Google Sheet?')) return;
+  const okLoc = await showModal({ icon: '📍', title: 'Remove location?', desc: 'This will delete <strong>' + loc + '</strong> and its menu from the app and Google Sheet.', confirmLabel: 'Remove' });
+  if (!okLoc) return;
   state.locations = state.locations.filter(l => l !== loc);
   delete state.locationMenus[loc];
   state.settingsLocation = 'Generic';
@@ -2021,7 +2100,8 @@ async function bulkDeleteSelected() {
   if (!indices.length) return;
   const orders = indices.map(i => todayOrdersCache[i]).filter(Boolean);
   const names = orders.map(o => o.name).join(', ');
-  if (!confirm('Delete orders for: ' + names + '?')) return;
+  const okBulk = await showModal({ icon: '🗑️', title: 'Delete ' + orders.length + ' order' + (orders.length !== 1 ? 's' : '') + '?', desc: 'This will permanently remove orders for <strong>' + names + '</strong> from the sheet.', confirmLabel: 'Delete all' });
+  if (!okBulk) return;
 
   const { date: todayDate } = getNPTDate();
 
@@ -2094,7 +2174,8 @@ function editOrderFromToday(idx) {
 async function deleteOrderFromToday(idx) {
   const order = todayOrdersCache[idx];
   if (!order) return;
-  if (!confirm(`Delete ${order.name}'s order (${order.total})?`)) return;
+  const okSingle = await showModal({ icon: '🗑️', title: 'Delete order?', desc: 'Remove <strong>' + order.name + '</strong>\'s order of <strong>' + order.total + '</strong> from today\'s sheet.' });
+  if (!okSingle) return;
 
   const { date: todayDate } = getNPTDate();
 
@@ -2711,11 +2792,39 @@ function settleDebt(from, to) {
   toast(`${from} settled up with ${to} ✓`);
 }
 
-function clearAllDebts() {
-  if (!confirm('Clear all debt records?')) return;
+async function clearAllDebts() {
+  const okDebts = await showModal({ icon: '💸', title: 'Clear all debts?', desc: 'This will erase all debt records. This cannot be undone.', confirmLabel: 'Clear', confirmDanger: false });
+  if (!okDebts) return;
   saveDebts([]);
   renderDebtsCard();
   toast('All debts cleared');
+}
+
+// ═══════════════════════════════════════
+//  CONFIRM MODAL — replaces browser confirm()
+// ═══════════════════════════════════════
+let _modalResolve = null;
+
+function showModal({ icon = '🗑️', title, desc, confirmLabel = 'Delete', confirmDanger = true }) {
+  return new Promise(resolve => {
+    _modalResolve = resolve;
+    document.getElementById('modalIcon').textContent = icon;
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalDesc').innerHTML = desc;
+    const btn = document.getElementById('modalConfirmBtn');
+    btn.textContent = confirmLabel;
+    btn.style.color = confirmDanger ? 'var(--pr)' : 'var(--accent)';
+    document.getElementById('confirmModal').classList.add('open');
+  });
+}
+
+function resolveModal(result) {
+  document.getElementById('confirmModal').classList.remove('open');
+  if (_modalResolve) { _modalResolve(result); _modalResolve = null; }
+}
+
+function handleModalOverlayClick(e) {
+  if (e.target === document.getElementById('confirmModal')) resolveModal(false);
 }
 
 // ═══════════════════════════════════════
