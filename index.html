@@ -2663,7 +2663,10 @@ function confirmSplit(idx) {
   delete splitSelections[idx];
 
   renderDebtsCard();
-  setTimeout(() => loadTodayOrders(), 1500); // refresh to show updated rows
+  setTimeout(() => {
+    todayActiveFilter = 'All'; // reset filter so ALL split rows are visible
+    loadTodayOrders();
+  }, 1500); // refresh to show updated rows
   toast(`Split recorded — ${sharers.join(', ')} each owe Rs ${share} to ${order.name}`);
 }
 
