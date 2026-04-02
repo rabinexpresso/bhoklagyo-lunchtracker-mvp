@@ -1092,7 +1092,7 @@ let state = {
 // ── PERSIST ──
 function loadState() {
   try {
-    const saved = localStorage.getItem('bhok_lagyo_v6');
+    const saved = localStorage.getItem('bhok_lagyo_v7');
     if (saved) {
       const d = JSON.parse(saved);
       const cleanNames = d.names ? d.names.filter(n => n && n.trim().length >= 2).sort((a,b) => a.localeCompare(b)) : [];
@@ -1103,12 +1103,12 @@ function loadState() {
       if (d.locationMenus) state.locationMenus = d.locationMenus;
     }
   } catch(e) {
-    try { localStorage.removeItem('bhok_lagyo_v6'); } catch(e2) {}
+    try { localStorage.removeItem('bhok_lagyo_v7'); } catch(e2) {}
   }
 }
 function saveState() {
   try {
-    localStorage.setItem('bhok_lagyo_v6', JSON.stringify({
+    localStorage.setItem('bhok_lagyo_v7', JSON.stringify({
       names: state.names, menu: state.menu, sheetUrl: state.sheetUrl,
       locations: state.locations, locationMenus: state.locationMenus
     }));
@@ -1714,6 +1714,25 @@ function saveSettings() {
   toast('✅ Settings saved!');
   // Push current location menu to sheet
   pushLocationMenuToSheet(state.settingsLocation, getSettingsMenu());
+  // Sync users to sheet
+  syncUsersToSheet();
+}
+
+function syncUsersToSheet() {
+  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
+  const callbackName = 'usersCallback_' + Date.now();
+  const usersJson = JSON.stringify(state.names);
+  const url = `${state.sheetUrl}?action=saveUsers&users=${encodeURIComponent(usersJson)}&callback=${callbackName}`;
+  const timeout = setTimeout(() => { delete window[callbackName]; }, 8000);
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    delete window[callbackName];
+  };
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = () => { clearTimeout(timeout); delete window[callbackName]; };
+  document.head.appendChild(script);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 10000);
 }
 
 // ═══════════════════════════════════════
@@ -2386,12 +2405,16 @@ function syncLocationsFromSheet(fromSettings) {
     const sheetLocs = data.locations;
 
     // Remove location menus for locations no longer in sheet
+    // Also clear cache for existing locations so fresh data is loaded from sheet
     state.locations
       .filter(l => l !== 'Generic' && !sheetLocs.includes(l))
       .forEach(l => { delete state.locationMenus[l]; });
+    // Clear all non-Generic caches so sheet data is always fresh on sync
+    sheetLocs.filter(l => l !== 'Generic').forEach(l => { delete state.locationMenus[l]; });
 
-    // Set locations = Generic + whatever sheet has
-    state.locations = ['Generic', ...sheetLocs];
+    // Set locations = Generic + whatever sheet has (exclude Generic from sheetLocs to avoid duplicate)
+    const filteredSheetLocs = sheetLocs.filter(l => l !== 'Generic');
+    state.locations = ['Generic', ...filteredSheetLocs];
 
     // If currently selected location was removed, reset to Generic
     if (!state.locations.includes(state.activeLocation)) state.activeLocation = 'Generic';
@@ -2434,8 +2457,11 @@ function updateLocSyncLabel(text) {
 // ═══════════════════════════════════════
 saveState();
 renderNames();
-// 2-way sync locations from sheet on startup
-setTimeout(() => syncLocationsFromSheet(), 1200);
+// Sync locations from sheet on startup (sheet is master)
+setTimeout(() => {
+  syncLocationsFromSheet();
+  syncUsersToSheet(); // keep Users sheet up to date
+}, 1200);
 </script>
 </body>
 </html>
