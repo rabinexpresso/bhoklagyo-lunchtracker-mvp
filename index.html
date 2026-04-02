@@ -1154,10 +1154,11 @@ let state = {
 // ── PERSIST ──
 function loadState() {
   try {
-    const saved = localStorage.getItem('bhok_lagyo_v7');
+    const saved = localStorage.getItem('bhok_lagyo_v8');
     if (saved) {
       const d = JSON.parse(saved);
-      const cleanNames = d.names ? d.names.filter(n => n && n.trim().length >= 2).sort((a,b) => a.localeCompare(b)) : [];
+      const rawNames = d.names ? d.names.filter(n => n && n.trim().length >= 2) : [];
+      const cleanNames = [...new Set(rawNames.map(n => n.trim()))].sort((a,b) => a.localeCompare(b));
       if (cleanNames.length > 0) state.names = cleanNames;
       if (d.menu && d.menu.length > 0) state.menu = d.menu;
       if (d.sheetUrl) state.sheetUrl = d.sheetUrl;
@@ -1165,12 +1166,12 @@ function loadState() {
       if (d.locationMenus) state.locationMenus = d.locationMenus;
     }
   } catch(e) {
-    try { localStorage.removeItem('bhok_lagyo_v7'); } catch(e2) {}
+    try { localStorage.removeItem('bhok_lagyo_v8'); } catch(e2) {}
   }
 }
 function saveState() {
   try {
-    localStorage.setItem('bhok_lagyo_v7', JSON.stringify({
+    localStorage.setItem('bhok_lagyo_v8', JSON.stringify({
       names: state.names, menu: state.menu, sheetUrl: state.sheetUrl,
       locations: state.locations, locationMenus: state.locationMenus
     }));
@@ -2616,9 +2617,18 @@ function confirmSplit(idx) {
   const total = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
   const people = sel.size + 1;
   const share = Math.ceil(total / people);
-  const { date } = getNPTDate();
+  const { date, day } = getNPTDate();
+  const now = new Date();
+  const nptMs = now.getTime() + (now.getTimezoneOffset() * 60000) + (5 * 60 + 45) * 60000;
+  const npt = new Date(nptMs);
+  const hh = npt.getHours() % 12 || 12;
+  const mm = String(npt.getMinutes()).padStart(2,'0');
+  const ampm = npt.getHours() >= 12 ? 'PM' : 'AM';
+  const timeOnly = `${hh}:${mm} ${ampm}`;
 
   const debts = getDebts();
+  const splitNote = `[SPLIT] Shared with ${order.name} (${people} people) — ${order.items}`;
+
   [...sel].forEach(person => {
     debts.push({
       id: Date.now() + Math.random(),
@@ -2628,7 +2638,18 @@ function confirmSplit(idx) {
       date,
       settled: false
     });
+    // Write split entry to Orders sheet for each person who owes
+    writeSplitToSheet(person, splitNote, share, date, day, timeOnly);
   });
+  // Update payer's share in sheet (they paid full but their real cost is their share)
+  writeSplitToSheet(
+    order.name,
+    `[PAID] Paid for ${[...sel].join('+')} — ${order.items}`,
+    share,
+    date, day, timeOnly,
+    true // mark as update
+  );
+
   saveDebts(debts);
 
   // Close panel
@@ -2638,6 +2659,19 @@ function confirmSplit(idx) {
 
   renderDebtsCard();
   toast(`Split recorded — ${[...sel].join(', ')} each owe Rs ${share} to ${order.name}`);
+}
+
+function writeSplitToSheet(name, items, total, date, day, time, isUpdate) {
+  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
+  const action = isUpdate ? 'update' : 'add';
+  const url = `${state.sheetUrl}?action=${action}` +
+    `&name=${encodeURIComponent(name)}` +
+    `&items=${encodeURIComponent(items)}` +
+    `&total=${encodeURIComponent('Rs ' + total)}` +
+    `&date=${encodeURIComponent(date)}` +
+    `&day=${encodeURIComponent(day)}` +
+    `&timestamp=${encodeURIComponent(time)}`;
+  fetch(url, { method: 'GET', mode: 'no-cors' }).catch(() => {});
 }
 
 function renderDebtsCard() {
