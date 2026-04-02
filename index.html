@@ -1235,6 +1235,7 @@ function addNewName() {
   state.names.sort((a, b) => a.localeCompare(b));
   saveState();
   renderNames();
+  syncUsersToSheet();
   document.getElementById('newNameInput').value = '';
   toast('Added ' + v);
 }
@@ -1245,6 +1246,7 @@ function deleteName(name) {
   state.names = state.names.filter(n => n !== name);
   saveState();
   renderNames();
+  syncUsersToSheet();
   toast('Removed ' + name);
 }
 
@@ -1604,14 +1606,23 @@ function addNameSettings() {
   const v = document.getElementById('settingsNameInput').value.trim();
   if (v && !state.names.includes(v)) {
     state.names.push(v);
+    state.names.sort((a, b) => a.localeCompare(b));
+    saveState();
     renderTeamList();
+    syncUsersToSheet();
     document.getElementById('settingsNameInput').value = '';
+    toast('Added ' + v);
   }
 }
 
 function removeName(i) {
+  if (state.names.length <= 1) { toast('Need at least one name'); return; }
+  const removed = state.names[i];
   state.names.splice(i, 1);
+  saveState();
   renderTeamList();
+  syncUsersToSheet();
+  toast('Removed ' + removed);
 }
 
 function getSettingsMenu() {
