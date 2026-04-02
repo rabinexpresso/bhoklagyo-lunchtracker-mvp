@@ -2202,16 +2202,49 @@ function toggleHistGroup(bodyId, chevronId) {
 
 function pushLocationMenuToSheet(location, menu) {
   if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
-  const menuJson = JSON.stringify(menu);
-  const url = `${state.sheetUrl}?action=saveMenu&location=${encodeURIComponent(location)}&menu=${encodeURIComponent(menuJson)}`;
-  fetch(url, {method:'GET', mode:'no-cors'}).catch(() => {});
-  // Show sync feedback in settings if open
+
+  // Show syncing indicator immediately
   const s = document.getElementById('menuSyncStatus');
-  if (s) {
-    s.textContent = '✓ Synced to sheet';
-    s.className = 'sync-status visible';
-    setTimeout(() => s.classList.remove('visible'), 2500);
-  }
+  if (s) { s.textContent = '⏳ Syncing to sheet...'; s.className = 'sync-status visible'; }
+
+  // Use JSONP (script tag injection) — works cross-origin unlike fetch no-cors
+  // Each menu item sent as separate rows via a compact format
+  const callbackName = 'pushMenuCallback_' + Date.now();
+  const menuJson = JSON.stringify(menu);
+  const url = `${state.sheetUrl}?action=saveMenu` +
+    `&location=${encodeURIComponent(location)}` +
+    `&menu=${encodeURIComponent(menuJson)}` +
+    `&callback=${callbackName}`;
+
+  const timeout = setTimeout(() => {
+    delete window[callbackName];
+    if (s) { s.textContent = '⚠️ Sync timed out — check connection'; s.className = 'sync-status visible err'; }
+  }, 10000);
+
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    if (s) {
+      if (data.status === 'ok') {
+        s.textContent = '✓ Synced to sheet (' + (data.saved || menu.length) + ' items)';
+        s.className = 'sync-status visible';
+      } else {
+        s.textContent = '❌ Sync failed: ' + (data.msg || 'unknown error');
+        s.className = 'sync-status visible err';
+      }
+      setTimeout(() => s.classList.remove('visible'), 3000);
+    }
+  };
+
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = () => {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    if (s) { s.textContent = '❌ Could not reach sheet'; s.className = 'sync-status visible err'; setTimeout(() => s.classList.remove('visible'), 3000); }
+  };
+  document.head.appendChild(script);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 12000);
 }
 
 function loadLocationMenuFromSheet(location) {
