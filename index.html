@@ -2615,7 +2615,7 @@ function confirmSplit(idx) {
   if (sel.size === 0) return;
 
   const total = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
-  const people = sel.size + 1; // payer + sharers
+  const people = sel.size + 1;
   const share = Math.ceil(total / people);
   const { date, day } = getNPTDate();
   const now = new Date();
@@ -2627,21 +2627,24 @@ function confirmSplit(idx) {
   const timeOnly = `${hh}:${mm} ${ampm}`;
   const sharers = [...sel];
 
-  // Step 1: Delete the payer's original full-amount row from the sheet
-  writeSplitToSheet('delete', order.name, 0, date, day, timeOnly);
+  // Build all rows to write in ONE single request to avoid race conditions
+  const allRows = [
+    // Payer's row first
+    {
+      name: order.name,
+      items: `${order.items} [split ${people} ways with ${sharers.join(', ')}]`,
+      total: share
+    },
+    // One row per sharer
+    ...sharers.map(person => ({
+      name: person,
+      items: `${order.items} [split cost, paid by ${order.name}]`,
+      total: share
+    }))
+  ];
 
-  // Small delay to let delete complete before adding new rows
-  setTimeout(() => {
-    // Step 2: Add payer's new row with their share only
-    const payerNote = `${order.items} [split ${people} ways with ${sharers.join(', ')}]`;
-    writeSplitToSheet('add', order.name, share, date, day, timeOnly, payerNote);
-
-    // Step 3: Add a row for each sharer with their share
-    sharers.forEach(person => {
-      const sharerNote = `${order.items} [split cost, paid by ${order.name}]`;
-      writeSplitToSheet('add', person, share, date, day, timeOnly, sharerNote);
-    });
-  }, 600);
+  // Send everything in one JSONP call — Apps Script writes all rows atomically
+  writeSplitBatchToSheet(order.name, date, day, timeOnly, allRows);
 
   // Record debts locally
   const debts = getDebts();
@@ -2663,30 +2666,51 @@ function confirmSplit(idx) {
   delete splitSelections[idx];
 
   renderDebtsCard();
-  setTimeout(() => {
-    todayActiveFilter = 'All'; // reset filter so ALL split rows are visible
-    loadTodayOrders();
-  }, 1500); // refresh to show updated rows
   toast(`Split recorded — ${sharers.join(', ')} each owe Rs ${share} to ${order.name}`);
 }
 
-function writeSplitToSheet(action, name, total, date, day, time, items) {
+function writeSplitBatchToSheet(payerName, date, day, time, rows) {
   if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
-  let url;
-  if (action === 'delete') {
-    url = `${state.sheetUrl}?action=delete` +
-      `&name=${encodeURIComponent(name)}` +
-      `&date=${encodeURIComponent(date)}`;
-  } else {
-    url = `${state.sheetUrl}?action=add` +
-      `&name=${encodeURIComponent(name)}` +
-      `&items=${encodeURIComponent(items || '')}` +
-      `&total=${encodeURIComponent('Rs ' + total)}` +
-      `&date=${encodeURIComponent(date)}` +
-      `&day=${encodeURIComponent(day)}` +
-      `&timestamp=${encodeURIComponent(time)}`;
-  }
-  fetch(url, { method: 'GET', mode: 'no-cors' }).catch(() => {});
+
+  const callbackName = 'splitBatchCallback_' + Date.now();
+  const rowsJson = JSON.stringify(rows);
+
+  const url = `${state.sheetUrl}?action=splitBatch` +
+    `&payerName=${encodeURIComponent(payerName)}` +
+    `&date=${encodeURIComponent(date)}` +
+    `&day=${encodeURIComponent(day)}` +
+    `&timestamp=${encodeURIComponent(time)}` +
+    `&rows=${encodeURIComponent(rowsJson)}` +
+    `&callback=${callbackName}`;
+
+  const timeout = setTimeout(() => {
+    delete window[callbackName];
+    // Still try to reload even if timed out
+    todayActiveFilter = 'All';
+    loadTodayOrders();
+  }, 12000);
+
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    // Reload today's orders to show all split rows
+    todayActiveFilter = 'All';
+    loadTodayOrders();
+    if (data.status === 'ok') {
+      toast('Split saved — ' + (data.saved || rows.length) + ' rows written ✓');
+    }
+  };
+
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = () => {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    todayActiveFilter = 'All';
+    loadTodayOrders();
+  };
+  document.head.appendChild(script);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 14000);
 }
 
 function renderDebtsCard() {
