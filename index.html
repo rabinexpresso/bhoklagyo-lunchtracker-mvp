@@ -1049,7 +1049,7 @@ let state = {
 // ── PERSIST ──
 function loadState() {
   try {
-    const saved = localStorage.getItem('bhok_lagyo_v5');
+    const saved = localStorage.getItem('bhok_lagyo_v6');
     if (saved) {
       const d = JSON.parse(saved);
       const cleanNames = d.names ? d.names.filter(n => n && n.trim().length >= 2).sort((a,b) => a.localeCompare(b)) : [];
@@ -1060,12 +1060,12 @@ function loadState() {
       if (d.locationMenus) state.locationMenus = d.locationMenus;
     }
   } catch(e) {
-    try { localStorage.removeItem('bhok_lagyo_v5'); } catch(e2) {}
+    try { localStorage.removeItem('bhok_lagyo_v6'); } catch(e2) {}
   }
 }
 function saveState() {
   try {
-    localStorage.setItem('bhok_lagyo_v5', JSON.stringify({
+    localStorage.setItem('bhok_lagyo_v6', JSON.stringify({
       names: state.names, menu: state.menu, sheetUrl: state.sheetUrl,
       locations: state.locations, locationMenus: state.locationMenus
     }));
