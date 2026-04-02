@@ -2311,13 +2311,77 @@ function loadAllLocationMenus() {
   });
 }
 
+// ── 2-WAY SYNC: fetch all location tabs from sheet and merge with app ──
+function syncLocationsFromSheet() {
+  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
+  const callbackName = 'syncLocsCallback_' + Date.now();
+  const url = `${state.sheetUrl}?action=getLocations&callback=${callbackName}`;
+
+  const timeout = setTimeout(() => { delete window[callbackName]; }, 8000);
+
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    if (data.status !== 'ok' || !data.locations) return;
+
+    const sheetLocs = data.locations; // e.g. ['Samjhana', 'XO Coffee Palace']
+    let changed = false;
+
+    // Add any locations in sheet that aren't in the app
+    sheetLocs.forEach(loc => {
+      if (!state.locations.includes(loc)) {
+        state.locations.push(loc);
+        changed = true;
+      }
+    });
+
+    // Remove any locations in app that no longer exist in sheet
+    // (keep Generic always — it's the default and has no sheet tab)
+    const toRemove = state.locations.filter(loc =>
+      loc !== 'Generic' && !sheetLocs.includes(loc)
+    );
+    toRemove.forEach(loc => {
+      state.locations = state.locations.filter(l => l !== loc);
+      delete state.locationMenus[loc];
+      changed = true;
+    });
+
+    if (changed) {
+      saveState();
+      // Re-render if settings screen is open
+      renderSettingsLocTabs();
+      renderLocationBar();
+      // Load menus for any newly discovered locations
+      sheetLocs.forEach(loc => {
+        if (!state.locationMenus[loc] || state.locationMenus[loc].length === 0) {
+          loadLocationMenuFromSheet(loc);
+        }
+      });
+    } else {
+      // Still load menus even if no location changes
+      loadAllLocationMenus();
+    }
+  };
+
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = () => {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    // Fall back to loading menus from known locations
+    loadAllLocationMenus();
+  };
+  document.head.appendChild(script);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 10000);
+}
+
 // ═══════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════
-saveState();   // persist defaults immediately so next load always has names
+saveState();
 renderNames();
-// Load location menus from sheet in background
-setTimeout(() => loadAllLocationMenus(), 1200);
+// 2-way sync locations from sheet on startup
+setTimeout(() => syncLocationsFromSheet(), 1200);
 </script>
 </body>
 </html>
