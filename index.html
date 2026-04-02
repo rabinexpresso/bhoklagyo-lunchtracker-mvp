@@ -540,6 +540,42 @@
   /* Scroll padding so sticky header doesn't cover content */
   html { scroll-padding-top: 70px; }
 
+  /* ── LOCATION PICKER ── */
+  .location-bar {
+    padding: 10px 20px 0; display: flex; gap: 7px; overflow-x: auto; align-items: center;
+  }
+  .location-bar::-webkit-scrollbar { display: none; }
+  .loc-chip {
+    border: none; border-radius: var(--radius-pill); padding: 8px 16px;
+    font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    background: var(--surface); color: var(--text2); font-family: 'Outfit', sans-serif;
+    box-shadow: var(--shadow-sm); transition: all 0.15s; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .loc-chip.active { background: var(--hdr-bg); color: var(--gold); box-shadow: var(--shadow-md); }
+  .loc-chip:active { transform: scale(0.96); }
+  .menu-loading { text-align: center; padding: 30px 20px; color: var(--text3); font-size: 13px; }
+  .menu-loading .spin { display: inline-block; animation: spin 1s linear infinite; font-size: 20px; }
+
+  /* ── SETTINGS LOCATION SECTION ── */
+  .loc-tab-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .loc-tab-btn {
+    border: none; border-radius: var(--radius-pill); padding: 7px 14px;
+    font-size: 12px; font-weight: 700; cursor: pointer; background: var(--surface);
+    color: var(--text2); font-family: 'Outfit', sans-serif; box-shadow: var(--shadow-sm);
+    transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .loc-tab-btn.active { background: var(--hdr-bg); color: var(--gold); box-shadow: var(--shadow-md); }
+  .add-location-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .sync-status { font-size: 12px; color: var(--success); font-weight: 600; margin-top: 6px; display: none; }
+  .sync-status.visible { display: block; }
+  .sync-status.err { color: var(--error); }
+  .loc-del-btn {
+    background: none; border: none; cursor: pointer; color: var(--text3);
+    font-size: 13px; padding: 2px 6px; border-radius: 6px; transition: all 0.15s;
+  }
+  .loc-del-btn:hover { color: var(--error); background: var(--error-bg); }
+
 </style>
 </head>
 <body>
@@ -768,7 +804,8 @@
 
   <!-- ═══════════ SCREEN: MENU ═══════════ -->
   <div class="screen" id="screen-menu">
-    <div class="page" style="padding-bottom:0">
+    <div class="location-bar" id="menuLocBar"></div>
+    <div class="page" style="padding-bottom:0;padding-top:10px">
       <div class="tabs-wrap">
         <div class="tabs" id="catTabs"></div>
       </div>
@@ -850,7 +887,17 @@
       <div class="divider"></div>
 
       <div class="settings-section">
-        <div class="label">Menu items</div>
+        <div class="label">Menu locations</div>
+        <div class="info-banner">Menus are shared across all devices via Google Sheet. Changes sync instantly for everyone.</div>
+        <div class="loc-tab-row" id="settingsLocTabs"></div>
+        <div class="add-location-row">
+          <input type="text" id="newLocName" placeholder="New location name (e.g. Samjhana)" />
+          <button class="btn-sm" onclick="addLocation()">+ Add</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="label">Menu items — <span id="settingsLocLabel" style="color:var(--pr)">select a location above</span></div>
         <div class="menu-list" id="menuEditList"></div>
         <div class="add-item-row">
           <input type="text" id="newItemName" placeholder="Item name" />
@@ -859,8 +906,9 @@
             <option>Rice</option><option>Noodles</option><option>Snacks</option>
             <option>Drinks</option><option>Other</option>
           </select>
-          <button class="btn-sm" onclick="addMenuItem()" style="width:100%">+ Add item</button>
+          <button class="btn-sm" onclick="addMenuItem()" style="width:100%">+ Add</button>
         </div>
+        <div class="sync-status" id="menuSyncStatus"></div>
       </div>
 
       <div class="divider"></div>
@@ -982,10 +1030,16 @@ const DEFAULT_MENU = [
 
 const SHEET_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbybhJdlI2-U_QiHTwuN2LGKZDPT0wL3Nj-Lbgy2-xvUXT1rijUDT34_30hiO2WdVC6G/exec';
 
+const DEFAULT_LOCATIONS = ['Generic','Samjhana','XO Coffee Palace'];
+
 let state = {
   names: [...DEFAULT_NAMES],
   menu: JSON.parse(JSON.stringify(DEFAULT_MENU)),
   sheetUrl: SHEET_URL_DEFAULT,
+  locations: [...DEFAULT_LOCATIONS],
+  activeLocation: 'Generic',
+  settingsLocation: 'Generic',
+  locationMenus: {}, // cache: { locationName: [{ name, price, cat }] }
   currentUser: null,
   cart: {},
   activeCategory: 'All',
@@ -995,24 +1049,25 @@ let state = {
 // ── PERSIST ──
 function loadState() {
   try {
-    const saved = localStorage.getItem('bhok_lagyo_v4');
+    const saved = localStorage.getItem('bhok_lagyo_v5');
     if (saved) {
       const d = JSON.parse(saved);
       const cleanNames = d.names ? d.names.filter(n => n && n.trim().length >= 2).sort((a,b) => a.localeCompare(b)) : [];
-      // Only use saved names if we actually have some — otherwise fall back to defaults
       if (cleanNames.length > 0) state.names = cleanNames;
       if (d.menu && d.menu.length > 0) state.menu = d.menu;
       if (d.sheetUrl) state.sheetUrl = d.sheetUrl;
+      if (d.locations && d.locations.length > 0) state.locations = d.locations;
+      if (d.locationMenus) state.locationMenus = d.locationMenus;
     }
   } catch(e) {
-    // Corrupt storage — clear it and start fresh
-    try { localStorage.removeItem('bhok_lagyo_v4'); } catch(e2) {}
+    try { localStorage.removeItem('bhok_lagyo_v5'); } catch(e2) {}
   }
 }
 function saveState() {
   try {
-    localStorage.setItem('bhok_lagyo_v4', JSON.stringify({
-      names: state.names, menu: state.menu, sheetUrl: state.sheetUrl
+    localStorage.setItem('bhok_lagyo_v5', JSON.stringify({
+      names: state.names, menu: state.menu, sheetUrl: state.sheetUrl,
+      locations: state.locations, locationMenus: state.locationMenus
     }));
   } catch(e) {}
 }
@@ -1052,18 +1107,19 @@ function initials(name) {
 }
 
 function getCategories() {
-  return ['All', ...new Set(state.menu.map(m => m.cat))];
+  const menu = getActiveMenu();
+  return ['All', ...new Set(menu.map(m => m.cat))];
 }
 
 function getCartItems() {
+  const menu = getActiveMenu();
   return Object.entries(state.cart)
     .filter(([,q]) => q > 0)
-    .map(([i, q]) => ({
-      name: state.menu[i].name,
-      price: state.menu[i].price,
-      qty: q,
-      subtotal: state.menu[i].price * q
-    }));
+    .map(([i, q]) => {
+      const item = menu[i];
+      if (!item) return null;
+      return { name: item.name, price: item.price, qty: q, subtotal: item.price * q };
+    }).filter(Boolean);
 }
 
 function getCartTotal() {
@@ -1167,9 +1223,10 @@ function renderCategoryTabs() {
 function renderMenuGrid() {
   const g = document.getElementById('menuGrid');
   g.innerHTML = '';
+  const activeMenu = getActiveMenu();
   const items = state.activeCategory === 'All'
-    ? state.menu
-    : state.menu.filter(m => m.cat === state.activeCategory);
+    ? activeMenu
+    : activeMenu.filter(m => m.cat === state.activeCategory);
 
   if (!items.length) {
     g.innerHTML = '<div class="empty" style="grid-column:span 2"><span class="emoji">🍽️</span>No items in this category</div>';
@@ -1177,7 +1234,7 @@ function renderMenuGrid() {
   }
 
   items.forEach(item => {
-    const realIdx = state.menu.indexOf(item);
+    const realIdx = activeMenu.indexOf(item);
     const qty = state.cart[realIdx] || 0;
     const card = document.createElement('div');
     card.className = 'menu-card' + (qty > 0 ? ' active-item' : '');
@@ -1200,6 +1257,10 @@ function changeQty(idx, delta) {
   if (state.cart[idx] <= 0) delete state.cart[idx];
   renderMenuGrid();
   updateCartBar();
+}
+
+function getActiveMenuForCart() {
+  return state.activeLocation === 'Generic' ? state.menu : (state.locationMenus[state.activeLocation] || []);
 }
 
 function updateCartBar() {
@@ -1273,17 +1334,52 @@ function goMenu(isEdit) {
   if (!isEdit) state.cart = {};
   state.activeCategory = 'All';
   updateUserPill();
+  renderLocationBar();
   renderCategoryTabs();
   renderMenuGrid();
   updateCartBar();
   showScreen('screen-menu');
 }
 
+function renderLocationBar() {
+  const bar = document.getElementById('menuLocBar');
+  if (!bar) return;
+  bar.innerHTML = state.locations.map(loc =>
+    `<button class="loc-chip ${state.activeLocation === loc ? 'active' : ''}" onclick="switchLocation('${loc.replace(/'/g,"\\'")}')">
+      ${loc === 'Generic' ? '🍽️' : loc === 'Samjhana' ? '🏠' : '☕'} ${loc}
+    </button>`
+  ).join('');
+}
+
+function getLocationEmoji(loc) {
+  const map = { 'Generic':'🍽️','Samjhana':'🏠','XO Coffee Palace':'☕' };
+  return map[loc] || '📍';
+}
+
+function getActiveMenu() {
+  if (state.activeLocation === 'Generic') return state.menu;
+  return state.locationMenus[state.activeLocation] || [];
+}
+
+function switchLocation(loc) {
+  state.activeLocation = loc;
+  state.activeCategory = 'All';
+  state.cart = {};
+  renderLocationBar();
+  renderCategoryTabs();
+  renderMenuGrid();
+  updateCartBar();
+  // Load from sheet if not cached
+  if (loc !== 'Generic' && !state.locationMenus[loc]) {
+    loadLocationMenuFromSheet(loc);
+  }
+}
+
 function addMoreItems() {
-  // Clear cart so user starts fresh — previously submitted order is already in the sheet
   state.cart = {};
   state.isEditing = false;
   state.activeCategory = 'All';
+  renderLocationBar();
   renderCategoryTabs();
   renderMenuGrid();
   updateCartBar();
@@ -1298,9 +1394,60 @@ function goSummary() {
 function goSettings() {
   document.getElementById('sheetUrl').value = state.sheetUrl || '';
   renderTeamList();
+  renderSettingsLocTabs();
   renderMenuEditList();
   document.getElementById('testStatus').className = 'status-msg';
   showScreen('screen-settings');
+}
+
+function renderSettingsLocTabs() {
+  const row = document.getElementById('settingsLocTabs');
+  if (!row) return;
+  row.innerHTML = state.locations.map(loc =>
+    `<button class="loc-tab-btn ${state.settingsLocation === loc ? 'active' : ''}"
+      onclick="switchSettingsLocation('${loc.replace(/'/g,"\\'")}')">
+      ${getLocationEmoji(loc)} ${loc}
+    </button>`
+  ).join('') +
+  `<button class="loc-tab-btn" style="color:var(--error)" onclick="deleteLocation('${state.settingsLocation.replace(/'/g,"\\'")}')">✕ Remove</button>`;
+}
+
+function switchSettingsLocation(loc) {
+  state.settingsLocation = loc;
+  renderSettingsLocTabs();
+  renderMenuEditList();
+  document.getElementById('settingsLocLabel').textContent = loc;
+  // Load from sheet if not yet cached
+  if (loc !== 'Generic' && !state.locationMenus[loc]) {
+    loadLocationMenuFromSheet(loc);
+  }
+}
+
+function addLocation() {
+  const v = document.getElementById('newLocName').value.trim();
+  if (!v || v.length < 2) { toast('Enter a location name'); return; }
+  if (state.locations.map(l => l.toLowerCase()).includes(v.toLowerCase())) { toast('Location already exists'); return; }
+  state.locations.push(v);
+  state.locationMenus[v] = [];
+  saveState();
+  renderSettingsLocTabs();
+  document.getElementById('newLocName').value = '';
+  toast('Added ' + v);
+  // Push new empty sheet to Google Sheets
+  pushLocationMenuToSheet(v, []);
+}
+
+function deleteLocation(loc) {
+  if (loc === 'Generic') { toast('Cannot remove Generic menu'); return; }
+  if (!confirm('Remove ' + loc + ' and its menu?')) return;
+  state.locations = state.locations.filter(l => l !== loc);
+  delete state.locationMenus[loc];
+  state.settingsLocation = 'Generic';
+  if (state.activeLocation === loc) state.activeLocation = 'Generic';
+  saveState();
+  renderSettingsLocTabs();
+  renderMenuEditList();
+  toast('Removed ' + loc);
 }
 
 // ═══════════════════════════════════════
@@ -1405,16 +1552,30 @@ function removeName(i) {
   renderTeamList();
 }
 
+function getSettingsMenu() {
+  if (state.settingsLocation === 'Generic') return state.menu;
+  if (!state.locationMenus[state.settingsLocation]) state.locationMenus[state.settingsLocation] = [];
+  return state.locationMenus[state.settingsLocation];
+}
+
 function renderMenuEditList() {
   const list = document.getElementById('menuEditList');
+  if (!list) return;
+  const loc = state.settingsLocation || 'Generic';
+  const label = document.getElementById('settingsLocLabel');
+  if (label) label.textContent = loc;
+  const menu = getSettingsMenu();
   list.innerHTML = '';
-  state.menu.forEach((item, i) => {
+  if (menu.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No items yet. Add below.</div>';
+  }
+  menu.forEach((item, i) => {
     const row = document.createElement('div');
     row.className = 'menu-edit-row';
     row.innerHTML = `
-      <input class="mn" type="text" value="${item.name}" onchange="state.menu[${i}].name=this.value">
-      <input class="mp" type="number" value="${item.price}" onchange="state.menu[${i}].price=parseInt(this.value)||0">
-      <select class="mc" onchange="state.menu[${i}].cat=this.value">
+      <input class="mn" type="text" value="${item.name}" onchange="updateMenuItemField(${i},'name',this.value)">
+      <input class="mp" type="number" value="${item.price}" onchange="updateMenuItemField(${i},'price',parseInt(this.value)||0)">
+      <select class="mc" onchange="updateMenuItemField(${i},'cat',this.value)">
         ${['Rice','Noodles','Snacks','Drinks','Other'].map(c=>`<option ${item.cat===c?'selected':''}>${c}</option>`).join('')}
       </select>
       <button class="del-btn" onclick="removeMenuItem(${i})">✕</button>
@@ -1423,22 +1584,33 @@ function renderMenuEditList() {
   });
 }
 
+function updateMenuItemField(i, field, val) {
+  const menu = getSettingsMenu();
+  if (menu[i]) menu[i][field] = val;
+}
+
 function addMenuItem() {
   const n = document.getElementById('newItemName').value.trim();
   const p = parseInt(document.getElementById('newItemPrice').value) || 0;
   const c = document.getElementById('newItemCat').value;
-  if (n && p > 0) {
-    state.menu.push({name: n, price: p, cat: c});
-    renderMenuEditList();
-    document.getElementById('newItemName').value = '';
-    document.getElementById('newItemPrice').value = '';
-    toast('Added ' + n);
-  }
+  if (!n || p <= 0) { toast('Enter item name and price'); return; }
+  const menu = getSettingsMenu();
+  menu.push({name: n, price: p, cat: c});
+  saveState();
+  renderMenuEditList();
+  document.getElementById('newItemName').value = '';
+  document.getElementById('newItemPrice').value = '';
+  toast('Added ' + n);
+  // Auto-sync to sheet
+  pushLocationMenuToSheet(state.settingsLocation, menu);
 }
 
 function removeMenuItem(i) {
-  state.menu.splice(i, 1);
+  const menu = getSettingsMenu();
+  menu.splice(i, 1);
+  saveState();
   renderMenuEditList();
+  pushLocationMenuToSheet(state.settingsLocation, menu);
 }
 
 function clearUrl() {
@@ -1478,6 +1650,8 @@ function saveSettings() {
   renderNames();
   showScreen('screen-name');
   toast('✅ Settings saved!');
+  // Push current location menu to sheet
+  pushLocationMenuToSheet(state.settingsLocation, getSettingsMenu());
 }
 
 // ═══════════════════════════════════════
@@ -2023,10 +2197,75 @@ function toggleHistGroup(bodyId, chevronId) {
 }
 
 // ═══════════════════════════════════════
+//  LOCATION MENU — SHEET SYNC
+// ═══════════════════════════════════════
+
+function pushLocationMenuToSheet(location, menu) {
+  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
+  const menuJson = JSON.stringify(menu);
+  const url = `${state.sheetUrl}?action=saveMenu&location=${encodeURIComponent(location)}&menu=${encodeURIComponent(menuJson)}`;
+  fetch(url, {method:'GET', mode:'no-cors'}).catch(() => {});
+  // Show sync feedback in settings if open
+  const s = document.getElementById('menuSyncStatus');
+  if (s) {
+    s.textContent = '✓ Synced to sheet';
+    s.className = 'sync-status visible';
+    setTimeout(() => s.classList.remove('visible'), 2500);
+  }
+}
+
+function loadLocationMenuFromSheet(location) {
+  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
+  const callbackName = 'menuCallback_' + Date.now();
+  const url = `${state.sheetUrl}?action=getMenu&location=${encodeURIComponent(location)}&callback=${callbackName}`;
+
+  // Show loading in menu grid if on menu screen
+  const mg = document.getElementById('menuGrid');
+  if (mg) mg.innerHTML = '<div class="menu-loading"><span class="spin">⏳</span><br>Loading ' + location + ' menu...</div>';
+
+  const timeout = setTimeout(() => {
+    delete window[callbackName];
+    if (mg) { renderMenuGrid(); }
+  }, 8000);
+
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    if (data.status === 'ok' && data.menu) {
+      state.locationMenus[location] = data.menu;
+      saveState();
+      // Re-render if still on this location
+      if (state.activeLocation === location) {
+        state.activeCategory = 'All';
+        renderCategoryTabs();
+        renderMenuGrid();
+      }
+      if (state.settingsLocation === location) {
+        renderMenuEditList();
+      }
+    }
+  };
+
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = () => { clearTimeout(timeout); delete window[callbackName]; if (mg) renderMenuGrid(); };
+  document.head.appendChild(script);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 10000);
+}
+
+function loadAllLocationMenus() {
+  state.locations.filter(l => l !== 'Generic').forEach(loc => {
+    loadLocationMenuFromSheet(loc);
+  });
+}
+
+// ═══════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════
 saveState();   // persist defaults immediately so next load always has names
 renderNames();
+// Load location menus from sheet in background
+setTimeout(() => loadAllLocationMenus(), 1200);
 </script>
 </body>
 </html>
