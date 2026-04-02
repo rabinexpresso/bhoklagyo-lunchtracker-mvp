@@ -1439,7 +1439,7 @@ function addLocation() {
 
 function deleteLocation(loc) {
   if (loc === 'Generic') { toast('Cannot remove Generic menu'); return; }
-  if (!confirm('Remove ' + loc + ' and its menu?')) return;
+  if (!confirm('Remove ' + loc + ' and its menu from the app and Google Sheet?')) return;
   state.locations = state.locations.filter(l => l !== loc);
   delete state.locationMenus[loc];
   state.settingsLocation = 'Generic';
@@ -1448,6 +1448,25 @@ function deleteLocation(loc) {
   renderSettingsLocTabs();
   renderMenuEditList();
   toast('Removed ' + loc);
+  // Also delete the sheet tab from Google Sheets
+  deleteLocationSheetTab(loc);
+}
+
+function deleteLocationSheetTab(location) {
+  if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
+  const callbackName = 'deleteSheetCallback_' + Date.now();
+  const url = `${state.sheetUrl}?action=deleteSheet&location=${encodeURIComponent(location)}&callback=${callbackName}`;
+  const timeout = setTimeout(() => { delete window[callbackName]; }, 8000);
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    if (data.status === 'ok') toast('Sheet tab for ' + location + ' also deleted');
+  };
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = () => { clearTimeout(timeout); delete window[callbackName]; };
+  document.head.appendChild(script);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 10000);
 }
 
 // ═══════════════════════════════════════
