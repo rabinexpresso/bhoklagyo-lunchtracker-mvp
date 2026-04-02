@@ -1332,9 +1332,10 @@ function renderMenuGrid() {
   const g = document.getElementById('menuGrid');
   g.innerHTML = '';
   const activeMenu = getActiveMenu();
-  const items = state.activeCategory === 'All'
+  const items = (state.activeCategory === 'All'
     ? activeMenu
-    : activeMenu.filter(m => m.cat === state.activeCategory);
+    : activeMenu.filter(m => m.cat === state.activeCategory))
+    .slice().sort((a, b) => a.name.localeCompare(b.name));
 
   if (!items.length) {
     g.innerHTML = '<div class="empty" style="grid-column:span 2"><span class="emoji">🍽️</span>No items in this category</div>';
