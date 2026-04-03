@@ -165,10 +165,13 @@
     font-family: 'Sora', sans-serif; text-shadow: 0 1px 6px rgba(0,0,0,0.8);
   }
   .name-screen-hero .dual-flag {
-    display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px;
+    display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px;
+    background: rgba(255,255,255,0.08); border-radius: 40px; padding: 8px 20px;
+    border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(8px);
+    width: fit-content; margin-left: auto; margin-right: auto;
   }
-  .name-screen-hero .dual-flag span { font-size: 22px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6)); }
-  .name-screen-hero .dual-flag .sep { font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 3px; }
+  .name-screen-hero .dual-flag span { font-size: 26px; filter: drop-shadow(0 3px 10px rgba(0,0,0,0.5)); line-height: 1; }
+  .name-screen-hero .dual-flag .sep { font-size: 14px; color: rgba(255,255,255,0.25); letter-spacing: 2px; }
   .hero-pill {
     display: inline-flex; align-items: center; gap: 6px;
     background: rgba(255,255,255,0.12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -664,7 +667,7 @@
         <div class="brand-icon">🍛</div>
         <div class="brand-text">
           <h1>Bhok Lagyo!</h1>
-          <p>🇳🇵 &nbsp;×&nbsp; 🇦🇺 &nbsp;·&nbsp; Alaya HLE</p>
+          <p><span style="font-style:normal">🇳🇵</span> × <span style="font-style:normal">🇦🇺</span> · Alaya HLE</p>
         </div>
       </div>
       <div class="header-actions">
@@ -687,22 +690,22 @@
         <!-- Food art canvas — illustrated SVG background -->
         <svg class="hero-canvas" viewBox="0 0 480 320" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
           <defs>
-            <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
-              <stop offset="0%" stop-color="#2C1204"/>
-              <stop offset="60%" stop-color="#1A0A03"/>
-              <stop offset="100%" stop-color="#0D0502"/>
+            <radialGradient id="bgGrad" cx="50%" cy="40%" r="70%">
+              <stop offset="0%" stop-color="#1E2D5A"/>
+              <stop offset="55%" stop-color="#141E3E"/>
+              <stop offset="100%" stop-color="#0C1228"/>
             </radialGradient>
-            <radialGradient id="glow1" cx="20%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#C0392B" stop-opacity="0.45"/>
-              <stop offset="100%" stop-color="#C0392B" stop-opacity="0"/>
+            <radialGradient id="glow1" cx="15%" cy="55%" r="55%">
+              <stop offset="0%" stop-color="#D94F1E" stop-opacity="0.40"/>
+              <stop offset="100%" stop-color="#D94F1E" stop-opacity="0"/>
             </radialGradient>
-            <radialGradient id="glow2" cx="80%" cy="35%" r="45%">
-              <stop offset="0%" stop-color="#E8A020" stop-opacity="0.35"/>
-              <stop offset="100%" stop-color="#E8A020" stop-opacity="0"/>
+            <radialGradient id="glow2" cx="85%" cy="30%" r="50%">
+              <stop offset="0%" stop-color="#C4860A" stop-opacity="0.30"/>
+              <stop offset="100%" stop-color="#C4860A" stop-opacity="0"/>
             </radialGradient>
-            <radialGradient id="glow3" cx="50%" cy="90%" r="40%">
-              <stop offset="0%" stop-color="#8B2010" stop-opacity="0.3"/>
-              <stop offset="100%" stop-color="#8B2010" stop-opacity="0"/>
+            <radialGradient id="glow3" cx="50%" cy="85%" r="45%">
+              <stop offset="0%" stop-color="#4E7358" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#4E7358" stop-opacity="0"/>
             </radialGradient>
             <filter id="blur4"><feGaussianBlur stdDeviation="4"/></filter>
             <filter id="blur2"><feGaussianBlur stdDeviation="2"/></filter>
@@ -715,13 +718,15 @@
           <rect width="480" height="320" fill="url(#glow2)"/>
           <rect width="480" height="320" fill="url(#glow3)"/>
 
-          <!-- Scattered spice dots — background texture -->
-          <g opacity="0.25" filter="url(#blur2)">
-            <circle cx="40" cy="30" r="18" fill="#C0392B"/>
-            <circle cx="420" cy="60" r="14" fill="#E8A020"/>
-            <circle cx="460" cy="200" r="20" fill="#C0392B"/>
-            <circle cx="20" cy="220" r="16" fill="#E8A020"/>
-            <circle cx="240" cy="240" r="12" fill="#C0392B"/>
+          <!-- Bokeh dots — indigo night with saffron glow -->
+          <g opacity="0.3" filter="url(#blur4)">
+            <circle cx="40" cy="40" r="22" fill="#D94F1E"/>
+            <circle cx="430" cy="55" r="16" fill="#C4860A"/>
+            <circle cx="455" cy="210" r="24" fill="#4E7358"/>
+            <circle cx="18" cy="230" r="18" fill="#C4860A"/>
+            <circle cx="250" cy="260" r="14" fill="#D94F1E"/>
+            <circle cx="380" cy="160" r="10" fill="#8899CC"/>
+            <circle cx="80" cy="150" r="8" fill="#8899CC"/>
           </g>
 
           <!-- ── MOMO BOWL (left) ── -->
@@ -835,7 +840,7 @@
           <defs>
             <linearGradient id="bottomFade" x1="0" y1="0" x2="0" y2="1">
               <stop offset="60%" stop-color="transparent"/>
-              <stop offset="100%" stop-color="#F5F2EE"/>
+              <stop offset="100%" stop-color="#F5EFE6"/>
             </linearGradient>
           </defs>
           <rect width="480" height="320" fill="url(#bottomFade)"/>
