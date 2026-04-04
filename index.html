@@ -2893,63 +2893,49 @@ setTimeout(() => {
 }, 2000);
 
 // ═══════════════════════════════════════
-//  UPDATE CHECKER — DEBUG MODE
+//  UPDATE CHECKER — GitHub commits API
+//  Uses localStorage to persist baseline SHA
+//  across sessions. Banner appears within
+//  seconds of opening app if new version exists.
+//
+//  Flow:
+//  First visit → fetch SHA → store in localStorage
+//  Next visit → fetch SHA → compare → show banner
 // ═══════════════════════════════════════
 (function() {
-  var REPO = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
-  var API  = 'https://api.github.com/repos/' + REPO + '/commits/main';
-  var baselineSHA = null;
-
-  var dbg = document.createElement('div');
-  dbg.style.cssText = 'position:fixed;top:80px;left:8px;z-index:999999;background:rgba(0,0,0,0.9);color:#0f0;font-size:11px;padding:8px 10px;border-radius:6px;max-width:280px;line-height:1.6;font-family:monospace;pointer-events:none;border:1px solid #0f0';
-  document.body.appendChild(dbg);
-  function log(msg) {
-    var t = new Date().toLocaleTimeString('en-NP', {timeZone:'Asia/Kathmandu'});
-    dbg.innerHTML = '['+t+'] '+msg+'<br>'+dbg.innerHTML;
-    var lines = dbg.innerHTML.split('<br>');
-    if (lines.length > 8) dbg.innerHTML = lines.slice(0,8).join('<br>');
-  }
+  var REPO    = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
+  var API     = 'https://api.github.com/repos/' + REPO + '/commits/main';
+  var LS_KEY  = 'bhok_lagyo_sha';
 
   function fetchSHA(cb) {
-    log('fetching...');
     fetch(API, {
       cache: 'no-store',
       headers: { 'Accept': 'application/vnd.github.v3+json' }
     })
-    .then(function(r) { log('status:'+r.status); return r.ok ? r.json() : null; })
-    .then(function(d) {
-      if (d && d.sha) { log('sha:'+d.sha.slice(0,7)); cb(d.sha); }
-      else log('no sha');
-    })
-    .catch(function(e) { log('ERR:'+e.message); });
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) { if (d && d.sha) cb(d.sha); })
+    .catch(function() {});
   }
 
-  function checkForUpdate() {
-    if (!baselineSHA) { log('no baseline'); return; }
-    log('checking...');
+  function showBanner() {
+    document.getElementById('updateBanner').classList.add('visible');
+  }
+
+  // Check on page load — runs within 3 seconds of opening app
+  setTimeout(function() {
     fetchSHA(function(sha) {
-      if (sha !== baselineSHA) {
-        log('NEW! baseline:'+baselineSHA.slice(0,7)+' new:'+sha.slice(0,7));
-        document.getElementById('updateBanner').classList.add('visible');
-      } else {
-        log('same:'+sha.slice(0,7));
+      var stored = localStorage.getItem(LS_KEY);
+      if (!stored) {
+        // First ever visit — store SHA, no banner
+        localStorage.setItem(LS_KEY, sha);
+      } else if (sha !== stored) {
+        // New version pushed since last visit — show banner
+        showBanner();
+        // Update stored SHA so banner doesn't keep showing
+        localStorage.setItem(LS_KEY, sha);
       }
     });
-  }
-
-  log('checker loaded ✓');
-
-  setTimeout(function() {
-    log('setting baseline...');
-    fetchSHA(function(sha) { baselineSHA = sha; log('baseline='+sha.slice(0,7)); });
-  }, 10000);
-
-  setInterval(checkForUpdate, 5 * 60 * 1000);
-
-  document.addEventListener('visibilitychange', function() {
-    log('visibility:'+document.visibilityState);
-    if (document.visibilityState === 'visible') checkForUpdate();
-  });
+  }, 3000);
 })();
 </script>
 </body>
