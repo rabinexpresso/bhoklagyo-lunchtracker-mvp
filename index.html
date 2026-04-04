@@ -471,9 +471,10 @@
   .go-name-sel { flex: 0 0 90px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px 7px 6px; font-weight: 600; -webkit-appearance: none; box-sizing: border-box; }
   .go-item-sel { flex: 1 1 80px; min-width: 60px; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px 7px 6px; -webkit-appearance: none; box-sizing: border-box; }
   .go-qty-sel { flex: 0 0 36px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px; text-align: center; -webkit-appearance: none; box-sizing: border-box; }
-  .go-price-cell { flex: 0 0 60px; min-width: 0; text-align: right; font-size: 11px; font-weight: 700; color: var(--pr); font-family: 'Poppins', sans-serif; padding: 7px 4px; white-space: nowrap; display: flex; align-items: center; justify-content: flex-end; box-sizing: border-box; }
-  .go-custom-items { flex: 1 1 80px; min-width: 60px; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 4px 7px 6px; box-sizing: border-box; }
-  .go-custom-total { flex: 0 0 60px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--pr); font-weight: 700; outline: none; padding: 7px 4px; text-align: right; box-sizing: border-box; }
+  .go-price-cell { flex: 0 0 60px; min-width: 0; text-align: right; font-size: 11px; font-weight: 700; color: var(--pr); font-family: 'Poppins', sans-serif; padding: 0 4px; white-space: nowrap; display: flex; align-items: center; justify-content: flex-end; box-sizing: border-box; }
+  .go-price-input { flex: 0 0 72px; min-width: 0; border: none; background: transparent; font-size: 11px; font-weight: 700; color: var(--pr); font-family: 'Poppins', sans-serif; outline: none; padding: 0 6px; height: 34px; text-align: right; box-sizing: border-box; }
+  .go-custom-items { flex: 1 1 80px; min-width: 60px; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 0 4px 0 6px; height: 34px; line-height: 34px; box-sizing: border-box; }
+  .go-custom-total { flex: 0 0 72px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--pr); font-weight: 700; outline: none; padding: 0 6px; height: 34px; text-align: right; box-sizing: border-box; }
   .go-del-btn { flex: 0 0 28px; min-width: 0; border: none; border-left: 1px solid var(--border2); background: none; cursor: pointer; font-size: 14px; color: var(--text3); display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0; box-sizing: border-box; }
   .go-del-btn:hover { background: var(--error-bg); color: var(--error); }
   .go-add-btn { width: 100%; padding: 7px; border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); background: none; font-size: 12px; color: var(--text3); cursor: pointer; font-family: 'Poppins', sans-serif; transition: all 0.15s; margin-top: 2px; }
@@ -1046,7 +1047,7 @@
       <!-- Mode toggle -->
       <div class="go-mode-row">
         <button class="go-mode-btn active" id="goModeMenu" onclick="setGoMode('menu')">📋 Menu order</button>
-        <button class="go-mode-btn" id="goModeCustom" onclick="setGoMode('custom')">📝 Custom entry</button>
+        <button class="go-mode-btn" id="goModeCustom" onclick="setGoMode('custom')">📝 Custom order</button>
       </div>
 
       <!-- How many people -->
@@ -3173,7 +3174,7 @@ function renderGoRows() {
         <select class="go-qty-sel" onchange="updateGoRow(${i},'qty',parseInt(this.value))">
           ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${row.qty===n?' selected':''}>${n}</option>`).join('')}
         </select>
-        <div class="go-price-cell" id="goPrice_${i}">${row.price > 0 ? 'Rs '+(row.price*(row.qty||1)) : '—'}</div>
+        <input class="go-price-input" type="number" id="goPrice_${i}" value="${row.price > 0 ? row.price : ''}" placeholder="Rs" onchange="updateGoRowPrice(${i}, parseInt(this.value)||0)" />
         <button class="go-del-btn" onclick="removeGoRow(${i})">×</button>
       </div>`).join('');
     // Add row button
@@ -3199,11 +3200,6 @@ function renderGoRows() {
 function updateGoRow(i, field, value) {
   if (!goRows[i]) return;
   goRows[i][field] = value;
-  // Refresh price display when qty changes
-  if (field === 'qty' && goRows[i].price > 0) {
-    const priceEl = document.getElementById('goPrice_' + i);
-    if (priceEl) priceEl.textContent = 'Rs ' + (goRows[i].price * value);
-  }
   updateGoTotalBar();
   updateGroupSubmitBar();
 }
@@ -3213,9 +3209,15 @@ function updateGoRowItem(i, sel) {
   const opt = sel.options[sel.selectedIndex];
   goRows[i].item = sel.value;
   goRows[i].price = parseInt(opt.getAttribute('data-price')) || 0;
-  const qty = goRows[i].qty || 1;
-  const total = goRows[i].price * qty;
-  document.getElementById('goPrice_' + i).textContent = total > 0 ? 'Rs ' + total : '—';
+  const priceInput = document.getElementById('goPrice_' + i);
+  if (priceInput) priceInput.value = goRows[i].price > 0 ? goRows[i].price : '';
+  updateGoTotalBar();
+  updateGroupSubmitBar();
+}
+
+function updateGoRowPrice(i, price) {
+  if (!goRows[i]) return;
+  goRows[i].price = price;
   updateGoTotalBar();
   updateGroupSubmitBar();
 }
@@ -3238,7 +3240,7 @@ function removeGoRow(i) {
 function updateGoTotalBar() {
   let total = 0;
   goRows.forEach(row => {
-    if (goMode === 'menu') total += (row.price || 0) * (row.qty || 1);
+    if (goMode === 'menu') total += row.price || 0;
     else total += parseInt(row.customTotal) || 0;
   });
   const bar = document.getElementById('goTotalBar');
@@ -3250,7 +3252,7 @@ function updateGoTotalBar() {
 function updateGroupSubmitBar() {
   const readyRows = goRows.filter(row => {
     if (!row.name) return false;
-    if (goMode === 'menu') return row.item && row.price > 0;
+    if (goMode === 'menu') return row.item && row.item !== '' && row.price > 0;
     return row.customItems && row.customTotal;
   });
   document.getElementById('groupOrderCount').textContent = `${readyRows.length} of ${goRows.length} ready`;
@@ -3260,7 +3262,7 @@ function updateGroupSubmitBar() {
 function submitGroupOrder() {
   const readyRows = goRows.filter(row => {
     if (!row.name) return false;
-    if (goMode === 'menu') return row.item && row.price > 0;
+    if (goMode === 'menu') return row.item && row.item !== '' && row.price > 0;
     return row.customItems && row.customTotal;
   });
   if (readyRows.length === 0) return;
@@ -3279,7 +3281,7 @@ function submitGroupOrder() {
     if (!grouped[row.name]) grouped[row.name] = { items: [], total: 0 };
     if (goMode === 'menu') {
       grouped[row.name].items.push(`${row.item} x${row.qty||1}`);
-      grouped[row.name].total += row.price * (row.qty||1);
+      grouped[row.name].total += row.price;
     } else {
       grouped[row.name].items.push(row.customItems);
       grouped[row.name].total += parseInt(row.customTotal) || 0;
