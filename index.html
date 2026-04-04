@@ -2893,41 +2893,26 @@ setTimeout(() => {
 }, 2000);
 
 // ═══════════════════════════════════════
-//  UPDATE CHECKER
-//  Uses GitHub commits API (never cached,
-//  works on both mobile + desktop).
-//  Stores baseline SHA in localStorage.
-//  Shows banner when new commit detected.
+//  UPDATE CHECKER — GitHub commits API
+//  In-memory baseline (no localStorage)
+//  Works reliably on Mobile Safari + Chrome
 // ═══════════════════════════════════════
 (function() {
-  const REPO   = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
-  const API    = 'https://api.github.com/repos/' + REPO + '/commits/main';
-  const LS_KEY = 'bhoklagyo_baseline_sha';
-  let checking = false;
+  var REPO   = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
+  var API    = 'https://api.github.com/repos/' + REPO + '/commits/main';
+  var baselineSHA = null;
 
-  function fetchSHA(onSuccess, onFail) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000); // 8s timeout for slow mobile
-
+  function fetchSHA(cb) {
+    var controller = new AbortController();
+    var timer = setTimeout(function() { controller.abort(); }, 8000);
     fetch(API, {
-      method: 'GET',
       cache: 'no-store',
       signal: controller.signal,
       headers: { 'Accept': 'application/vnd.github.v3+json' }
     })
-    .then(function(r) {
-      clearTimeout(timer);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(d) {
-      if (d && d.sha) onSuccess(d.sha);
-      else if (onFail) onFail();
-    })
-    .catch(function() {
-      clearTimeout(timer);
-      if (onFail) onFail();
-    });
+    .then(function(r) { clearTimeout(timer); return r.ok ? r.json() : null; })
+    .then(function(d) { if (d && d.sha) cb(d.sha); })
+    .catch(function() { clearTimeout(timer); });
   }
 
   function showBanner() {
@@ -2935,30 +2920,18 @@ setTimeout(() => {
     if (el) el.classList.add('visible');
   }
 
-  function check() {
-    if (checking) return;
-    checking = true;
+  // At 10s — fetch SHA and store as in-memory baseline
+  setTimeout(function() {
+    fetchSHA(function(sha) { baselineSHA = sha; });
+  }, 10000);
 
+  // Every 5 min — compare with baseline, show banner if changed
+  setInterval(function() {
+    if (!baselineSHA) return;
     fetchSHA(function(sha) {
-      checking = false;
-      var stored = localStorage.getItem(LS_KEY);
-      if (!stored) {
-        // First load — store SHA silently, no banner
-        localStorage.setItem(LS_KEY, sha);
-      } else if (sha !== stored) {
-        // New push detected — show banner
-        showBanner();
-      }
-    }, function() {
-      checking = false; // failed silently, try again next interval
+      if (sha !== baselineSHA) showBanner();
     });
-  }
-
-  // Initial check at 10s (gives app time to load, safer on slow mobile connections)
-  setTimeout(check, 10000);
-
-  // Then every 5 minutes (matches mortgage thug — reliable on all networks)
-  setInterval(check, 5 * 60 * 1000);
+  }, 5 * 60 * 1000);
 })();
 </script>
 </body>
