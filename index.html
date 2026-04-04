@@ -2893,76 +2893,47 @@ setTimeout(() => {
 }, 2000);
 
 // ═══════════════════════════════════════
-//  UPDATE CHECKER — DEBUG MODE
-//  Shows a small status log on screen so
-//  we can see what's happening on Safari
+//  UPDATE CHECKER — GitHub commits API
+//  At 10s → set baseline SHA
+//  Every 5 min → compare, show banner if changed
+//  visibilitychange → fires when user returns
+//  to app on Mobile Safari
 // ═══════════════════════════════════════
 (function() {
   var REPO = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
   var API  = 'https://api.github.com/repos/' + REPO + '/commits/main';
   var baselineSHA = null;
 
-  // Debug log — small overlay bottom-left
-  var dbg = document.createElement('div');
-  dbg.style.cssText = 'position:fixed;bottom:80px;left:8px;z-index:9999;background:rgba(0,0,0,0.75);color:#0f0;font-size:10px;padding:6px 8px;border-radius:6px;max-width:240px;line-height:1.5;font-family:monospace;pointer-events:none';
-  document.body.appendChild(dbg);
-  function log(msg) {
-    var t = new Date().toLocaleTimeString('en-NP', {timeZone:'Asia/Kathmandu'});
-    dbg.innerHTML = '[' + t + '] ' + msg + '<br>' + dbg.innerHTML;
-    var lines = dbg.innerHTML.split('<br>');
-    if (lines.length > 6) dbg.innerHTML = lines.slice(0,6).join('<br>');
-  }
-
   function fetchSHA(cb) {
-    log('fetching SHA...');
     fetch(API, {
       cache: 'no-store',
       headers: { 'Accept': 'application/vnd.github.v3+json' }
     })
-    .then(function(r) {
-      log('response: ' + r.status);
-      return r.ok ? r.json() : null;
-    })
-    .then(function(d) {
-      if (d && d.sha) {
-        log('SHA: ' + d.sha.slice(0,7));
-        cb(d.sha);
-      } else {
-        log('no SHA in response');
-      }
-    })
-    .catch(function(e) {
-      log('ERROR: ' + e.message);
-    });
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) { if (d && d.sha) cb(d.sha); })
+    .catch(function() {});
   }
 
   function checkForUpdate() {
-    if (!baselineSHA) { log('no baseline yet'); return; }
+    if (!baselineSHA) return;
     fetchSHA(function(sha) {
       if (sha !== baselineSHA) {
-        log('NEW SHA! showing banner');
         document.getElementById('updateBanner').classList.add('visible');
-      } else {
-        log('same SHA, no update');
       }
     });
   }
 
+  // At 10s — set baseline SHA silently
   setTimeout(function() {
-    log('setting baseline...');
-    fetchSHA(function(sha) {
-      baselineSHA = sha;
-      log('baseline set: ' + sha.slice(0,7));
-    });
-  }, 3000);
+    fetchSHA(function(sha) { baselineSHA = sha; });
+  }, 10000);
 
-  setInterval(checkForUpdate, 30 * 1000); // 30 seconds
+  // Every 5 min — works while app is active
+  setInterval(checkForUpdate, 5 * 60 * 1000);
 
+  // visibilitychange — fires when user returns to app on Mobile Safari
   document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') {
-      log('visible! checking...');
-      checkForUpdate();
-    }
+    if (document.visibilityState === 'visible') checkForUpdate();
   });
 })();
 </script>
