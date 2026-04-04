@@ -81,7 +81,8 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  .app { max-width: 480px; margin: 0 auto; padding: 0 0 120px; min-height: 100vh; min-height: -webkit-fill-available; }
+  .app { max-width: 100%; margin: 0 auto; padding: 0 0 120px; min-height: 100vh; min-height: -webkit-fill-available; }
+  @media (min-width: 480px) { .app { max-width: 680px; } }
   html { height: -webkit-fill-available; }
 
   /* ════════════════════════════════════
@@ -347,7 +348,7 @@
   ════════════════════════════════════ */
   .cart-bar {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 480px;
+    width: 100%; max-width: 680px;
     background: #000079;
     padding: 8px 14px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
@@ -469,6 +470,7 @@
   .go-row:focus-within { border-color: var(--accent); }
   .go-name-sel { width: 88px; flex-shrink: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px 7px 6px; font-weight: 600; -webkit-appearance: none; }
   .go-item-sel { flex: 1; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px 7px 6px; -webkit-appearance: none; }
+  .go-qty-sel { width: 36px; flex-shrink: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px; text-align: center; -webkit-appearance: none; }
   .go-price-cell { width: 56px; flex-shrink: 0; text-align: right; font-size: 11px; font-weight: 700; color: var(--pr); font-family: 'Poppins', sans-serif; padding: 7px 6px; white-space: nowrap; display: flex; align-items: center; justify-content: flex-end; }
   .go-custom-items { flex: 1; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 4px 7px 6px; }
   .go-custom-total { width: 56px; flex-shrink: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--pr); font-weight: 700; outline: none; padding: 7px 4px; text-align: right; }
@@ -478,7 +480,7 @@
   .go-add-btn:hover { border-color: var(--accent); color: var(--accent); }
   .go-total-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-top: 10px; }
   .go-grand-total { font-size: 16px; font-weight: 800; color: var(--pr); font-family: 'Poppins', sans-serif; }
-  .group-submit-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #000079; border-top: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; padding-bottom: max(10px, env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 40; }
+  .group-submit-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 680px; background: #000079; border-top: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; padding-bottom: max(10px, env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 40; }
   .group-order-count { font-size: 12px; color: rgba(255,255,255,0.6); font-family: 'Poppins', sans-serif; }
 
   /* ════════════════════════════════════
@@ -1064,10 +1066,11 @@
       <!-- Order rows — MENU MODE -->
       <div id="goMenuRows" style="margin-top:10px">
         <div class="go-row-header">
-          <span style="flex:1.2">Name</span>
-          <span style="flex:2">Food item</span>
-          <span style="flex:0.8;text-align:right">Price</span>
-          <span style="width:24px"></span>
+          <span style="width:88px;flex-shrink:0">Name</span>
+          <span style="flex:1">Food item</span>
+          <span style="width:36px;flex-shrink:0;text-align:center">Qty</span>
+          <span style="width:56px;flex-shrink:0;text-align:right">Price</span>
+          <span style="width:28px;flex-shrink:0"></span>
         </div>
         <div id="goMenuRowsList"></div>
       </div>
@@ -3143,7 +3146,7 @@ function setGoMode(mode) {
 function renderGoRows() {
   const count = parseInt(document.getElementById('goCountSelect').value) || 1;
   // Pad or trim goRows to match count
-  while (goRows.length < count) goRows.push({ name: '', item: '', price: 0, customItems: '', customTotal: '' });
+  while (goRows.length < count) goRows.push({ name: '', item: '', qty: 1, price: 0, customItems: '', customTotal: '' });
   goRows = goRows.slice(0, count);
 
   const menu = getGoMenu();
@@ -3161,7 +3164,10 @@ function renderGoRows() {
           <option value="">— Food item —</option>
           ${menu.map(m => `<option value="${m.name}" data-price="${m.price}"${row.item===m.name?' selected':''}>${m.name}</option>`).join('')}
         </select>
-        <div class="go-price-cell" id="goPrice_${i}">${row.price > 0 ? 'Rs '+row.price : '—'}</div>
+        <select class="go-qty-sel" onchange="updateGoRow(${i},'qty',parseInt(this.value))">
+          ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${row.qty===n?' selected':''}>${n}</option>`).join('')}
+        </select>
+        <div class="go-price-cell" id="goPrice_${i}">${row.price > 0 ? 'Rs '+(row.price*(row.qty||1)) : '—'}</div>
         <button class="go-del-btn" onclick="removeGoRow(${i})">×</button>
       </div>`).join('');
     // Add row button
@@ -3187,6 +3193,11 @@ function renderGoRows() {
 function updateGoRow(i, field, value) {
   if (!goRows[i]) return;
   goRows[i][field] = value;
+  // Refresh price display when qty changes
+  if (field === 'qty' && goRows[i].price > 0) {
+    const priceEl = document.getElementById('goPrice_' + i);
+    if (priceEl) priceEl.textContent = 'Rs ' + (goRows[i].price * value);
+  }
   updateGoTotalBar();
   updateGroupSubmitBar();
 }
@@ -3196,13 +3207,15 @@ function updateGoRowItem(i, sel) {
   const opt = sel.options[sel.selectedIndex];
   goRows[i].item = sel.value;
   goRows[i].price = parseInt(opt.getAttribute('data-price')) || 0;
-  document.getElementById('goPrice_' + i).textContent = goRows[i].price > 0 ? 'Rs ' + goRows[i].price : '—';
+  const qty = goRows[i].qty || 1;
+  const total = goRows[i].price * qty;
+  document.getElementById('goPrice_' + i).textContent = total > 0 ? 'Rs ' + total : '—';
   updateGoTotalBar();
   updateGroupSubmitBar();
 }
 
 function addGoRow() {
-  goRows.push({ name: '', item: '', price: 0, customItems: '', customTotal: '' });
+  goRows.push({ name: '', item: '', qty: 1, price: 0, customItems: '', customTotal: '' });
   // Update count select
   const sel = document.getElementById('goCountSelect');
   if (sel) sel.value = goRows.length;
@@ -3219,7 +3232,7 @@ function removeGoRow(i) {
 function updateGoTotalBar() {
   let total = 0;
   goRows.forEach(row => {
-    if (goMode === 'menu') total += row.price || 0;
+    if (goMode === 'menu') total += (row.price || 0) * (row.qty || 1);
     else total += parseInt(row.customTotal) || 0;
   });
   const bar = document.getElementById('goTotalBar');
@@ -3251,7 +3264,7 @@ function submitGroupOrder() {
   btn.textContent = 'Submitting...';
 
   const { date: todayDate } = getNPTDate();
-  const ts = new Date().toLocaleString('en-NP', {timeZone: 'Asia/Kathmandu'});
+  const ts = new Date().toLocaleTimeString('en-US', {timeZone: 'Asia/Kathmandu', hour: '2-digit', minute: '2-digit'});
   const dayName = new Date().toLocaleDateString('en-US', {timeZone:'Asia/Kathmandu', weekday:'long'});
 
   // Group rows by name — combine items and sum totals
@@ -3259,8 +3272,8 @@ function submitGroupOrder() {
   readyRows.forEach(row => {
     if (!grouped[row.name]) grouped[row.name] = { items: [], total: 0 };
     if (goMode === 'menu') {
-      grouped[row.name].items.push(`${row.item} x1`);
-      grouped[row.name].total += row.price;
+      grouped[row.name].items.push(`${row.item} x${row.qty||1}`);
+      grouped[row.name].total += row.price * (row.qty||1);
     } else {
       grouped[row.name].items.push(row.customItems);
       grouped[row.name].total += parseInt(row.customTotal) || 0;
