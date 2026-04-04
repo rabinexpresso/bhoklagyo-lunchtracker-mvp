@@ -385,12 +385,12 @@
   /* ════════════════════════════════════
      SETTINGS
   ════════════════════════════════════ */
-  .settings-section { margin-bottom: 26px; }
+  .settings-section { margin-bottom: 16px; }
   .url-field-wrap { position: relative; }
   .url-clear { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text3); font-size: 18px; padding: 4px; }
   .url-clear:hover { color: var(--error); }
   .team-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-  .team-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: var(--radius-sm); padding: 12px 14px; box-shadow: var(--shadow-sm); border: 1.5px solid transparent; transition: border-color 0.15s; }
+  .team-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: var(--radius-sm); padding: 8px 12px; box-shadow: var(--shadow-sm); border: 1.5px solid transparent; transition: border-color 0.15s; }
   .team-row:hover { border-color: rgba(255,69,0,0.15); }
   .team-row input { border: none; padding: 0; font-size: 14px; font-weight: 600; background: transparent; flex: 1; outline: none; color: var(--text); font-family: 'Poppins', sans-serif; }
   .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 2px 6px; border-radius: 6px; transition: all 0.15s; }
@@ -408,7 +408,7 @@
   /* ════════════════════════════════════
      INFO BANNER
   ════════════════════════════════════ */
-  .info-banner { background: #e6f8ff; border-radius: var(--radius-sm); padding: 13px 16px; font-size: 12px; color: #0088cc; line-height: 1.7; margin-bottom: 16px; border-left: 3px solid #00b0ff; }
+  .info-banner { background: #e6f8ff; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 11px; color: #0088cc; line-height: 1.5; margin-bottom: 12px; border-left: 3px solid #00b0ff; }
   .info-banner strong { font-weight: 700; }
 
   /* ════════════════════════════════════
@@ -454,8 +454,8 @@
   /* ════════════════════════════════════
      TODAY'S ORDERS
   ════════════════════════════════════ */
-  .orders-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .grand-total-card {
+  .orders-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .grand-total-card { /* compact */
     background: linear-gradient(135deg, #e6f8ff 0%, #cceeff 100%);
     border-radius: var(--radius); padding: 22px; display: flex; align-items: center;
     justify-content: space-between; margin-bottom: 22px;
@@ -466,7 +466,7 @@
   .grand-total-card::after { content: ''; position: absolute; right: 30px; bottom: -30px; width: 70px; height: 70px; border-radius: 50%; background: rgba(255,165,0,0.08); }
   .grand-total-card .gt-label { font-size: 10px; color: var(--text3); font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; font-family: 'Poppins', sans-serif; }
   .grand-total-card .gt-count { font-size: 12px; color: var(--text3); margin-top: 4px; font-family: 'Poppins', sans-serif; }
-  .grand-total-card .gt-amount { font-family: 'Poppins', sans-serif; font-size: 34px; font-weight: 800; color: var(--pr); letter-spacing: -1.5px; position: relative; z-index: 1; }
+  .grand-total-card .gt-amount { font-family: 'Poppins', sans-serif; font-size: 26px; font-weight: 800; color: var(--pr); letter-spacing: -1px; position: relative; z-index: 1; }
   .refresh-btn { display: flex; align-items: center; gap: 6px; background: var(--surface); border: none; border-radius: var(--radius-sm); padding: 10px 16px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer; transition: all 0.18s; box-shadow: var(--shadow-sm); }
   .refresh-btn:hover { color: var(--pr); box-shadow: var(--shadow-md); }
   .refresh-btn.spinning svg { animation: spin 1s linear infinite; }
@@ -479,13 +479,13 @@
   /* Order cards */
   .order-person-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-sm); margin-bottom: 14px; overflow: hidden; border: 2px solid transparent; transition: all 0.18s; }
   .order-person-card.selected { border-color: var(--pr); box-shadow: var(--shadow-red); }
-  .opc-header { display: flex; align-items: center; gap: 12px; padding: 16px 14px 12px; }
+  .opc-header { display: flex; align-items: center; gap: 10px; padding: 10px 12px 8px; }
   .opc-avatar { font-size: 24px; line-height: 1; background: var(--surface2); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2px solid rgba(0,0,0,0.06); }
-  .opc-name { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
+  .opc-name { font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
   .opc-time { font-size: 11px; color: var(--text3); margin-top: 2px; font-weight: 500; }
-  .opc-total { font-family: 'Poppins', sans-serif; font-size: 17px; font-weight: 800; color: var(--pr); letter-spacing: -0.5px; }
-  .opc-items { padding: 0 14px 14px; border-top: 1px solid var(--surface2); padding-top: 12px; }
-  .opc-item-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; font-size: 13px; color: var(--text2); border-bottom: 1px solid rgba(0,0,0,0.04); }
+  .opc-total { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 800; color: var(--pr); letter-spacing: -0.3px; }
+  .opc-items { padding: 6px 12px 10px; border-top: 1px solid var(--surface2); }
+  .opc-item-row { display: flex; align-items: center; justify-content: space-between; padding: 3px 0; font-size: 12px; color: var(--text2); border-bottom: 1px solid rgba(0,0,0,0.04); }
   .opc-item-row:last-child { border-bottom: none; }
   .opc-item-row .iname { color: var(--text); font-weight: 600; }
   .opc-item-row .iprice { color: var(--text3); font-size: 12px; font-weight: 600; background: var(--surface2); border-radius: 20px; padding: 2px 8px; }
@@ -512,8 +512,8 @@
   .bulk-del-btn { background: var(--error); color: white; border: none; border-radius: var(--radius-sm); padding: 9px 18px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 3px 10px rgba(204,34,0,0.3); }
   .bulk-del-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(204,34,0,0.4); }
   .bulk-clear-btn { background: none; border: none; color: var(--text3); font-size: 12px; cursor: pointer; font-family: 'Poppins', sans-serif; padding: 4px; }
-  .today-filter-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
-  .today-filter-chip { border: none; border-radius: var(--radius-pill); padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--text2); transition: all 0.18s; font-family: 'Poppins', sans-serif; box-shadow: var(--shadow-sm); border: 1.5px solid transparent; }
+  .today-filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .today-filter-chip { border: none; border-radius: var(--radius-pill); padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--text2); transition: all 0.18s; font-family: 'Poppins', sans-serif; box-shadow: var(--shadow-sm); border: 1.5px solid transparent; }
   .today-filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: var(--shadow-sage); }
   .today-filter-chip:hover:not(.active) { border-color: rgba(255,69,0,0.3); color: var(--pr); }
 
@@ -525,7 +525,7 @@
   .date-filter-row label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; font-family: 'Poppins', sans-serif; }
   .date-filter-row input[type="date"] { padding: 10px 12px; font-size: 13px; }
   .hist-day-group { margin-bottom: 20px; }
-  .hist-day-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); cursor: pointer; margin-bottom: 8px; transition: box-shadow 0.18s; }
+  .hist-day-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--surface); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); cursor: pointer; margin-bottom: 6px; transition: box-shadow 0.18s; }
   .hist-day-header:hover { box-shadow: var(--shadow-md); }
   .hist-day-title { font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
   .hist-day-count { font-size: 11px; color: var(--text3); margin-top: 2px; font-weight: 500; }
@@ -535,17 +535,19 @@
   .hist-day-chevron.open { transform: rotate(180deg); }
   .hist-day-body { display: none; }
   .hist-day-body.open { display: block; }
-  .hist-summary-row { display: grid; grid-template-columns: 30px 80px 1fr 70px; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border-radius: var(--radius-sm); margin-bottom: 6px; box-shadow: var(--shadow-sm); font-size: 13px; }
+  .hist-summary-row { display: grid; grid-template-columns: 26px 72px 1fr 66px; align-items: center; gap: 8px; padding: 7px 10px; background: var(--surface); border-radius: var(--radius-sm); margin-bottom: 4px; box-shadow: var(--shadow-sm); font-size: 12px; }
   .hist-avatar { font-size: 18px; }
   .hist-name { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--text); font-size: 13px; }
   .hist-items { color: var(--text3); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hist-total { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--pr); text-align: right; }
-  .hist-stats-card { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; box-shadow: var(--shadow-md); border: 2px solid var(--surface3); }
-  .hist-stat { text-align: center; }
-  .hist-stat-val { font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 800; color: var(--pr); letter-spacing: -0.8px; }
-  .hist-stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; font-family: 'Poppins', sans-serif; font-weight: 600; }
+  .hist-stats-card { background: var(--surface); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; box-shadow: var(--shadow-sm); border: 1.5px solid var(--surface3); flex-wrap: wrap; }
+  .hist-stats-grid { display: flex; align-items: center; width: 100%; }
+  .hist-stat { display: flex; align-items: center; gap: 4px; flex: 1; justify-content: center; }
+  .hist-stat + .hist-stat { border-left: 1px solid var(--surface3); }
+  .sv { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 800; color: var(--pr); }
+  .sl { font-size: 11px; color: var(--text3); font-family: 'Poppins', sans-serif; }
   .name-filter-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
-  .hist-name-chip { border: none; border-radius: var(--radius-pill); padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--text2); transition: all 0.18s; font-family: 'Poppins', sans-serif; box-shadow: var(--shadow-sm); border: 1.5px solid transparent; }
+  .hist-name-chip { border: none; border-radius: var(--radius-pill); padding: 5px 11px; font-size: 11px; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--text2); transition: all 0.18s; font-family: 'Poppins', sans-serif; box-shadow: var(--shadow-sm); border: 1.5px solid transparent; }
   .hist-name-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
 
   /* ════════════════════════════════════
