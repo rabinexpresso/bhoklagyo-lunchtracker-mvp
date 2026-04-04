@@ -3238,7 +3238,7 @@ function updateGroupSubmitBar() {
   document.getElementById('groupSubmitBtn').disabled = readyRows.length === 0;
 }
 
-async function submitGroupOrder() {
+function submitGroupOrder() {
   const readyRows = goRows.filter(row => {
     if (!row.name) return false;
     if (goMode === 'menu') return row.item && row.price > 0;
@@ -3252,6 +3252,7 @@ async function submitGroupOrder() {
 
   const { date: todayDate } = getNPTDate();
   const ts = new Date().toLocaleString('en-NP', {timeZone: 'Asia/Kathmandu'});
+  const dayName = new Date().toLocaleDateString('en-US', {timeZone:'Asia/Kathmandu', weekday:'long'});
 
   // Group rows by name — combine items and sum totals
   const grouped = {};
@@ -3266,44 +3267,45 @@ async function submitGroupOrder() {
     }
   });
 
-  const rows = Object.entries(grouped).map(([name, data]) => ({
+  const orders = Object.entries(grouped).map(([name, data]) => ({
     name,
     items: data.items.join(', '),
-    total: 'Rs ' + data.total,
-    timestamp: ts
+    total: 'Rs ' + data.total
   }));
 
-  // Use JSONP like all other write actions — fetch no-cors doesn't work for sheet writes
-  const callbackName = 'batchCallback_' + Date.now();
-  const rowsJson = encodeURIComponent(JSON.stringify(rows));
-  const url = `${state.sheetUrl}?action=addBatch&rows=${rowsJson}&date=${encodeURIComponent(todayDate)}&callback=${callbackName}`;
+  // Submit each person as a separate JSONP call — avoids URL length limits
+  let submitted = 0;
+  const total = orders.length;
 
-  const timeout = setTimeout(() => {
-    delete window[callbackName];
-    toast('Request timed out — try again');
-    btn.disabled = false;
-    btn.textContent = 'Submit all →';
-  }, 20000);
+  orders.forEach((order, idx) => {
+    setTimeout(() => {
+      const callbackName = 'groupCb_' + Date.now() + '_' + idx;
+      const url = `${state.sheetUrl}?action=add` +
+        `&name=${encodeURIComponent(order.name)}` +
+        `&items=${encodeURIComponent(order.items)}` +
+        `&total=${encodeURIComponent(order.total)}` +
+        `&timestamp=${encodeURIComponent(ts)}` +
+        `&date=${encodeURIComponent(todayDate)}` +
+        `&day=${encodeURIComponent(dayName)}` +
+        `&callback=${callbackName}`;
 
-  window[callbackName] = function(data) {
-    clearTimeout(timeout);
-    delete window[callbackName];
-    toast(`✅ ${rows.length} people's orders submitted!`);
-    goRows = [];
-    setTimeout(() => showScreen('screen-name'), 600);
-  };
+      window[callbackName] = function(data) {
+        delete window[callbackName];
+        submitted++;
+        if (submitted === total) {
+          toast(`✅ ${total} orders submitted!`);
+          goRows = [];
+          setTimeout(() => showScreen('screen-name'), 600);
+        }
+      };
 
-  const script = document.createElement('script');
-  script.src = url;
-  script.onerror = () => {
-    clearTimeout(timeout);
-    delete window[callbackName];
-    toast('Error submitting — try again');
-    btn.disabled = false;
-    btn.textContent = 'Submit all →';
-  };
-  document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
+      const script = document.createElement('script');
+      script.src = url;
+      script.onerror = () => { delete window[callbackName]; submitted++; };
+      document.head.appendChild(script);
+      setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
+    }, idx * 300); // stagger by 300ms to avoid overwhelming Apps Script
+  });
 }
 // ═══════════════════════════════════════
 //  UPDATE CHECKER — GitHub commits API
