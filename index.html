@@ -576,12 +576,12 @@
   .hist-name { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--text); font-size: 13px; }
   .hist-items { color: var(--text3); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hist-total { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--pr); text-align: right; }
-  .hist-stats-card { background: var(--surface); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; box-shadow: var(--shadow-sm); border: 1.5px solid var(--surface3); flex-wrap: wrap; }
+  .hist-stats-card { background: var(--surface); border-radius: var(--radius-sm); padding: 7px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; box-shadow: var(--shadow-sm); border: 1.5px solid var(--surface3); flex-wrap: wrap; }
   .hist-stats-grid { display: flex; align-items: center; width: 100%; }
-  .hist-stat { display: flex; align-items: center; gap: 4px; flex: 1; justify-content: center; }
+  .hist-stat { display: flex; flex-direction: column; align-items: center; gap: 1px; flex: 1; justify-content: center; }
   .hist-stat + .hist-stat { border-left: 1px solid var(--surface3); }
-  .sv { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 800; color: var(--pr); }
-  .sl { font-size: 11px; color: var(--text3); font-family: 'Poppins', sans-serif; }
+  .sv { font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 800; color: var(--pr); line-height: 1.2; }
+  .sl { font-size: 10px; color: var(--text3); font-family: 'Poppins', sans-serif; line-height: 1.2; }
   .name-filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
   .name-filter-chip { border: 1.5px solid transparent; border-radius: var(--radius-pill); padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--text2); transition: all 0.18s; font-family: 'Poppins', sans-serif; box-shadow: var(--shadow-sm); }
   .name-filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: var(--shadow-sage); }
@@ -1991,6 +1991,18 @@ async function testConnection() {
 }
 
 function saveSettings() {
+  // Auto-add any pending item sitting in the input fields before saving
+  const pendingName = document.getElementById('newItemName').value.trim();
+  const pendingPrice = parseInt(document.getElementById('newItemPrice').value) || 0;
+  const pendingCat = document.getElementById('newItemCat') ? document.getElementById('newItemCat').value : 'Other';
+  if (pendingName && pendingPrice > 0) {
+    const menu = getSettingsMenu();
+    menu.push({ name: pendingName, price: pendingPrice, cat: pendingCat });
+    saveState();
+    document.getElementById('newItemName').value = '';
+    document.getElementById('newItemPrice').value = '';
+  }
+
   state.sheetUrl = document.getElementById('sheetUrl').value.trim();
   saveState();
   renderNames();
