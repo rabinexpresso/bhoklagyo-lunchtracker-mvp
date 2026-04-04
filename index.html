@@ -489,11 +489,12 @@
   .opc-item-row:last-child { border-bottom: none; }
   .opc-item-row .iname { color: var(--text); font-weight: 600; }
   .opc-item-row .iprice { color: var(--text3); font-size: 12px; font-weight: 600; background: var(--surface2); border-radius: 20px; padding: 2px 8px; }
-  .opc-actions { display: flex; gap: 8px; padding: 10px 14px 12px; background: var(--surface2); }
+  .opc-actions { display: flex; gap: 5px; padding: 7px 10px 9px; background: var(--surface2); flex-wrap: nowrap; }
   .opc-edit-btn, .opc-del-btn, .opc-split-btn {
-    flex: 1; padding: 10px; border-radius: var(--radius-sm); font-family: 'Poppins', sans-serif;
-    font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.18s; border: none;
-    box-shadow: var(--shadow-sm); background: var(--surface); color: var(--text2);
+    flex: 1; padding: 6px 4px; border-radius: var(--radius-sm); font-family: 'Poppins', sans-serif;
+    font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    border: 1.5px solid var(--border2); background: var(--surface); color: var(--text2);
+    text-align: center; min-width: 0;
   }
   .opc-edit-btn:hover { color: var(--gold-dark); background: var(--gold-light); }
   .opc-split-btn:hover { color: var(--gold-dark); background: var(--gold-light); }
@@ -1166,6 +1167,25 @@
       <div class="modal-actions">
         <button class="modal-btn cancel" onclick="resolveModal(false)">Cancel</button>
         <button class="modal-btn confirm" id="modalConfirmBtn" onclick="resolveModal(true)">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INLINE EDIT MODAL -->
+  <div class="modal-overlay" id="editOrderModal">
+    <div class="modal-box" style="width:92%;max-width:400px">
+      <div class="modal-body" style="text-align:left;padding:20px 20px 12px">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:'Poppins',sans-serif">📝 Custom edit</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px" id="editOrderName"></div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;font-family:'Poppins',sans-serif">Items</div>
+        <textarea id="editOrderItems" rows="4" style="width:100%;border:1.5px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:13px;font-family:'Poppins',sans-serif;color:var(--text);resize:vertical;outline:none;background:var(--surface);box-sizing:border-box" placeholder="e.g. Dal Bhat Set x2, Milk Tea x1"></textarea>
+        <div style="font-size:11px;color:var(--text3);margin:4px 0 12px">Separate items with commas. Format: Item Name xQty</div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;font-family:'Poppins',sans-serif">Total (Rs)</div>
+        <input type="number" id="editOrderTotal" style="width:100%;border:1.5px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;font-family:'Poppins',sans-serif;color:var(--pr);outline:none;background:var(--surface);box-sizing:border-box" placeholder="e.g. 360" />
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" onclick="closeEditOrderModal()">Cancel</button>
+        <button class="modal-btn confirm" onclick="saveEditedOrder()" style="color:#00b0ff">Save</button>
       </div>
     </div>
   </div>
