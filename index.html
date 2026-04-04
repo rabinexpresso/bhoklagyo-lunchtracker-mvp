@@ -1645,7 +1645,7 @@ function deleteLocationSheetTab(location) {
   script.src = url;
   script.onerror = () => { clearTimeout(timeout); delete window[callbackName]; };
   document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 10000);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
 // ═══════════════════════════════════════
@@ -1877,7 +1877,7 @@ function syncUsersToSheet() {
   script.src = url;
   script.onerror = () => { clearTimeout(timeout); delete window[callbackName]; };
   document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 10000);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
 // ═══════════════════════════════════════
@@ -1938,7 +1938,7 @@ function loadTodayOrders() {
     errorEl.innerHTML = '<strong>Request timed out.</strong> Check that your Apps Script is deployed correctly and the URL is valid.';
     listEl.innerHTML = '';
     delete window[callbackName];
-  }, 3000);
+  }, 20000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
@@ -1969,7 +1969,7 @@ function loadTodayOrders() {
     delete window[callbackName];
   };
   document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 12000);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
 // ── TODAY NAME FILTER ──
@@ -2177,7 +2177,7 @@ async function bulkDeleteSelected() {
     delete window[callbackName];
     selectedOrderIndices = new Set();
     loadTodayOrders();
-  }, 3000);
+  }, 10000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
@@ -2196,7 +2196,7 @@ async function bulkDeleteSelected() {
     loadTodayOrders();
   };
   document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 12000);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
 function editOrderFromToday(idx) {
@@ -2317,7 +2317,7 @@ function loadHistory() {
     errorEl.innerHTML = '<strong>Request timed out.</strong> Check your Apps Script deployment.';
     listEl.innerHTML = '';
     delete window[callbackName];
-  }, 12000);
+  }, 20000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
@@ -2348,7 +2348,7 @@ function loadHistory() {
     delete window[callbackName];
   };
   document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 14000);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
 function renderNameFilterChips(nameList) {
@@ -2477,7 +2477,7 @@ function pushLocationMenuToSheet(location, menu) {
   const timeout = setTimeout(() => {
     delete window[callbackName];
     if (s) { s.textContent = '⚠️ Sync timed out — check connection'; s.className = 'sync-status visible err'; }
-  }, 3000);
+  }, 10000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
@@ -2502,7 +2502,7 @@ function pushLocationMenuToSheet(location, menu) {
     if (s) { s.textContent = '❌ Could not reach sheet'; s.className = 'sync-status visible err'; setTimeout(() => s.classList.remove('visible'), 3000); }
   };
   document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 12000);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
 function loadLocationMenuFromSheet(location) {
@@ -2541,7 +2541,7 @@ function loadLocationMenuFromSheet(location) {
   script.src = url;
   script.onerror = () => { clearTimeout(timeout); delete window[callbackName]; if (mg) renderMenuGrid(); };
   document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 10000);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
 function loadAllLocationMenus() {
@@ -2621,7 +2621,7 @@ function syncLocationsFromSheet(fromSettings) {
     loadAllLocationMenus();
   };
   document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 10000);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
 function updateLocSyncLabel(text) {
@@ -2803,7 +2803,7 @@ function writeSplitBatchToSheet(payerName, date, day, time, rows) {
     loadTodayOrders();
   };
   document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 14000);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
 function renderDebtsCard() {
