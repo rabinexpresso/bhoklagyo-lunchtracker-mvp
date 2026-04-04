@@ -2894,68 +2894,39 @@ setTimeout(() => {
 
 // ═══════════════════════════════════════
 //  UPDATE CHECKER — GitHub commits API
-//  Checks on: page load, visibility change
-//  (user returns to tab/app), and interval.
-//  This is the most reliable cross-browser
-//  approach including Mobile Safari.
+//  Same method that works on Mortgage Thug:
+//  At 10s → set baseline SHA
+//  Every 5 min → compare, show banner if changed
 // ═══════════════════════════════════════
 (function() {
-  var REPO   = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
-  var API    = 'https://api.github.com/repos/' + REPO + '/commits/main';
+  var REPO = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
+  var API  = 'https://api.github.com/repos/' + REPO + '/commits/main';
   var baselineSHA = null;
-  var lastCheck   = 0;
-  var MIN_INTERVAL = 60 * 1000; // don't check more than once per minute
 
   function fetchSHA(cb) {
-    var controller = new AbortController();
-    var timer = setTimeout(function() { controller.abort(); }, 8000);
     fetch(API, {
       cache: 'no-store',
-      signal: controller.signal,
       headers: { 'Accept': 'application/vnd.github.v3+json' }
     })
-    .then(function(r) { clearTimeout(timer); return r.ok ? r.json() : null; })
+    .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(d) { if (d && d.sha) cb(d.sha); })
-    .catch(function() { clearTimeout(timer); });
+    .catch(function() {});
   }
 
-  function showBanner() {
-    var el = document.getElementById('updateBanner');
-    if (el) el.classList.add('visible');
-  }
+  // At 10s — fetch and store baseline SHA silently
+  setTimeout(function() {
+    fetchSHA(function(sha) { baselineSHA = sha; });
+  }, 10000);
 
-  function check() {
-    var now = Date.now();
-    if (now - lastCheck < MIN_INTERVAL) return; // throttle
-    lastCheck = now;
-
+  // Every 5 min — compare SHA, show banner if changed
+  setInterval(function() {
+    if (!baselineSHA) return;
     fetchSHA(function(sha) {
-      if (!baselineSHA) {
-        baselineSHA = sha; // first check — set baseline silently
-      } else if (sha !== baselineSHA) {
-        showBanner(); // SHA changed — new version pushed!
+      if (sha !== baselineSHA) {
+        document.getElementById('updateBanner').classList.add('visible');
       }
     });
-  }
-
-  // 1. Check 10s after page load
-  setTimeout(check, 10000);
-
-  // 2. Check every 5 min (works on desktop + active mobile)
-  setInterval(check, 5 * 60 * 1000);
-
-  // 3. Check when user returns to the app (Mobile Safari key trigger)
-  document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') check();
-  });
-
-  // 4. Check when window regains focus (desktop browsers)
-  window.addEventListener('focus', check);
-
-  // 5. Check on pageshow (Safari back/forward cache restore)
-  window.addEventListener('pageshow', function(e) {
-    if (e.persisted) check(); // restored from bfcache
-  });
+  }, 5 * 60 * 1000);
 })();
 </script>
 </body>
