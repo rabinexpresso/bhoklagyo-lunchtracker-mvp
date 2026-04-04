@@ -2065,7 +2065,8 @@ function renderTodayOrders(orders, skipCacheReset) {
       </div>
       <div class="opc-items">${itemRows}</div>
       <div class="opc-actions">
-        <button class="opc-edit-btn" onclick="editOrderFromToday(${idx})">✏️ Edit</button>
+        <button class="opc-edit-btn" onclick="editOrderFromToday(${idx})">✏️ Edit menu</button>
+        <button class="opc-edit-btn" onclick="editOrderInline(${idx})" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom edit</button>
         <button class="opc-split-btn" onclick="toggleSplitPanel(${idx})">💸 Split</button>
         <button class="opc-del-btn" onclick="deleteOrderFromToday(${idx})">🗑 Delete</button>
       </div>
@@ -2199,14 +2200,15 @@ async function bulkDeleteSelected() {
   setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
+let editOrderIdx = null;
+
 function editOrderFromToday(idx) {
   const order = todayOrdersCache[idx];
   if (!order) return;
-  // Set the current user and pre-populate cart from this order
+  // Go back to menu screen to re-select items
   state.currentUser = order.name;
   state.isEditing = true;
   state.cart = {};
-  // Parse items back into cart
   const parts = order.items.split(',').map(s => s.trim()).filter(Boolean);
   parts.forEach(part => {
     const match = part.match(/^(.+?)\s*x(\d+)$/i);
@@ -2222,6 +2224,52 @@ function editOrderFromToday(idx) {
   renderMenuGrid();
   updateCartBar();
   showScreen('screen-menu');
+}
+
+function editOrderInline(idx) {
+  const order = todayOrdersCache[idx];
+  if (!order) return;
+  editOrderIdx = idx;
+  document.getElementById('editOrderName').textContent = order.name + ' · ' + (order.time ? cleanTime(order.time) : '');
+  document.getElementById('editOrderItems').value = order.items || '';
+  const totalNum = String(order.total).replace(/[^0-9]/g, '');
+  document.getElementById('editOrderTotal').value = totalNum;
+  document.getElementById('editOrderModal').classList.add('open');
+}
+
+function closeEditOrderModal() {
+  document.getElementById('editOrderModal').classList.remove('open');
+  editOrderIdx = null;
+}
+
+function saveEditedOrder() {
+  if (editOrderIdx === null) return;
+  const order = todayOrdersCache[editOrderIdx];
+  if (!order) return;
+
+  const newItems = document.getElementById('editOrderItems').value.trim();
+  const newTotalRaw = document.getElementById('editOrderTotal').value.trim();
+  const newTotal = 'Rs ' + (parseInt(newTotalRaw) || 0);
+
+  if (!newItems) { toast('Please enter items'); return; }
+  if (!newTotalRaw) { toast('Please enter a total'); return; }
+
+  closeEditOrderModal();
+
+  const { date: todayDate } = getNPTDate();
+  const url = `${state.sheetUrl}?action=update` +
+    `&name=${encodeURIComponent(order.name)}` +
+    `&date=${encodeURIComponent(todayDate)}` +
+    `&items=${encodeURIComponent(newItems)}` +
+    `&total=${encodeURIComponent(newTotal)}` +
+    `&timestamp=${encodeURIComponent(order.time || '')}`;
+
+  fetch(url, { method: 'GET', mode: 'no-cors' })
+    .then(() => {
+      toast('✅ Order updated!');
+      setTimeout(() => loadTodayOrders(), 800);
+    })
+    .catch(() => toast('Error updating — try again'));
 }
 
 async function deleteOrderFromToday(idx) {
