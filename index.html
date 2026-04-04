@@ -2894,35 +2894,38 @@ setTimeout(() => {
 
 // ═══════════════════════════════════════
 //  UPDATE CHECKER — GitHub commits API
+//  Stores SHA in localStorage so any new
+//  push triggers banner on next check,
+//  even after closing and reopening app.
 // ═══════════════════════════════════════
 (function() {
-  const REPO = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
-  const API  = `https://api.github.com/repos/${REPO}/commits/main`;
-  let baselineSHA = null;
+  const REPO    = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
+  const API     = `https://api.github.com/repos/${REPO}/commits/main`;
+  const LS_KEY  = 'bhoklagyo_sha';
 
   function fetchSHA(cb) {
     fetch(API, { cache: 'no-store', headers: { 'Accept': 'application/vnd.github.v3+json' } })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d && d.sha) cb(d.sha); })
-      .catch(() => {}); // silent fail — don't interrupt app
+      .catch(() => {});
   }
 
-  function showUpdateBanner() {
-    document.getElementById('updateBanner').classList.add('visible');
-  }
-
-  // After 10s — set baseline SHA quietly
-  setTimeout(() => {
-    fetchSHA(sha => { baselineSHA = sha; });
-  }, 10000);
-
-  // Every 5 min — compare against baseline
-  setInterval(() => {
-    if (!baselineSHA) return;
+  function check() {
     fetchSHA(sha => {
-      if (sha !== baselineSHA) showUpdateBanner();
+      const stored = localStorage.getItem(LS_KEY);
+      if (!stored) {
+        // First ever load — save SHA, no banner
+        localStorage.setItem(LS_KEY, sha);
+      } else if (sha !== stored) {
+        // New commit detected — show banner
+        document.getElementById('updateBanner').classList.add('visible');
+      }
     });
-  }, 5 * 60 * 1000);
+  }
+
+  // Check 2s after load, then every 1 min
+  setTimeout(check, 2000);
+  setInterval(check, 60 * 1000);
 })();
 </script>
 </body>
