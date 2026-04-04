@@ -2991,21 +2991,25 @@ setTimeout(() => {
     document.getElementById('updateBanner').classList.add('visible');
   }
 
-  // Check on page load — runs within 3 seconds of opening app
-  setTimeout(function() {
+  function check() {
     fetchSHA(function(sha) {
       var stored = localStorage.getItem(LS_KEY);
       if (!stored) {
-        // First ever visit — store SHA, no banner
         localStorage.setItem(LS_KEY, sha);
       } else if (sha !== stored) {
-        // New version pushed since last visit — show banner
         showBanner();
-        // Update stored SHA so banner doesn't keep showing
         localStorage.setItem(LS_KEY, sha);
       }
     });
-  }, 3000);
+  }
+
+  // Check 3s after page load
+  setTimeout(check, 3000);
+
+  // Check when user returns to app — catches Mobile Safari background/foreground
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') check();
+  });
 })();
 </script>
 </body>
