@@ -2894,9 +2894,11 @@ setTimeout(() => {
 
 // ═══════════════════════════════════════
 //  UPDATE CHECKER — GitHub commits API
-//  Same method that works on Mortgage Thug:
 //  At 10s → set baseline SHA
 //  Every 5 min → compare, show banner if changed
+//  visibilitychange → fires when user returns
+//  to app on Mobile Safari (screen unlock,
+//  switching back from another app)
 // ═══════════════════════════════════════
 (function() {
   var REPO = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
@@ -2913,20 +2915,28 @@ setTimeout(() => {
     .catch(function() {});
   }
 
-  // At 10s — fetch and store baseline SHA silently
-  setTimeout(function() {
-    fetchSHA(function(sha) { baselineSHA = sha; });
-  }, 10000);
-
-  // Every 5 min — compare SHA, show banner if changed
-  setInterval(function() {
+  function checkForUpdate() {
     if (!baselineSHA) return;
     fetchSHA(function(sha) {
       if (sha !== baselineSHA) {
         document.getElementById('updateBanner').classList.add('visible');
       }
     });
-  }, 5 * 60 * 1000);
+  }
+
+  // At 10s — fetch and store baseline SHA silently
+  setTimeout(function() {
+    fetchSHA(function(sha) { baselineSHA = sha; });
+  }, 10000);
+
+  // Every 5 min — works on desktop + active mobile
+  setInterval(checkForUpdate, 5 * 60 * 1000);
+
+  // visibilitychange — critical for Mobile Safari:
+  // fires every time user returns to the app
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') checkForUpdate();
+  });
 })();
 </script>
 </body>
