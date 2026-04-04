@@ -517,6 +517,8 @@
   .opc-name { font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
   .opc-time { font-size: 11px; color: var(--text3); margin-top: 2px; font-weight: 500; }
   .opc-total { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 800; color: var(--pr); letter-spacing: -0.3px; }
+  .opc-total-input { width: 72px; border: 1.5px solid var(--border2); border-radius: 8px; background: var(--surface2); font-size: 13px; font-weight: 800; color: var(--pr); font-family: 'Poppins', sans-serif; outline: none; padding: 3px 6px; text-align: right; box-sizing: border-box; }
+  .opc-total-input:focus { border-color: var(--pr); background: white; }
   .opc-items { padding: 6px 12px 10px; border-top: 1px solid var(--surface2); }
   .opc-item-row { display: flex; align-items: center; justify-content: space-between; padding: 3px 0; font-size: 12px; color: var(--text2); border-bottom: 1px solid rgba(0,0,0,0.04); }
   .opc-item-row:last-child { border-bottom: none; }
@@ -2198,7 +2200,7 @@ function renderTodayOrders(orders, skipCacheReset) {
           <div class="opc-name">${o.name || 'Unknown'}</div>
           ${o.time ? `<div class="opc-time">${cleanTime(o.time)}</div>` : ''}
         </div>
-        <div class="opc-total">${o.total}</div>
+        <input class="opc-total-input" type="number" value="${String(o.total).replace(/[^0-9]/g,'')}" onchange="updateOrderTotal(${idx}, this.value)" />
       </div>
       <div class="opc-items">${itemRows}</div>
       <div class="opc-actions">
@@ -2372,6 +2374,29 @@ function editOrderInline(idx) {
   const totalNum = String(order.total).replace(/[^0-9]/g, '');
   document.getElementById('editOrderTotal').value = totalNum;
   document.getElementById('editOrderModal').classList.add('open');
+}
+
+function updateOrderTotal(idx, value) {
+  const order = todayOrdersCache[idx];
+  if (!order) return;
+  const newTotal = 'Rs ' + (parseInt(value) || 0);
+  const { date: todayDate } = getNPTDate();
+  const url = `${state.sheetUrl}?action=update` +
+    `&name=${encodeURIComponent(order.name)}` +
+    `&date=${encodeURIComponent(todayDate)}` +
+    `&items=${encodeURIComponent(order.items)}` +
+    `&total=${encodeURIComponent(newTotal)}` +
+    `&timestamp=${encodeURIComponent(order.time || '')}`;
+  fetch(url, { method: 'GET', mode: 'no-cors' })
+    .then(() => {
+      order.total = newTotal;
+      toast('✅ Total updated!');
+      // Refresh grand total
+      let grandTotal = 0;
+      todayOrdersCache.forEach(o => { grandTotal += parseInt(String(o.total).replace(/[^0-9]/g, '')) || 0; });
+      document.getElementById('grandTotalAmount').textContent = 'Rs ' + grandTotal;
+    })
+    .catch(() => toast('Error updating — try again'));
 }
 
 function closeEditOrderModal() {
