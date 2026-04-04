@@ -3273,18 +3273,37 @@ async function submitGroupOrder() {
     timestamp: ts
   }));
 
-  try {
-    const rowsJson = encodeURIComponent(JSON.stringify(rows));
-    const url = `${state.sheetUrl}?action=addBatch&rows=${rowsJson}&date=${encodeURIComponent(todayDate)}`;
-    await fetch(url, { method: 'GET', mode: 'no-cors' });
+  // Use JSONP like all other write actions — fetch no-cors doesn't work for sheet writes
+  const callbackName = 'batchCallback_' + Date.now();
+  const rowsJson = encodeURIComponent(JSON.stringify(rows));
+  const url = `${state.sheetUrl}?action=addBatch&rows=${rowsJson}&date=${encodeURIComponent(todayDate)}&callback=${callbackName}`;
+
+  const timeout = setTimeout(() => {
+    delete window[callbackName];
+    toast('Request timed out — try again');
+    btn.disabled = false;
+    btn.textContent = 'Submit all →';
+  }, 20000);
+
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    delete window[callbackName];
     toast(`✅ ${rows.length} people's orders submitted!`);
     goRows = [];
     setTimeout(() => showScreen('screen-name'), 600);
-  } catch(e) {
+  };
+
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = () => {
+    clearTimeout(timeout);
+    delete window[callbackName];
     toast('Error submitting — try again');
     btn.disabled = false;
     btn.textContent = 'Submit all →';
-  }
+  };
+  document.head.appendChild(script);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 // ═══════════════════════════════════════
 //  UPDATE CHECKER — GitHub commits API
