@@ -136,7 +136,9 @@
     display: flex; align-items: center; justify-content: center;
     font-family: 'Poppins', sans-serif;
   }
-  .user-pill span { font-size: 13px; font-weight: 700; color: #0088cc; font-family: 'Poppins', sans-serif; }
+  .user-pill span { font-size: 13px; font-weight: 700; color: #0088cc; font-family: 'Poppins', sans-serif; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill-back-btn { background: rgba(0,176,255,0.12); border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: #0088cc; flex-shrink: 0; transition: background 0.15s; padding: 0; line-height: 1; }
+  .pill-back-btn:hover { background: rgba(0,176,255,0.25); }
   .edit-badge { display: none; margin-left: auto; background: var(--gold-light); color: var(--gold-dark); border-radius: var(--radius-pill); padding: 3px 10px; font-size: 10px; font-weight: 700; }
   .edit-badge.visible { display: block; }
 
@@ -451,6 +453,34 @@
   .empty .emoji { font-size: 40px; display: block; margin-bottom: 12px; }
   .scroll-pad { height: 100px; }
 
+  /* ═══ GROUP ORDER ═══ */
+  .go-section-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-family: 'Poppins', sans-serif; }
+  .go-location-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .go-loc-btn { border: 1.5px solid var(--border2); border-radius: var(--radius-pill); padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; background: var(--surface2); color: var(--text2); font-family: 'Poppins', sans-serif; transition: all 0.15s; }
+  .go-loc-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .go-mode-row { display: flex; gap: 6px; margin-bottom: 4px; }
+  .go-mode-btn { flex: 1; padding: 7px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border2); background: var(--surface2); color: var(--text2); font-family: 'Poppins', sans-serif; transition: all 0.15s; text-align: center; }
+  .go-mode-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .go-count-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .go-select { border: 1.5px solid var(--border2); border-radius: var(--radius-sm); padding: 6px 8px; font-size: 12px; font-family: 'Poppins', sans-serif; color: var(--text); background: var(--surface); outline: none; cursor: pointer; }
+  .go-select:focus { border-color: var(--accent); }
+  .go-row-header { display: flex; align-items: center; padding: 4px 2px; font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Poppins', sans-serif; margin-bottom: 4px; }
+  .go-row { display: flex; align-items: stretch; background: var(--surface); border-radius: var(--radius-sm); border: 1.5px solid var(--border2); margin-bottom: 4px; overflow: hidden; }
+  .go-row:focus-within { border-color: var(--accent); }
+  .go-name-sel { width: 88px; flex-shrink: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px 7px 6px; font-weight: 600; -webkit-appearance: none; }
+  .go-item-sel { flex: 1; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px 7px 6px; -webkit-appearance: none; }
+  .go-price-cell { width: 56px; flex-shrink: 0; text-align: right; font-size: 11px; font-weight: 700; color: var(--pr); font-family: 'Poppins', sans-serif; padding: 7px 6px; white-space: nowrap; display: flex; align-items: center; justify-content: flex-end; }
+  .go-custom-items { flex: 1; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 4px 7px 6px; }
+  .go-custom-total { width: 56px; flex-shrink: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--pr); font-weight: 700; outline: none; padding: 7px 4px; text-align: right; }
+  .go-del-btn { width: 28px; flex-shrink: 0; border: none; border-left: 1px solid var(--border2); background: none; cursor: pointer; font-size: 14px; color: var(--text3); display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0; }
+  .go-del-btn:hover { background: var(--error-bg); color: var(--error); }
+  .go-add-btn { width: 100%; padding: 7px; border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); background: none; font-size: 12px; color: var(--text3); cursor: pointer; font-family: 'Poppins', sans-serif; transition: all 0.15s; margin-top: 2px; }
+  .go-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .go-total-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-top: 10px; }
+  .go-grand-total { font-size: 16px; font-weight: 800; color: var(--pr); font-family: 'Poppins', sans-serif; }
+  .group-submit-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #000079; border-top: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; padding-bottom: max(10px, env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 40; }
+  .group-order-count { font-size: 12px; color: rgba(255,255,255,0.6); font-family: 'Poppins', sans-serif; }
+
   /* ════════════════════════════════════
      TODAY'S ORDERS
   ════════════════════════════════════ */
@@ -725,6 +755,7 @@
       </div>
     </div>
     <div class="user-pill" id="userPill">
+      <button class="pill-back-btn" onclick="showScreen('screen-name')" title="Back to home">←</button>
       <div class="user-avatar" id="userAvatar"></div>
       <span id="userPillName"></span>
       <span class="edit-badge" id="editBadge">✏️ editing</span>
@@ -929,7 +960,10 @@
       </div>
       <div class="btn-gap" style="margin-bottom:16px">
         <button class="btn-primary" id="startBtn" onclick="goMenu(false)" disabled>
-          Start ordering →
+          Start ordering individually →
+        </button>
+        <button class="btn-secondary" id="startGroupBtn" onclick="goGroupOrder()" disabled>
+          🍱 Start ordering for everyone →
         </button>
       </div>
 
@@ -986,6 +1020,80 @@
         <button class="btn-primary" id="submitBtn" onclick="submitOrder()">Submit &amp; save to sheet →</button>
         <button class="btn-secondary" onclick="showScreen('screen-name')">Order for someone else</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCREEN: GROUP ORDER ═══════════ -->
+  <div class="screen" id="screen-group">
+    <div class="back-nav">
+      <button class="back-btn" onclick="showScreen('screen-name')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
+        Back
+      </button>
+      <span class="back-nav-title">Order for everyone</span>
+    </div>
+    <div class="page" style="padding-top:8px;padding-bottom:100px">
+
+      <!-- Location selector -->
+      <div class="go-section-label">📍 Location</div>
+      <div id="goLocationBar" class="go-location-bar"></div>
+
+      <!-- Mode toggle -->
+      <div class="go-mode-row">
+        <button class="go-mode-btn active" id="goModeMenu" onclick="setGoMode('menu')">📋 Menu order</button>
+        <button class="go-mode-btn" id="goModeCustom" onclick="setGoMode('custom')">📝 Custom entry</button>
+      </div>
+
+      <!-- How many people -->
+      <div class="go-section-label" style="margin-top:12px">👥 How many people?</div>
+      <div class="go-count-row">
+        <select id="goCountSelect" onchange="renderGoRows()" class="go-select" style="width:100px">
+          <option value="1">1 person</option>
+          <option value="2">2 people</option>
+          <option value="3">3 people</option>
+          <option value="4">4 people</option>
+          <option value="5">5 people</option>
+          <option value="6">6 people</option>
+          <option value="7">7 people</option>
+          <option value="8">8 people</option>
+          <option value="9">9 people</option>
+          <option value="10">10 people</option>
+        </select>
+      </div>
+
+      <!-- Order rows — MENU MODE -->
+      <div id="goMenuRows" style="margin-top:10px">
+        <div class="go-row-header">
+          <span style="flex:1.2">Name</span>
+          <span style="flex:2">Food item</span>
+          <span style="flex:0.8;text-align:right">Price</span>
+          <span style="width:24px"></span>
+        </div>
+        <div id="goMenuRowsList"></div>
+      </div>
+
+      <!-- Order rows — CUSTOM MODE -->
+      <div id="goCustomRows" style="margin-top:10px;display:none">
+        <div class="go-row-header">
+          <span style="flex:1.2">Name</span>
+          <span style="flex:2">Items (free text)</span>
+          <span style="flex:0.8;text-align:right">Total</span>
+          <span style="width:24px"></span>
+        </div>
+        <div id="goCustomRowsList"></div>
+      </div>
+
+      <!-- Grand total -->
+      <div id="goTotalBar" class="go-total-bar" style="display:none">
+        <span style="font-size:12px;color:var(--text3)">Grand total</span>
+        <span class="go-grand-total" id="goGrandTotal">Rs 0</span>
+      </div>
+
+    </div>
+    <!-- Submit bar -->
+    <div class="group-submit-bar">
+      <div id="groupOrderCount" class="group-order-count">0 orders ready</div>
+      <button class="btn-primary" onclick="submitGroupOrder()" id="groupSubmitBtn" style="width:auto;padding:9px 18px;font-size:13px" disabled>Submit all →</button>
     </div>
   </div>
 
@@ -1218,7 +1326,7 @@ const DEFAULT_MENU = [
   {name:'Water Bottle',price:25,cat:'Drinks'},
 ];
 
-const SHEET_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbyx5kw4RDZmncaf0johQACD914WbJv8UdGeyOuReyxl76srHOmJo5AhLvjDeTqm0wo/exec';
+const SHEET_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbzDASq6-9ArvcGgk6A9nVh2v3pethQRUUdCiv_UYM6Zsax_9PLlgM2aB9A4Qmy2qJW-/exec';
 
 const DEFAULT_LOCATIONS = ['Generic','Samjhana','XO Coffee Palace'];
 
@@ -1281,6 +1389,7 @@ function showScreen(id) {
     const editBtn = document.getElementById('editNamesBtn');
     if (editBtn) { editBtn.textContent = '✏️ Edit names'; editBtn.style.color = ''; }
     document.getElementById('startBtn').disabled = true;
+  if (document.getElementById('startGroupBtn')) document.getElementById('startGroupBtn').disabled = true;
     document.getElementById('userPill').classList.remove('visible');
     renderNames();
   }
@@ -1366,6 +1475,7 @@ function renderNames() {
         state.currentUser = name;
         renderNames();
         document.getElementById('startBtn').disabled = false;
+      document.getElementById('startGroupBtn').disabled = false;
       };
     }
     g.appendChild(card);
@@ -1390,7 +1500,7 @@ function addNewName() {
 
 function deleteName(name) {
   if (state.names.length <= 1) { toast('Need at least one name'); return; }
-  if (state.currentUser === name) { state.currentUser = null; document.getElementById('startBtn').disabled = true; }
+  if (state.currentUser === name) { state.currentUser = null; document.getElementById('startBtn').disabled = true; document.getElementById('startGroupBtn').disabled = true; }
   state.names = state.names.filter(n => n !== name);
   saveState();
   renderNames();
@@ -2962,6 +3072,220 @@ setTimeout(() => {
   syncUsersToSheet();
 }, 2000);
 
+// ═══════════════════════════════════════
+//  GROUP ORDER
+// ═══════════════════════════════════════
+
+let goMode = 'menu';       // 'menu' | 'custom'
+let goLocation = null;     // active location name
+let goRows = [];           // array of row data objects
+
+function goGroupOrder() {
+  if (!state.currentUser) return;
+  goMode = 'menu';
+  goRows = [];
+  goLocation = state.activeLocation || state.locations[0] || 'Generic';
+  renderGoLocationBar();
+  setGoMode('menu');
+  renderGoRows();
+  updateGroupSubmitBar();
+  showScreen('screen-group');
+}
+
+function renderGoLocationBar() {
+  const bar = document.getElementById('goLocationBar');
+  if (!bar) return;
+  bar.innerHTML = state.locations.map(loc =>
+    `<button class="go-loc-btn${goLocation===loc?' active':''}" onclick="selectGoLocation('${loc}')">${loc}</button>`
+  ).join('');
+}
+
+function selectGoLocation(loc) {
+  goLocation = loc;
+  // Pre-load menu if needed
+  if (loc !== 'Generic' && !state.locationMenus[loc]) {
+    fetchLocationMenu(loc, function() { renderGoRows(); });
+  } else {
+    renderGoRows();
+  }
+  renderGoLocationBar();
+}
+
+function fetchLocationMenu(loc, cb) {
+  if (!state.sheetUrl) return;
+  const callbackName = 'goMenuCallback_' + Date.now();
+  const url = `${state.sheetUrl}?action=getMenu&location=${encodeURIComponent(loc)}&callback=${callbackName}`;
+  window[callbackName] = function(data) {
+    delete window[callbackName];
+    if (data && data.items) { state.locationMenus[loc] = data.items; saveState(); }
+    if (cb) cb();
+  };
+  const script = document.createElement('script');
+  script.src = url;
+  document.head.appendChild(script);
+  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
+}
+
+function getGoMenu() {
+  if (!goLocation || goLocation === 'Generic') return state.menu;
+  return state.locationMenus[goLocation] || state.menu;
+}
+
+function setGoMode(mode) {
+  goMode = mode;
+  document.getElementById('goModeMenu').classList.toggle('active', mode==='menu');
+  document.getElementById('goModeCustom').classList.toggle('active', mode==='custom');
+  document.getElementById('goMenuRows').style.display = mode==='menu' ? 'block' : 'none';
+  document.getElementById('goCustomRows').style.display = mode==='custom' ? 'block' : 'none';
+  renderGoRows();
+}
+
+function renderGoRows() {
+  const count = parseInt(document.getElementById('goCountSelect').value) || 1;
+  // Pad or trim goRows to match count
+  while (goRows.length < count) goRows.push({ name: '', item: '', price: 0, customItems: '', customTotal: '' });
+  goRows = goRows.slice(0, count);
+
+  const menu = getGoMenu();
+  const nameOptions = state.names.map(n => `<option value="${n}">${n}</option>`).join('');
+  const itemOptions = menu.map(m => `<option value="${m.name}" data-price="${m.price}">${m.name} — Rs ${m.price}</option>`).join('');
+
+  if (goMode === 'menu') {
+    document.getElementById('goMenuRowsList').innerHTML = goRows.map((row, i) => `
+      <div class="go-row" id="goRow_${i}">
+        <select class="go-name-sel" onchange="updateGoRow(${i},'name',this.value)">
+          <option value="">— Name —</option>
+          ${state.names.map(n => `<option value="${n}"${row.name===n?' selected':''}>${n}</option>`).join('')}
+        </select>
+        <select class="go-item-sel" onchange="updateGoRowItem(${i},this)">
+          <option value="">— Food item —</option>
+          ${menu.map(m => `<option value="${m.name}" data-price="${m.price}"${row.item===m.name?' selected':''}>${m.name}</option>`).join('')}
+        </select>
+        <div class="go-price-cell" id="goPrice_${i}">${row.price > 0 ? 'Rs '+row.price : '—'}</div>
+        <button class="go-del-btn" onclick="removeGoRow(${i})">×</button>
+      </div>`).join('');
+    // Add row button
+    document.getElementById('goMenuRowsList').innerHTML += `<button class="go-add-btn" onclick="addGoRow()">+ Add another person</button>`;
+  } else {
+    document.getElementById('goCustomRowsList').innerHTML = goRows.map((row, i) => `
+      <div class="go-row" id="goRowC_${i}">
+        <select class="go-name-sel" onchange="updateGoRow(${i},'name',this.value)">
+          <option value="">— Name —</option>
+          ${state.names.map(n => `<option value="${n}"${row.name===n?' selected':''}>${n}</option>`).join('')}
+        </select>
+        <input class="go-custom-items" placeholder="Items e.g. Momo x2" value="${row.customItems||''}" onchange="updateGoRow(${i},'customItems',this.value)" />
+        <input class="go-custom-total" type="number" placeholder="Rs" value="${row.customTotal||''}" onchange="updateGoRow(${i},'customTotal',this.value)" />
+        <button class="go-del-btn" onclick="removeGoRow(${i})">×</button>
+      </div>`).join('');
+    document.getElementById('goCustomRowsList').innerHTML += `<button class="go-add-btn" onclick="addGoRow()">+ Add another person</button>`;
+  }
+
+  updateGoTotalBar();
+  updateGroupSubmitBar();
+}
+
+function updateGoRow(i, field, value) {
+  if (!goRows[i]) return;
+  goRows[i][field] = value;
+  updateGoTotalBar();
+  updateGroupSubmitBar();
+}
+
+function updateGoRowItem(i, sel) {
+  if (!goRows[i]) return;
+  const opt = sel.options[sel.selectedIndex];
+  goRows[i].item = sel.value;
+  goRows[i].price = parseInt(opt.getAttribute('data-price')) || 0;
+  document.getElementById('goPrice_' + i).textContent = goRows[i].price > 0 ? 'Rs ' + goRows[i].price : '—';
+  updateGoTotalBar();
+  updateGroupSubmitBar();
+}
+
+function addGoRow() {
+  goRows.push({ name: '', item: '', price: 0, customItems: '', customTotal: '' });
+  // Update count select
+  const sel = document.getElementById('goCountSelect');
+  if (sel) sel.value = goRows.length;
+  renderGoRows();
+}
+
+function removeGoRow(i) {
+  goRows.splice(i, 1);
+  const sel = document.getElementById('goCountSelect');
+  if (sel) sel.value = Math.max(1, goRows.length);
+  renderGoRows();
+}
+
+function updateGoTotalBar() {
+  let total = 0;
+  goRows.forEach(row => {
+    if (goMode === 'menu') total += row.price || 0;
+    else total += parseInt(row.customTotal) || 0;
+  });
+  const bar = document.getElementById('goTotalBar');
+  const tot = document.getElementById('goGrandTotal');
+  if (bar) bar.style.display = total > 0 ? 'flex' : 'none';
+  if (tot) tot.textContent = 'Rs ' + total;
+}
+
+function updateGroupSubmitBar() {
+  const readyRows = goRows.filter(row => {
+    if (!row.name) return false;
+    if (goMode === 'menu') return row.item && row.price > 0;
+    return row.customItems && row.customTotal;
+  });
+  document.getElementById('groupOrderCount').textContent = `${readyRows.length} of ${goRows.length} ready`;
+  document.getElementById('groupSubmitBtn').disabled = readyRows.length === 0;
+}
+
+async function submitGroupOrder() {
+  const readyRows = goRows.filter(row => {
+    if (!row.name) return false;
+    if (goMode === 'menu') return row.item && row.price > 0;
+    return row.customItems && row.customTotal;
+  });
+  if (readyRows.length === 0) return;
+
+  const btn = document.getElementById('groupSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  const { date: todayDate } = getNPTDate();
+  const ts = new Date().toLocaleString('en-NP', {timeZone: 'Asia/Kathmandu'});
+
+  // Group rows by name — combine items and sum totals
+  const grouped = {};
+  readyRows.forEach(row => {
+    if (!grouped[row.name]) grouped[row.name] = { items: [], total: 0 };
+    if (goMode === 'menu') {
+      grouped[row.name].items.push(`${row.item} x1`);
+      grouped[row.name].total += row.price;
+    } else {
+      grouped[row.name].items.push(row.customItems);
+      grouped[row.name].total += parseInt(row.customTotal) || 0;
+    }
+  });
+
+  const rows = Object.entries(grouped).map(([name, data]) => ({
+    name,
+    items: data.items.join(', '),
+    total: 'Rs ' + data.total,
+    timestamp: ts
+  }));
+
+  try {
+    const rowsJson = encodeURIComponent(JSON.stringify(rows));
+    const url = `${state.sheetUrl}?action=addBatch&rows=${rowsJson}&date=${encodeURIComponent(todayDate)}`;
+    await fetch(url, { method: 'GET', mode: 'no-cors' });
+    toast(`✅ ${rows.length} people's orders submitted!`);
+    goRows = [];
+    setTimeout(() => showScreen('screen-name'), 600);
+  } catch(e) {
+    toast('Error submitting — try again');
+    btn.disabled = false;
+    btn.textContent = 'Submit all →';
+  }
+}
 // ═══════════════════════════════════════
 //  UPDATE CHECKER — GitHub commits API
 //  Uses localStorage to persist baseline SHA
