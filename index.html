@@ -466,15 +466,15 @@
   .go-select { border: 1.5px solid var(--border2); border-radius: var(--radius-sm); padding: 6px 8px; font-size: 12px; font-family: 'Poppins', sans-serif; color: var(--text); background: var(--surface); outline: none; cursor: pointer; }
   .go-select:focus { border-color: var(--accent); }
   .go-row-header { display: flex; align-items: center; padding: 4px 2px; font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Poppins', sans-serif; margin-bottom: 4px; }
-  .go-row { display: flex; align-items: stretch; background: var(--surface); border-radius: var(--radius-sm); border: 1.5px solid var(--border2); margin-bottom: 4px; overflow: hidden; }
+  .go-row { display: flex; align-items: stretch; background: var(--surface); border-radius: var(--radius-sm); border: 1.5px solid var(--border2); margin-bottom: 4px; overflow: hidden; width: 100%; box-sizing: border-box; }
   .go-row:focus-within { border-color: var(--accent); }
-  .go-name-sel { width: 88px; flex-shrink: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px 7px 6px; font-weight: 600; -webkit-appearance: none; }
-  .go-item-sel { flex: 1; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px 7px 6px; -webkit-appearance: none; }
-  .go-qty-sel { width: 36px; flex-shrink: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px; text-align: center; -webkit-appearance: none; }
-  .go-price-cell { width: 56px; flex-shrink: 0; text-align: right; font-size: 11px; font-weight: 700; color: var(--pr); font-family: 'Poppins', sans-serif; padding: 7px 6px; white-space: nowrap; display: flex; align-items: center; justify-content: flex-end; }
-  .go-custom-items { flex: 1; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 4px 7px 6px; }
-  .go-custom-total { width: 56px; flex-shrink: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--pr); font-weight: 700; outline: none; padding: 7px 4px; text-align: right; }
-  .go-del-btn { width: 28px; flex-shrink: 0; border: none; border-left: 1px solid var(--border2); background: none; cursor: pointer; font-size: 14px; color: var(--text3); display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0; }
+  .go-name-sel { flex: 0 0 90px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px 7px 6px; font-weight: 600; -webkit-appearance: none; box-sizing: border-box; }
+  .go-item-sel { flex: 1 1 80px; min-width: 60px; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px 7px 6px; -webkit-appearance: none; box-sizing: border-box; }
+  .go-qty-sel { flex: 0 0 36px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 2px; text-align: center; -webkit-appearance: none; box-sizing: border-box; }
+  .go-price-cell { flex: 0 0 60px; min-width: 0; text-align: right; font-size: 11px; font-weight: 700; color: var(--pr); font-family: 'Poppins', sans-serif; padding: 7px 4px; white-space: nowrap; display: flex; align-items: center; justify-content: flex-end; box-sizing: border-box; }
+  .go-custom-items { flex: 1 1 80px; min-width: 60px; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 7px 4px 7px 6px; box-sizing: border-box; }
+  .go-custom-total { flex: 0 0 60px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--pr); font-weight: 700; outline: none; padding: 7px 4px; text-align: right; box-sizing: border-box; }
+  .go-del-btn { flex: 0 0 28px; min-width: 0; border: none; border-left: 1px solid var(--border2); background: none; cursor: pointer; font-size: 14px; color: var(--text3); display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0; box-sizing: border-box; }
   .go-del-btn:hover { background: var(--error-bg); color: var(--error); }
   .go-add-btn { width: 100%; padding: 7px; border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); background: none; font-size: 12px; color: var(--text3); cursor: pointer; font-family: 'Poppins', sans-serif; transition: all 0.15s; margin-top: 2px; }
   .go-add-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -579,7 +579,10 @@
   .hist-stat + .hist-stat { border-left: 1px solid var(--surface3); }
   .sv { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 800; color: var(--pr); }
   .sl { font-size: 11px; color: var(--text3); font-family: 'Poppins', sans-serif; }
-  .name-filter-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+  .name-filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .name-filter-chip { border: 1.5px solid transparent; border-radius: var(--radius-pill); padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--text2); transition: all 0.18s; font-family: 'Poppins', sans-serif; box-shadow: var(--shadow-sm); }
+  .name-filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: var(--shadow-sage); }
+  .name-filter-chip:hover:not(.active) { border-color: rgba(255,69,0,0.3); color: var(--pr); }
   .hist-name-chip { border: none; border-radius: var(--radius-pill); padding: 5px 11px; font-size: 11px; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--text2); transition: all 0.18s; font-family: 'Poppins', sans-serif; box-shadow: var(--shadow-sm); border: 1.5px solid transparent; }
   .hist-name-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
 
@@ -1047,19 +1050,19 @@
       </div>
 
       <!-- How many people -->
-      <div class="go-section-label" style="margin-top:12px">👥 How many people?</div>
+      <div class="go-section-label" style="margin-top:12px">👥 How many food orders?</div>
       <div class="go-count-row">
         <select id="goCountSelect" onchange="renderGoRows()" class="go-select" style="width:100px">
-          <option value="1">1 person</option>
-          <option value="2">2 people</option>
-          <option value="3">3 people</option>
-          <option value="4">4 people</option>
-          <option value="5">5 people</option>
-          <option value="6">6 people</option>
-          <option value="7">7 people</option>
-          <option value="8">8 people</option>
-          <option value="9">9 people</option>
-          <option value="10">10 people</option>
+          <option value="1">1 order</option>
+          <option value="2">2 orders</option>
+          <option value="3">3 orders</option>
+          <option value="4">4 orders</option>
+          <option value="5">5 orders</option>
+          <option value="6">6 orders</option>
+          <option value="7">7 orders</option>
+          <option value="8">8 orders</option>
+          <option value="9">9 orders</option>
+          <option value="10">10 orders</option>
         </select>
       </div>
 
@@ -3088,6 +3091,9 @@ function goGroupOrder() {
   goMode = 'menu';
   goRows = [];
   goLocation = state.activeLocation || state.locations[0] || 'Generic';
+  // Reset submit button in case it was stuck
+  const btn = document.getElementById('groupSubmitBtn');
+  if (btn) { btn.textContent = 'Submit all →'; btn.disabled = true; }
   renderGoLocationBar();
   setGoMode('menu');
   renderGoRows();
