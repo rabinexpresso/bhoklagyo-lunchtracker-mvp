@@ -1936,7 +1936,7 @@ function loadTodayOrders() {
     errorEl.innerHTML = '<strong>Request timed out.</strong> Check that your Apps Script is deployed correctly and the URL is valid.';
     listEl.innerHTML = '';
     delete window[callbackName];
-  }, 10000);
+  }, 3000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
@@ -2175,7 +2175,7 @@ async function bulkDeleteSelected() {
     delete window[callbackName];
     selectedOrderIndices = new Set();
     loadTodayOrders();
-  }, 10000);
+  }, 3000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
@@ -2475,7 +2475,7 @@ function pushLocationMenuToSheet(location, menu) {
   const timeout = setTimeout(() => {
     delete window[callbackName];
     if (s) { s.textContent = '⚠️ Sync timed out — check connection'; s.className = 'sync-status visible err'; }
-  }, 10000);
+  }, 3000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
@@ -2954,9 +2954,9 @@ setTimeout(() => {
       baselineSHA = sha;
       log('baseline set: ' + sha.slice(0,7));
     });
-  }, 10000);
+  }, 3000);
 
-  setInterval(checkForUpdate, 5 * 60 * 1000);
+  setInterval(checkForUpdate, 30 * 1000); // 30 seconds
 
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible') {
