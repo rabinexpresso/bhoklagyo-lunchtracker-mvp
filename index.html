@@ -568,30 +568,33 @@
   .orders-date-label { font-size: 13px; color: var(--text3); font-weight: 600; font-family: 'Poppins', sans-serif; }
 
   /* Order cards */
-  .order-person-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-sm); margin-bottom: 14px; overflow: hidden; border: 2px solid transparent; transition: all 0.18s; }
+  .order-person-card { background: var(--surface); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); margin-bottom: 8px; overflow: hidden; border: 2px solid transparent; transition: all 0.18s; }
   .order-person-card.selected { border-color: var(--pr); box-shadow: var(--shadow-red); }
-  .opc-header { display: flex; align-items: center; gap: 10px; padding: 10px 12px 8px; }
-  .opc-avatar { font-size: 24px; line-height: 1; background: var(--surface2); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2px solid rgba(0,0,0,0.06); }
+  .opc-header { display: flex; align-items: center; gap: 8px; padding: 7px 10px 5px; }
+  .opc-avatar { font-size: 20px; line-height: 1; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2px solid rgba(0,0,0,0.06); }
   .opc-name { font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
   .opc-time { font-size: 11px; color: var(--text3); margin-top: 2px; font-weight: 500; }
   .opc-total { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 800; color: var(--pr); letter-spacing: -0.3px; }
   .opc-total-input { width: 72px; border: 1.5px solid var(--border2); border-radius: 8px; background: var(--surface2); font-size: 13px; font-weight: 800; color: var(--pr); font-family: 'Poppins', sans-serif; outline: none; padding: 3px 6px; text-align: right; box-sizing: border-box; }
   .opc-total-input:focus { border-color: var(--pr); background: white; }
-  .opc-items { padding: 6px 12px 10px; border-top: 1px solid var(--surface2); }
-  .opc-item-row { display: flex; align-items: center; justify-content: space-between; padding: 3px 0; font-size: 12px; color: var(--text2); border-bottom: 1px solid rgba(0,0,0,0.04); }
+  .opc-items { padding: 4px 10px 7px; border-top: 1px solid var(--surface2); }
+  .opc-item-row { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; font-size: 11px; color: var(--text2); border-bottom: 1px solid rgba(0,0,0,0.04); }
   .opc-item-row:last-child { border-bottom: none; }
   .opc-item-row .iname { color: var(--text); font-weight: 600; }
   .opc-item-row .iprice { color: var(--text3); font-size: 12px; font-weight: 600; background: var(--surface2); border-radius: 20px; padding: 2px 8px; }
-  .opc-actions { display: flex; gap: 5px; padding: 7px 10px 9px; background: var(--surface2); flex-wrap: nowrap; }
+  .opc-actions { display: flex; gap: 4px; padding: 5px 8px 7px; background: var(--surface2); flex-wrap: nowrap; }
   .opc-edit-btn, .opc-del-btn, .opc-split-btn {
-    flex: 1; padding: 6px 4px; border-radius: var(--radius-sm); font-family: 'Poppins', sans-serif;
-    font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    flex: 1; padding: 5px 2px; border-radius: var(--radius-sm); font-family: 'Poppins', sans-serif;
+    font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.15s;
     border: 1.5px solid var(--border2); background: var(--surface); color: var(--text2);
-    text-align: center; min-width: 0;
+    text-align: center; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .opc-edit-btn:hover { color: var(--blue); background: #e6f8ff; }
-  .opc-split-btn:hover { color: var(--gold-dark); background: var(--gold-light); }
-  .opc-del-btn:hover { color: var(--error); background: var(--error-bg); }
+  .opc-edit-btn { color: var(--blue); border-color: var(--blue); background: #e6f8ff; }
+  .opc-edit-btn:hover { background: #cceeff; }
+  .opc-split-btn { color: #b07800; border-color: #ffc709; background: #fff8e1; }
+  .opc-split-btn:hover { background: #fff0b3; }
+  .opc-del-btn { color: var(--error); border-color: var(--error); background: var(--error-bg); }
+  .opc-del-btn:hover { background: #ffd0d0; }
   .opc-checkbox { display: flex; align-items: center; justify-content: center; padding: 0 4px; }
   .opc-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--pr); cursor: pointer; }
 
@@ -1433,7 +1436,7 @@
   <div class="modal-overlay" id="editOrderModal">
     <div class="modal-box" style="width:92%;max-width:400px">
       <div class="modal-body" style="text-align:left;padding:20px 20px 12px">
-        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:'Poppins',sans-serif">📝 Custom edit</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:'Poppins',sans-serif">📝 Custom</div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:14px" id="editOrderName"></div>
         <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;font-family:'Poppins',sans-serif">Items</div>
         <textarea id="editOrderItems" rows="4" style="width:100%;border:1.5px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:13px;font-family:'Poppins',sans-serif;color:var(--text);resize:vertical;outline:none;background:var(--surface);box-sizing:border-box" placeholder="e.g. Dal Bhat Set x2, Milk Tea x1"></textarea>
@@ -2348,10 +2351,12 @@ function renderTodayOrders(orders, skipCacheReset) {
       return `<div class="opc-item-row"><span class="iname">${part}</span></div>`;
     }).join('');
     const av = getNameEmoji(o.name, idx);
-    return `<div class="order-person-card" id="opc_${idx}">
+    const ringColors = ['#00b0ff','#ff0065','#42db66','#ffc709','#000079','#00b0ff','#ff0065','#42db66','#ffc709','#000079'];
+    const ringColor = ringColors[idx % ringColors.length];
+    return `<div class="order-person-card" id="opc_${idx}" style="border-color:${ringColor}20">
       <div class="opc-header">
         <div class="opc-checkbox"><input type="checkbox" id="chk_${idx}" onchange="toggleOrderSelection(${idx})" /></div>
-        <div class="opc-avatar">${av}</div>
+        <div class="opc-avatar" style="border-color:${ringColor};background:${ringColor}15">${av}</div>
         <div style="flex:1">
           <div class="opc-name">${o.name || 'Unknown'}</div>
           ${o.time ? `<div class="opc-time">${cleanTime(o.time)}</div>` : ''}
@@ -2360,10 +2365,10 @@ function renderTodayOrders(orders, skipCacheReset) {
       </div>
       <div class="opc-items">${itemRows}</div>
       <div class="opc-actions">
-        <button class="opc-edit-btn" onclick="editOrderFromToday(${idx})">✏️ Edit menu</button>
-        <button class="opc-edit-btn" onclick="editOrderInline(${idx})" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom edit</button>
+        <button class="opc-edit-btn" onclick="editOrderFromToday(${idx})">✏️ Menu</button>
+        <button class="opc-edit-btn" onclick="editOrderInline(${idx})" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom</button>
         <button class="opc-split-btn" onclick="toggleSplitPanel(${idx})">💸 Split</button>
-        <button class="opc-del-btn" onclick="deleteOrderFromToday(${idx})">🗑 Delete</button>
+        <button class="opc-del-btn" onclick="deleteOrderFromToday(${idx})">🗑 Del</button>
       </div>
       <div class="split-panel" id="splitPanel_${idx}">
         <div class="split-panel-title">Who's sharing this bill?</div>
