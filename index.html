@@ -460,6 +460,43 @@
   .empty .emoji { font-size: 40px; display: block; margin-bottom: 12px; }
   .scroll-pad { height: 100px; }
 
+  /* ═══ FOOD ORDER ═══ */
+  .fo-table-header { display: flex; align-items: center; padding: 4px 2px; font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Poppins', sans-serif; margin-bottom: 4px; }
+  .fo-th-drag { flex: 0 0 16px; }
+  .fo-th-item { flex: 1 1 80px; min-width: 0; }
+  .fo-th-qty { flex: 0 0 60px; text-align: center; }
+  .fo-th-price { flex: 0 0 90px; text-align: right; padding-right: 6px; }
+  .fo-th-expand { flex: 0 0 36px; }
+  .fo-th-del { flex: 0 0 24px; }
+  .fo-food-block { margin-bottom: 6px; border-radius: var(--radius-sm); overflow: hidden; border: 1.5px solid var(--border2); background: var(--surface); }
+  .fo-food-block.expanded { border-color: var(--blue); }
+  .fo-food-row { display: flex; align-items: stretch; width: 100%; box-sizing: border-box; cursor: pointer; overflow: hidden; }
+  .fo-food-row:hover { background: var(--surface2); }
+  .fo-item-sel { flex: 1 1 80px; min-width: 60px; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 0 4px 0 8px; height: 34px; font-weight: 600; -webkit-appearance: none; box-sizing: border-box; }
+  .fo-qty-wrap { flex: 0 0 60px; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 2px; border-right: 1px solid var(--border2); padding: 0 2px; box-sizing: border-box; }
+  .fo-qty-btn { width: 20px; height: 20px; border: 1.5px solid var(--border2); border-radius: 50%; background: var(--surface2); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; color: var(--blue); flex-shrink: 0; padding: 0; line-height: 1; font-weight: 700; }
+  .fo-qty-num { font-size: 12px; font-weight: 800; min-width: 16px; text-align: center; color: var(--text); font-family: 'Poppins', sans-serif; }
+  .fo-price-input { flex: 0 0 90px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-weight: 700; color: var(--pr); font-family: 'Poppins', sans-serif; outline: none; padding: 0 6px; height: 34px; text-align: right; box-sizing: border-box; }
+  .fo-del-btn { flex: 0 0 24px; min-width: 0; border: none; background: none; cursor: pointer; font-size: 13px; color: var(--text3); display: flex; align-items: center; justify-content: center; padding: 0; }
+  .fo-del-btn:hover { color: var(--pr); }
+  .fo-expand-indicator { flex: 0 0 36px; min-width: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--blue); background: #e6f8ff; border-left: 1px solid var(--border2); }
+  /* Assignment panel */
+  .fo-assign-panel { border-top: 1px solid var(--border2); background: #f0f9ff; padding: 6px 8px; display: none; }
+  .fo-food-block.expanded .fo-assign-panel { display: block; }
+  .fo-assign-title { font-size: 10px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; font-family: 'Poppins', sans-serif; }
+  .fo-assign-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .fo-assign-idx { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); color: white; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Poppins', sans-serif; }
+  .fo-assign-sel { flex: 1; border: 1.5px solid var(--border2); border-radius: 8px; background: white; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 5px 8px; font-weight: 600; }
+  .fo-assign-sel:focus { border-color: var(--blue); }
+  .fo-assign-share { font-size: 11px; font-weight: 700; color: var(--pr); font-family: 'Poppins', sans-serif; min-width: 44px; text-align: right; }
+  .fo-assign-check { font-size: 13px; }
+  /* Summary bar */
+  .fo-summary-bar { background: var(--surface); border: 1.5px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 12px; }
+  .fo-summary-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; font-family: 'Poppins', sans-serif; }
+  .fo-summary-text { font-size: 12px; font-weight: 600; color: var(--text); font-family: 'Poppins', sans-serif; line-height: 1.6; }
+  /* Drag handle */
+  .fo-drag-handle { flex: 0 0 16px; min-width: 0; display: flex; align-items: center; justify-content: center; cursor: grab; color: var(--text3); font-size: 12px; padding: 0 2px; }
+
   /* ═══ GROUP ORDER ═══ */
   .go-section-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-family: 'Poppins', sans-serif; }
   .go-location-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -984,6 +1021,9 @@
         <button class="btn-secondary" id="startGroupBtn" onclick="goGroupOrder()" disabled style="background:linear-gradient(135deg,#42db66,#2db554);border-color:#42db66;color:white;">
           🍱 Start ordering for everyone →
         </button>
+        <button class="btn-secondary" id="startFoodBtn" onclick="goFoodOrder()" disabled style="background:linear-gradient(135deg,#00b0ff,#0088cc);border-color:#00b0ff;color:white;">
+          🧾 Start ordering by food →
+        </button>
       </div>
 
       <!-- Add name — clearly separated and labelled -->
@@ -1114,6 +1154,47 @@
     <div class="group-submit-bar">
       <div id="groupOrderCount" class="group-order-count">0 orders ready</div>
       <button class="btn-primary" onclick="submitGroupOrder()" id="groupSubmitBtn" style="width:auto;padding:9px 18px;font-size:13px" disabled>Submit all →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCREEN: FOOD ORDER ═══════════ -->
+  <div class="screen" id="screen-food">
+    <div class="back-nav">
+      <button class="back-btn" onclick="showScreen('screen-name')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
+        Back
+      </button>
+      <span class="back-nav-title">Order by food</span>
+    </div>
+    <div class="page" style="padding-top:8px;padding-bottom:120px">
+
+      <!-- Location -->
+      <div class="go-section-label">📍 Location</div>
+      <div id="foLocationBar" class="go-location-bar"></div>
+
+      <!-- Food items table -->
+      <div class="fo-table-header">
+        <span class="fo-th-drag"></span>
+        <span class="fo-th-item">Food item</span>
+        <span class="fo-th-qty">Qty</span>
+        <span class="fo-th-price">Price/item</span>
+        <span class="fo-th-expand"></span>
+        <span class="fo-th-del"></span>
+      </div>
+      <div id="foFoodList"></div>
+      <button class="go-add-btn" onclick="addFoItem()" style="margin-top:4px">+ Add food item</button>
+
+      <!-- Restaurant summary -->
+      <div id="foSummaryBar" class="fo-summary-bar" style="display:none">
+        <div class="fo-summary-label">🧾 For restaurant</div>
+        <div id="foSummaryText" class="fo-summary-text"></div>
+      </div>
+
+    </div>
+    <!-- Submit bar -->
+    <div class="group-submit-bar">
+      <div id="foReadyCount" class="group-order-count">0 of 0 assigned</div>
+      <button class="btn-primary" id="foSubmitBtn" onclick="submitFoodOrder()" style="width:auto;padding:9px 18px;font-size:13px" disabled>Submit all →</button>
     </div>
   </div>
 
@@ -1410,6 +1491,7 @@ function showScreen(id) {
     if (editBtn) { editBtn.textContent = '✏️ Edit names'; editBtn.style.color = ''; }
     document.getElementById('startBtn').disabled = true;
   if (document.getElementById('startGroupBtn')) document.getElementById('startGroupBtn').disabled = true;
+  if (document.getElementById('startFoodBtn')) document.getElementById('startFoodBtn').disabled = true;
     document.getElementById('userPill').classList.remove('visible');
     renderNames();
   }
@@ -1496,6 +1578,7 @@ function renderNames() {
         renderNames();
         document.getElementById('startBtn').disabled = false;
       document.getElementById('startGroupBtn').disabled = false;
+      document.getElementById('startFoodBtn').disabled = false;
       };
     }
     g.appendChild(card);
@@ -1520,7 +1603,7 @@ function addNewName() {
 
 function deleteName(name) {
   if (state.names.length <= 1) { toast('Need at least one name'); return; }
-  if (state.currentUser === name) { state.currentUser = null; document.getElementById('startBtn').disabled = true; document.getElementById('startGroupBtn').disabled = true; }
+  if (state.currentUser === name) { state.currentUser = null; document.getElementById('startBtn').disabled = true; document.getElementById('startGroupBtn').disabled = true; document.getElementById('startFoodBtn').disabled = true; }
   state.names = state.names.filter(n => n !== name);
   saveState();
   renderNames();
@@ -3160,13 +3243,21 @@ function renderGoLocationBar() {
 
 function selectGoLocation(loc) {
   goLocation = loc;
-  // Pre-load menu if needed
-  if (loc !== 'Generic' && !state.locationMenus[loc]) {
-    fetchLocationMenu(loc, function() { renderGoRows(); });
+  renderGoLocationBar();
+  if (loc !== 'Generic' && (!state.locationMenus[loc] || state.locationMenus[loc].length === 0)) {
+    toast('Loading ' + loc + ' menu...');
+    loadLocationMenuFromSheet(loc);
+    var attempts = 0;
+    var poll = setInterval(function() {
+      attempts++;
+      if ((state.locationMenus[loc] && state.locationMenus[loc].length > 0) || attempts > 20) {
+        clearInterval(poll);
+        if (goLocation === loc) renderGoRows();
+      }
+    }, 500);
   } else {
     renderGoRows();
   }
-  renderGoLocationBar();
 }
 
 function fetchLocationMenu(loc, cb) {
@@ -3175,7 +3266,7 @@ function fetchLocationMenu(loc, cb) {
   const url = `${state.sheetUrl}?action=getMenu&location=${encodeURIComponent(loc)}&callback=${callbackName}`;
   window[callbackName] = function(data) {
     delete window[callbackName];
-    if (data && data.items) { state.locationMenus[loc] = data.items; saveState(); }
+    if (data && data.menu) { state.locationMenus[loc] = data.menu; saveState(); }
     if (cb) cb();
   };
   const script = document.createElement('script');
@@ -3186,7 +3277,8 @@ function fetchLocationMenu(loc, cb) {
 
 function getGoMenu() {
   if (!goLocation || goLocation === 'Generic') return state.menu;
-  return state.locationMenus[goLocation] || state.menu;
+  const locMenu = state.locationMenus[goLocation];
+  return (locMenu && locMenu.length > 0) ? locMenu : [];
 }
 
 function setGoMode(mode) {
@@ -3376,6 +3468,302 @@ function submitGroupOrder() {
     }, idx * 300); // stagger by 300ms to avoid overwhelming Apps Script
   });
 }
+// ═══════════════════════════════════════
+//  FOOD ORDER
+// ═══════════════════════════════════════
+
+// foItems = [{ item, price, qty, assignments: ['Name','',''...] }]
+let foItems = [];
+let foLocation = null;
+let foDragIdx = null;
+
+function goFoodOrder() {
+  if (!state.currentUser) return;
+  foItems = [];
+  foLocation = state.activeLocation || state.locations[0] || 'Generic';
+  const btn = document.getElementById('foSubmitBtn');
+  if (btn) { btn.textContent = 'Submit all →'; btn.disabled = true; }
+  renderFoLocationBar();
+  // Pre-load all non-Generic menus using the proven loadLocationMenuFromSheet
+  state.locations.filter(l => l !== 'Generic').forEach(loc => {
+    if (!state.locationMenus[loc] || state.locationMenus[loc].length === 0) {
+      loadLocationMenuFromSheet(loc);
+    }
+  });
+  addFoItem(); // start with one row
+  showScreen('screen-food');
+}
+
+function renderFoLocationBar() {
+  const bar = document.getElementById('foLocationBar');
+  if (!bar) return;
+  bar.innerHTML = state.locations.map(loc =>
+    `<button class="go-loc-btn${foLocation===loc?' active':''}" onclick="selectFoLocation('${loc}')">${loc}</button>`
+  ).join('');
+}
+
+function selectFoLocation(loc) {
+  foLocation = loc;
+  renderFoLocationBar();
+  if (loc !== 'Generic' && (!state.locationMenus[loc] || state.locationMenus[loc].length === 0)) {
+    toast('Loading ' + loc + ' menu...');
+    // Use the same proven function as individual ordering
+    loadLocationMenuFromSheet(loc);
+    // Poll until loaded then render
+    var attempts = 0;
+    var poll = setInterval(function() {
+      attempts++;
+      if ((state.locationMenus[loc] && state.locationMenus[loc].length > 0) || attempts > 20) {
+        clearInterval(poll);
+        if (foLocation === loc) renderFoFoodList();
+      }
+    }, 500);
+  } else {
+    renderFoFoodList();
+  }
+}
+
+function getFoMenu() {
+  if (!foLocation || foLocation === 'Generic') return state.menu;
+  // Return location menu if it has items, empty array if loading (never fall back to Generic)
+  const locMenu = state.locationMenus[foLocation];
+  return (locMenu && locMenu.length > 0) ? locMenu : [];
+}
+
+function addFoItem() {
+  foItems.push({ item: '', price: 0, qty: 1, assignments: [''], expanded: false });
+  renderFoFoodList();
+}
+
+function removeFoItem(i) {
+  foItems.splice(i, 1);
+  renderFoFoodList();
+  updateFoSummary();
+  updateFoSubmitBar();
+}
+
+function setFoItemExpanded(i, val) {
+  foItems[i].expanded = val;
+  renderFoFoodList();
+}
+
+function renderFoFoodList() {
+  const menu = getFoMenu();
+  const listEl = document.getElementById('foFoodList');
+  if (!listEl) return;
+
+  listEl.innerHTML = foItems.map((item, i) => {
+    const itemOpts = menu.map(m =>
+      `<option value="${m.name}" data-price="${m.price}"${item.item===m.name?' selected':''}>${m.name}</option>`
+    ).join('');
+    const sharePrice = item.price > 0 ? item.price : 0;  // price is per item
+    const allAssigned = item.assignments.every(a => a !== '');
+    const assignedCount = item.assignments.filter(a => a !== '').length;
+
+    // Assignment rows
+    const assignRows = item.assignments.map((name, j) => `
+      <div class="fo-assign-row">
+        <div class="fo-assign-idx">${j+1}</div>
+        <select class="fo-assign-sel" onchange="updateFoAssignment(${i},${j},this.value)">
+          <option value="">— Who? —</option>
+          ${state.names.map(n => `<option value="${n}"${name===n?' selected':''}>${n}</option>`).join('')}
+        </select>
+        <div class="fo-assign-share">${sharePrice > 0 ? 'Rs '+sharePrice : '—'}</div>
+        <div class="fo-assign-check">${name ? '✅' : '⬜'}</div>
+      </div>`).join('');
+
+    return `<div class="fo-food-block${item.expanded?' expanded':''}" id="fob_${i}" draggable="true"
+        ondragstart="foDragStart(${i})" ondragover="foDragOver(event,${i})" ondrop="foDrop(event,${i})" ondragend="foDragEnd()">
+      <div class="fo-food-row" onclick="setFoItemExpanded(${i},${!item.expanded})">
+        <div class="fo-drag-handle">⠿</div>
+        <select class="fo-item-sel" onclick="event.stopPropagation()" onchange="updateFoItem(${i},this)">
+          <option value="">— Food item —</option>
+          ${itemOpts}
+        </select>
+        <div class="fo-qty-wrap" onclick="event.stopPropagation()">
+          <button class="fo-qty-btn" onclick="changeFoQty(${i},-1)">−</button>
+          <span class="fo-qty-num">${item.qty}</span>
+          <button class="fo-qty-btn" onclick="changeFoQty(${i},1)">+</button>
+        </div>
+        <input class="fo-price-input" type="number" placeholder="Rs" value="${item.price||''}"
+          onclick="event.stopPropagation()" onchange="updateFoPrice(${i},parseInt(this.value)||0)" />
+        <div class="fo-expand-indicator">${item.expanded?'▲':'▼'}</div>
+        <button class="fo-del-btn" onclick="event.stopPropagation();removeFoItem(${i})">×</button>
+      </div>
+      <div class="fo-assign-panel">
+        <div class="fo-assign-title">
+          Assign ${item.qty} portion${item.qty>1?'s':''} of ${item.item||'this item'} 
+          <span style="color:${allAssigned?'#42db66':'var(--pr)'}">
+            (${assignedCount}/${item.qty} assigned)
+          </span>
+        </div>
+        ${assignRows}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateFoItem(i, sel) {
+  if (!foItems[i]) return;
+  const opt = sel.options[sel.selectedIndex];
+  foItems[i].item = sel.value;
+  foItems[i].price = parseInt(opt.getAttribute('data-price')) || 0;
+  // Sync price input
+  const block = document.getElementById('fob_' + i);
+  if (block) {
+    const priceInput = block.querySelector('.fo-price-input');
+    if (priceInput) priceInput.value = foItems[i].price || '';
+  }
+  updateFoSummary();
+  updateFoSubmitBar();
+}
+
+function updateFoPrice(i, price) {
+  if (!foItems[i]) return;
+  foItems[i].price = price;
+  updateFoSummary();
+  updateFoSubmitBar();
+  // Re-render just the assignment shares without full re-render
+  renderFoFoodList();
+}
+
+function changeFoQty(i, delta) {
+  if (!foItems[i]) return;
+  const newQty = Math.max(1, (foItems[i].qty || 1) + delta);
+  foItems[i].qty = newQty;
+  // Resize assignments array
+  while (foItems[i].assignments.length < newQty) foItems[i].assignments.push('');
+  while (foItems[i].assignments.length > newQty) foItems[i].assignments.pop();
+  renderFoFoodList();
+  updateFoSummary();
+  updateFoSubmitBar();
+}
+
+function updateFoAssignment(i, j, name) {
+  if (!foItems[i]) return;
+  foItems[i].assignments[j] = name;
+  updateFoSummary();
+  updateFoSubmitBar();
+  // Update check icon without full re-render
+  renderFoFoodList();
+}
+
+function updateFoSummary() {
+  const bar = document.getElementById('foSummaryBar');
+  const txt = document.getElementById('foSummaryText');
+  if (!bar || !txt) return;
+  const readyItems = foItems.filter(f => f.item && f.qty > 0);
+  if (readyItems.length === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'block';
+  txt.textContent = readyItems.map(f => `${f.item} x${f.qty}`).join(', ');
+  // Live total
+  const grandTotal = foItems.reduce((sum, f) => sum + (f.price * f.qty), 0);
+  let totalEl = document.getElementById('foGrandTotal');
+  if (!totalEl) {
+    totalEl = document.createElement('div');
+    totalEl.id = 'foGrandTotal';
+    totalEl.style.cssText = 'margin-top:8px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border2);padding-top:8px';
+    bar.appendChild(totalEl);
+  }
+  totalEl.innerHTML = `<span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;font-family:'Poppins',sans-serif">Grand total</span>
+    <span style="font-size:16px;font-weight:800;color:var(--pr);font-family:'Poppins',sans-serif">Rs ${grandTotal}</span>`;
+}
+
+function updateFoSubmitBar() {
+  const totalSlots = foItems.reduce((s, f) => s + (f.qty || 0), 0);
+  const assignedSlots = foItems.reduce((s, f) => s + f.assignments.filter(a => a !== '').length, 0);
+  document.getElementById('foReadyCount').textContent = `${assignedSlots} of ${totalSlots} assigned`;
+  const hasItems = foItems.some(f => f.item && f.price > 0);
+  const allAssigned = totalSlots > 0 && assignedSlots === totalSlots;
+  document.getElementById('foSubmitBtn').disabled = !(hasItems && allAssigned);
+}
+
+// ── Drag to reorder ──
+function foDragStart(i) { foDragIdx = i; }
+function foDragEnd() { foDragIdx = null; }
+function foDragOver(e, i) { e.preventDefault(); }
+function foDrop(e, i) {
+  e.preventDefault();
+  if (foDragIdx === null || foDragIdx === i) return;
+  const dragged = foItems.splice(foDragIdx, 1)[0];
+  foItems.splice(i, 0, dragged);
+  foDragIdx = null;
+  renderFoFoodList();
+  updateFoSummary();
+}
+
+// ── Submit ──
+function submitFoodOrder() {
+  const btn = document.getElementById('foSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  const { date: todayDate } = getNPTDate();
+  const dayName = new Date().toLocaleDateString('en-US', {timeZone:'Asia/Kathmandu', weekday:'long'});
+  const ts = new Date().toLocaleTimeString('en-US', {timeZone:'Asia/Kathmandu', hour:'2-digit', minute:'2-digit'});
+
+  // Group by person — combine all their items
+  const grouped = {};
+  foItems.forEach(foodItem => {
+    if (!foodItem.item) return;
+    const sharePrice = foodItem.price > 0 ? foodItem.price : 0; // per item price
+    foodItem.assignments.forEach(name => {
+      if (!name) return;
+      if (!grouped[name]) grouped[name] = { items: [], total: 0 };
+      grouped[name].items.push(`${foodItem.item} x1`);
+      grouped[name].total += sharePrice;
+    });
+  });
+
+  // Merge duplicate items for same person
+  Object.keys(grouped).forEach(name => {
+    const itemCounts = {};
+    grouped[name].items.forEach(it => {
+      const base = it.replace(/ x\d+$/, '');
+      itemCounts[base] = (itemCounts[base] || 0) + 1;
+    });
+    grouped[name].items = Object.entries(itemCounts).map(([base, cnt]) => `${base} x${cnt}`);
+  });
+
+  const orders = Object.entries(grouped).map(([name, data]) => ({
+    name,
+    items: data.items.join(', '),
+    total: 'Rs ' + data.total
+  }));
+
+  let submitted = 0;
+  const total = orders.length;
+
+  orders.forEach((order, idx) => {
+    setTimeout(() => {
+      const callbackName = 'foodCb_' + Date.now() + '_' + idx;
+      const url = `${state.sheetUrl}?action=add` +
+        `&name=${encodeURIComponent(order.name)}` +
+        `&items=${encodeURIComponent(order.items)}` +
+        `&total=${encodeURIComponent(order.total)}` +
+        `&timestamp=${encodeURIComponent(ts)}` +
+        `&date=${encodeURIComponent(todayDate)}` +
+        `&day=${encodeURIComponent(dayName)}` +
+        `&callback=${callbackName}`;
+
+      window[callbackName] = function() {
+        delete window[callbackName];
+        submitted++;
+        if (submitted === total) {
+          toast(`✅ ${total} orders submitted!`);
+          foItems = [];
+          setTimeout(() => showScreen('screen-name'), 600);
+        }
+      };
+      const script = document.createElement('script');
+      script.src = url;
+      script.onerror = () => { delete window[callbackName]; submitted++; };
+      document.head.appendChild(script);
+      setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
+    }, idx * 300);
+  });
+}
+
 // ═══════════════════════════════════════
 //  UPDATE CHECKER — GitHub commits API
 //  Uses localStorage to persist baseline SHA
