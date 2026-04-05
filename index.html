@@ -152,7 +152,7 @@
   .page { padding: 20px; }
   .label {
     font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 1.8px; color: var(--text3); margin-bottom: 14px;
+    text-transform: uppercase; letter-spacing: 1.8px; color: var(--text3); margin-bottom: 8px;
   }
 
   /* ════════════════════════════════════
@@ -290,11 +290,11 @@
   /* ════════════════════════════════════
      LOCATION CHIPS — Swiggy style
   ════════════════════════════════════ */
-  .location-bar { padding: 12px 18px 0; display: flex; gap: 8px; overflow-x: auto; }
+  .location-bar { padding: 6px 14px 0; display: flex; gap: 6px; overflow-x: auto; }
   .location-bar::-webkit-scrollbar { display: none; }
   .loc-chip {
-    border: none; border-radius: var(--radius-pill); padding: 9px 18px;
-    font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    border: none; border-radius: var(--radius-pill); padding: 5px 12px;
+    font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap;
     background: var(--surface); color: var(--text2); font-family: 'Poppins', sans-serif;
     box-shadow: var(--shadow-sm); transition: all 0.18s; flex-shrink: 0;
     border: 1.5px solid transparent;
@@ -306,12 +306,12 @@
   /* ════════════════════════════════════
      CATEGORY TABS — Bold pill style
   ════════════════════════════════════ */
-  .tabs-wrap { overflow-x: auto; margin: 0 -20px; padding: 0 20px 16px; }
+  .tabs-wrap { overflow-x: auto; margin: 0 -20px; padding: 0 20px 8px; }
   .tabs-wrap::-webkit-scrollbar { display: none; }
-  .tabs { display: flex; gap: 8px; width: max-content; }
+  .tabs { display: flex; gap: 5px; width: max-content; }
   .cat-tab {
-    border: none; border-radius: var(--radius-pill); padding: 10px 22px;
-    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: none; border-radius: var(--radius-pill); padding: 6px 14px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
     background: var(--surface); color: var(--text2);
     transition: all 0.18s; font-family: 'Poppins', sans-serif; white-space: nowrap;
     box-shadow: var(--shadow-sm); border: 1.5px solid transparent;
@@ -395,21 +395,21 @@
   /* ════════════════════════════════════
      SETTINGS
   ════════════════════════════════════ */
-  .settings-section { margin-bottom: 16px; }
+  .settings-section { margin-bottom: 10px; }
   .url-field-wrap { position: relative; }
   .url-clear { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text3); font-size: 18px; padding: 4px; }
   .url-clear:hover { color: var(--error); }
   .team-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-  .team-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: var(--radius-sm); padding: 8px 12px; box-shadow: var(--shadow-sm); border: 1.5px solid transparent; transition: border-color 0.15s; }
+  .team-row { display: flex; align-items: center; gap: 8px; background: var(--surface); border-radius: var(--radius-sm); padding: 6px 10px; box-shadow: var(--shadow-sm); border: 1.5px solid transparent; transition: border-color 0.15s; }
   .team-row:hover { border-color: rgba(255,69,0,0.15); }
-  .team-row input { border: none; padding: 0; font-size: 14px; font-weight: 600; background: transparent; flex: 1; outline: none; color: var(--text); font-family: 'Poppins', sans-serif; }
+  .team-row input { border: none; padding: 0; font-size: 12px; font-weight: 600; background: transparent; flex: 1; outline: none; color: var(--text); font-family: 'Poppins', sans-serif; }
   .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 2px 6px; border-radius: 6px; transition: all 0.15s; }
   .del-btn:hover { color: var(--error); background: var(--error-bg); }
   .menu-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-  .menu-edit-row { display: flex; align-items: center; gap: 8px; background: var(--surface); border-radius: var(--radius-sm); padding: 10px 12px; box-shadow: var(--shadow-sm); }
-  .menu-edit-row .mn { flex: 1; border: none; font-size: 13px; font-weight: 600; background: transparent; color: var(--text); min-width: 0; outline: none; font-family: 'Poppins', sans-serif; }
-  .menu-edit-row .mp { width: 70px; border: none; font-size: 13px; font-weight: 700; color: var(--pr); background: transparent; text-align: right; outline: none; }
-  .menu-edit-row .mc { border: none; border-radius: 8px; font-size: 11px; padding: 4px 8px; background: var(--surface2); color: var(--text2); font-family: 'Poppins', sans-serif; cursor: pointer; width: 80px; outline: none; }
+  .menu-edit-row { display: flex; align-items: center; gap: 6px; background: var(--surface); border-radius: var(--radius-sm); padding: 6px 10px; box-shadow: var(--shadow-sm); }
+  .menu-edit-row .mn { flex: 1; border: none; font-size: 12px; font-weight: 600; background: transparent; color: var(--text); min-width: 0; outline: none; font-family: 'Poppins', sans-serif; }
+  .menu-edit-row .mp { width: 56px; border: none; font-size: 12px; font-weight: 700; color: var(--pr); background: transparent; text-align: right; outline: none; }
+  .menu-edit-row .mc { border: none; border-radius: 8px; font-size: 10px; padding: 3px 6px; background: var(--surface2); color: var(--text2); font-family: 'Poppins', sans-serif; cursor: pointer; width: 70px; outline: none; }
   .add-item-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .add-item-row input[type="text"] { flex: 1; min-width: 120px; }
   .add-item-row input[type="number"] { width: 80px; }
@@ -418,7 +418,7 @@
   /* ════════════════════════════════════
      INFO BANNER
   ════════════════════════════════════ */
-  .info-banner { background: #e6f8ff; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 11px; color: #0088cc; line-height: 1.5; margin-bottom: 12px; border-left: 3px solid #00b0ff; }
+  .info-banner { background: #e6f8ff; border-radius: var(--radius-sm); padding: 7px 10px; font-size: 10px; color: #0088cc; line-height: 1.4; margin-bottom: 8px; border-left: 3px solid #00b0ff; }
   .info-banner strong { font-weight: 700; }
 
   /* ════════════════════════════════════
@@ -519,6 +519,7 @@
   .go-price-input { flex: 0 0 72px; min-width: 0; border: none; background: transparent; font-size: 11px; font-weight: 700; color: var(--pr); font-family: 'Poppins', sans-serif; outline: none; padding: 0 6px; height: 34px; text-align: right; box-sizing: border-box; }
   .go-custom-items { flex: 1 1 80px; min-width: 60px; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; padding: 0 4px 0 6px; height: 34px; line-height: 34px; box-sizing: border-box; }
   .go-custom-total { flex: 0 0 72px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--pr); font-weight: 700; outline: none; padding: 0 6px; height: 34px; text-align: right; box-sizing: border-box; }
+  .fo-custom-total { flex: 0 0 90px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--pr); font-weight: 700; outline: none; padding: 0 8px; height: 34px; text-align: right; box-sizing: border-box; }
   .go-del-btn { flex: 0 0 28px; min-width: 0; border: none; border-left: 1px solid var(--border2); background: none; cursor: pointer; font-size: 14px; color: var(--text3); display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0; box-sizing: border-box; }
   .go-del-btn:hover { background: var(--error-bg); color: var(--error); }
   .go-add-btn { width: 100%; padding: 7px; border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); background: none; font-size: 12px; color: var(--text3); cursor: pointer; font-family: 'Poppins', sans-serif; transition: all 0.15s; margin-top: 2px; }
@@ -688,11 +689,11 @@
   /* ════════════════════════════════════
      SETTINGS LOCATION SECTION
   ════════════════════════════════════ */
-  .loc-tab-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
-  .loc-tab-btn { border: none; border-radius: var(--radius-pill); padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--text2); font-family: 'Poppins', sans-serif; box-shadow: var(--shadow-sm); transition: all 0.18s; border: 1.5px solid transparent; }
+  .loc-tab-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+  .loc-tab-btn { border: none; border-radius: var(--radius-pill); padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--text2); font-family: 'Poppins', sans-serif; box-shadow: var(--shadow-sm); transition: all 0.18s; border: 1.5px solid transparent; }
   .loc-tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
   .add-location-row { display: flex; gap: 8px; margin-bottom: 14px; }
-  .sync-status { font-size: 12px; color: var(--success); font-weight: 600; margin-top: 8px; display: none; font-family: 'Poppins', sans-serif; }
+  .sync-status { font-size: 11px; color: #2db554; font-weight: 600; margin-top: 4px; display: none; font-family: 'Poppins', sans-serif; }
   .sync-status.visible { display: block; }
   .sync-status.err { color: var(--error); }
   .loc-del-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 13px; padding: 3px 8px; border-radius: 8px; transition: all 0.15s; }
@@ -702,7 +703,7 @@
   /* ════════════════════════════════════
      ADD ROWS
   ════════════════════════════════════ */
-  .add-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .add-row { display: flex; gap: 6px; margin-bottom: 6px; }
   .name-edit-bar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 14px; }
   /* ════════════════════════════════════
      CONFIRM MODAL
@@ -1095,7 +1096,10 @@
       <div class="status-msg" id="statusMsg"></div>
       <div class="btn-gap">
         <button class="btn-primary" id="submitBtn" onclick="submitOrder()">Submit &amp; save to sheet →</button>
-        <button class="btn-secondary" onclick="showScreen('screen-name')">Order for someone else</button>
+        <div style="display:flex;gap:8px">
+          <button class="share-btn" onclick="shareSummary()" style="flex:1;justify-content:center">📤 Share order</button>
+          <button class="btn-secondary" onclick="showScreen('screen-name')" style="flex:1">Order for someone else</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1193,17 +1197,41 @@
       <div class="go-section-label">📍 Location</div>
       <div id="foLocationBar" class="go-location-bar"></div>
 
-      <!-- Food items table -->
-      <div class="fo-table-header">
-        <span class="fo-th-drag"></span>
-        <span class="fo-th-item">Food item</span>
-        <span class="fo-th-qty">Qty</span>
-        <span class="fo-th-price">Price/item</span>
-        <span class="fo-th-expand"></span>
-        <span class="fo-th-del"></span>
+      <!-- Mode toggle -->
+      <div class="go-mode-row" style="margin-bottom:10px">
+        <button class="go-mode-btn active" id="foModeMenu" onclick="setFoMode('menu')">📋 Menu order</button>
+        <button class="go-mode-btn" id="foModeCustom" onclick="setFoMode('custom')">📝 Custom order</button>
       </div>
-      <div id="foFoodList"></div>
-      <button class="go-add-btn" onclick="addFoItem()" style="margin-top:4px">+ Add food item</button>
+
+      <!-- MENU MODE -->
+      <div id="foMenuSection">
+        <div class="fo-table-header">
+          <span class="fo-th-drag"></span>
+          <span class="fo-th-item">Food item</span>
+          <span class="fo-th-qty">Qty</span>
+          <span class="fo-th-price">Price/item</span>
+          <span class="fo-th-expand"></span>
+          <span class="fo-th-del"></span>
+        </div>
+        <div id="foFoodList"></div>
+        <button class="go-add-btn" onclick="addFoItem()" style="margin-top:4px">+ Add food item</button>
+      </div>
+
+      <!-- CUSTOM MODE -->
+      <div id="foCustomSection" style="display:none">
+        <div class="go-row-header">
+          <span style="width:88px;flex-shrink:0">Name</span>
+          <span style="flex:1">Items (free text)</span>
+          <span style="width:90px;flex-shrink:0;text-align:right;padding-right:6px">Total</span>
+          <span style="width:28px;flex-shrink:0"></span>
+        </div>
+        <div id="foCustomList"></div>
+        <button class="go-add-btn" onclick="addFoCustomRow()" style="margin-top:4px">+ Add person</button>
+        <div id="foCustomTotalBar" class="go-total-bar" style="display:none;margin-top:10px">
+          <span style="font-size:12px;color:var(--text3)">Grand total</span>
+          <span class="go-grand-total" id="foCustomGrandTotal">Rs 0</span>
+        </div>
+      </div>
 
       <!-- Restaurant summary -->
       <div id="foSummaryBar" class="fo-summary-bar" style="display:none">
@@ -3514,9 +3542,12 @@ function submitGroupOrder() {
         delete window[callbackName];
         submitted++;
         if (submitted === total) {
-          toast(`✅ ${total} orders submitted!`);
+          toast('✅ ' + total + ' orders submitted!');
           goRows = [];
-          setTimeout(() => showScreen('screen-name'), 600);
+          // Stay on page so user can share — reset button
+          var submitBtn = document.getElementById('groupSubmitBtn');
+          if (submitBtn) { submitBtn.textContent = '✓ Submitted'; submitBtn.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
+          document.getElementById('groupOrderCount').textContent = total + ' orders saved';
         }
       };
 
@@ -3573,6 +3604,44 @@ function doShare(platform) {
       }
       break;
   }
+}
+
+function shareSummary() {
+  // Build from current cart state
+  if (!state.cart || Object.keys(state.cart).length === 0) {
+    toast('No items in order to share');
+    return;
+  }
+  var nl = String.fromCharCode(10);
+  var d = getNPTDate();
+  var menu = state.activeLocation === 'Generic' ? state.menu : (state.locationMenus[state.activeLocation] || state.menu);
+  var lines = [];
+  var total = 0;
+  Object.entries(state.cart).forEach(function(entry) {
+    var idx = parseInt(entry[0]);
+    var qty = entry[1];
+    if (qty > 0 && menu[idx]) {
+      var item = menu[idx];
+      var lineTotal = item.price * qty;
+      lines.push('  - ' + item.name + ' x' + qty + ' @ Rs ' + item.price + ' = Rs ' + lineTotal);
+      total += lineTotal;
+    }
+  });
+  if (lines.length === 0) { toast('No items to share'); return; }
+  var text = 'Bhok Lagyo! - ' + d.day + ', ' + d.date + nl;
+  text += 'Alaya HLE' + nl + nl;
+  text += (state.currentUser || 'Order') + nl;
+  text += lines.join(nl) + nl;
+  text += '  Total: Rs ' + total;
+  var allItems = Object.entries(state.cart).map(function(e) {
+    var idx = parseInt(e[0]); var qty = e[1];
+    return menu[idx] ? menu[idx].name + ' x' + qty : '';
+  }).filter(Boolean).join(', ');
+  var priceRef = buildPriceReference([allItems], state.activeLocation);
+  if (priceRef.length > 0) {
+    text += nl + nl + '---' + nl + 'Price reference:' + nl + priceRef.join(nl);
+  }
+  openShareSheet(text);
 }
 
 function buildPriceReference(itemStrings, location) {
@@ -3748,22 +3817,79 @@ function shareFoodOrder() {
 let foItems = [];
 let foLocation = null;
 let foDragIdx = null;
+let foMode = 'menu';
+let foCustomRows = []; // [{name, items, total}]
 
 function goFoodOrder() {
   if (!state.currentUser) return;
   foItems = [];
+  foCustomRows = [];
+  foMode = 'menu';
   foLocation = state.activeLocation || state.locations[0] || 'Generic';
   const btn = document.getElementById('foSubmitBtn');
   if (btn) { btn.textContent = 'Submit all →'; btn.disabled = true; }
   renderFoLocationBar();
-  // Pre-load all non-Generic menus using the proven loadLocationMenuFromSheet
+  setFoMode('menu');
   state.locations.filter(l => l !== 'Generic').forEach(loc => {
     if (!state.locationMenus[loc] || state.locationMenus[loc].length === 0) {
       loadLocationMenuFromSheet(loc);
     }
   });
-  addFoItem(); // start with one row
+  addFoItem();
   showScreen('screen-food');
+}
+
+function setFoMode(mode) {
+  foMode = mode;
+  document.getElementById('foModeMenu').classList.toggle('active', mode === 'menu');
+  document.getElementById('foModeCustom').classList.toggle('active', mode === 'custom');
+  document.getElementById('foMenuSection').style.display = mode === 'menu' ? 'block' : 'none';
+  document.getElementById('foCustomSection').style.display = mode === 'custom' ? 'block' : 'none';
+  if (mode === 'custom' && foCustomRows.length === 0) addFoCustomRow();
+  updateFoSubmitBar();
+}
+
+function addFoCustomRow() {
+  foCustomRows.push({ name: '', items: '', total: '' });
+  renderFoCustomList();
+}
+
+function removeFoCustomRow(i) {
+  foCustomRows.splice(i, 1);
+  renderFoCustomList();
+  updateFoSubmitBar();
+}
+
+function updateFoCustomRow(i, field, value) {
+  if (!foCustomRows[i]) return;
+  foCustomRows[i][field] = value;
+  updateFoCustomTotal();
+  updateFoSubmitBar();
+}
+
+function renderFoCustomList() {
+  const el = document.getElementById('foCustomList');
+  if (!el) return;
+  el.innerHTML = foCustomRows.map((row, i) => `
+    <div class="go-row" id="foCustomRow_${i}">
+      <select class="go-name-sel" onchange="updateFoCustomRow(${i},'name',this.value)">
+        <option value="">— Name —</option>
+        ${state.names.map(n => `<option value="${n}"${row.name===n?' selected':''}>${n}</option>`).join('')}
+      </select>
+      <input class="go-custom-items" placeholder="Items e.g. Momo x2" value="${row.items||''}" onchange="updateFoCustomRow(${i},'items',this.value)" />
+      <input class="fo-custom-total" type="number" placeholder="Rs" value="${row.total||''}" oninput="updateFoCustomRow(${i},'total',this.value);updateFoCustomTotal()" onchange="updateFoCustomRow(${i},'total',this.value);updateFoCustomTotal()" />
+      <button class="go-del-btn" onclick="removeFoCustomRow(${i})">×</button>
+    </div>`).join('');
+  updateFoCustomTotal();
+}
+
+function updateFoCustomTotal() {
+  var total = foCustomRows.reduce(function(s, r) { return s + (parseInt(r.total) || 0); }, 0);
+  var bar = document.getElementById('foCustomTotalBar');
+  var tot = document.getElementById('foCustomGrandTotal');
+  if (!bar || !tot) return;
+  bar.style.display = total > 0 ? 'flex' : 'none';
+  tot.textContent = 'Rs ' + total;
 }
 
 function renderFoLocationBar() {
@@ -3942,12 +4068,18 @@ function updateFoSummary() {
 }
 
 function updateFoSubmitBar() {
-  const totalSlots = foItems.reduce((s, f) => s + (f.qty || 0), 0);
-  const assignedSlots = foItems.reduce((s, f) => s + f.assignments.filter(a => a !== '').length, 0);
-  document.getElementById('foReadyCount').textContent = `${assignedSlots} of ${totalSlots} assigned`;
-  const hasItems = foItems.some(f => f.item && f.price > 0);
-  const allAssigned = totalSlots > 0 && assignedSlots === totalSlots;
-  document.getElementById('foSubmitBtn').disabled = !(hasItems && allAssigned);
+  if (foMode === 'custom') {
+    const readyRows = foCustomRows.filter(r => r.name && r.items && r.total);
+    document.getElementById('foReadyCount').textContent = readyRows.length + ' of ' + foCustomRows.length + ' ready';
+    document.getElementById('foSubmitBtn').disabled = readyRows.length === 0;
+  } else {
+    const totalSlots = foItems.reduce((s, f) => s + (f.qty || 0), 0);
+    const assignedSlots = foItems.reduce((s, f) => s + f.assignments.filter(a => a !== '').length, 0);
+    document.getElementById('foReadyCount').textContent = assignedSlots + ' of ' + totalSlots + ' assigned';
+    const hasItems = foItems.some(f => f.item && f.price > 0);
+    const allAssigned = totalSlots > 0 && assignedSlots === totalSlots;
+    document.getElementById('foSubmitBtn').disabled = !(hasItems && allAssigned);
+  }
 }
 
 // ── Drag to reorder ──
@@ -3974,7 +4106,50 @@ function submitFoodOrder() {
   const dayName = new Date().toLocaleDateString('en-US', {timeZone:'Asia/Kathmandu', weekday:'long'});
   const ts = new Date().toLocaleTimeString('en-US', {timeZone:'Asia/Kathmandu', hour:'2-digit', minute:'2-digit'});
 
-  // Group by person — combine all their items
+  // Custom mode — submit directly
+  if (foMode === 'custom') {
+    const readyRows = foCustomRows.filter(r => r.name && r.items && r.total);
+    if (readyRows.length === 0) {
+      toast('No orders ready');
+      btn.disabled = false;
+      btn.textContent = 'Submit all →';
+      return;
+    }
+    let submitted = 0;
+    const total = readyRows.length;
+    readyRows.forEach(function(row, idx) {
+      setTimeout(function() {
+        const callbackName = 'foCustCb_' + Date.now() + '_' + idx;
+        const url = state.sheetUrl + '?action=add' +
+          '&name=' + encodeURIComponent(row.name) +
+          '&items=' + encodeURIComponent(row.items) +
+          '&total=' + encodeURIComponent('Rs ' + row.total) +
+          '&timestamp=' + encodeURIComponent(ts) +
+          '&date=' + encodeURIComponent(todayDate) +
+          '&day=' + encodeURIComponent(dayName) +
+          '&callback=' + callbackName;
+        window[callbackName] = function() {
+          delete window[callbackName];
+          submitted++;
+          if (submitted === total) {
+            toast('✅ ' + total + ' orders submitted!');
+            // Stay on page so user can share
+            var submitBtn2 = document.getElementById('foSubmitBtn');
+            if (submitBtn2) { submitBtn2.textContent = '✓ Submitted'; submitBtn2.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
+            document.getElementById('foReadyCount').textContent = total + ' orders saved';
+          }
+        };
+        const script = document.createElement('script');
+        script.src = url;
+        script.onerror = function() { delete window[callbackName]; submitted++; };
+        document.head.appendChild(script);
+        setTimeout(function() { try { document.head.removeChild(script); } catch(e) {} }, 25000);
+      }, idx * 300);
+    });
+    return;
+  }
+
+  // Menu mode — Group by person — combine all their items
   const grouped = {};
   foItems.forEach(foodItem => {
     if (!foodItem.item) return;
@@ -4030,8 +4205,10 @@ function submitFoodOrder() {
         submitted++;
         if (submitted === total) {
           toast('✅ ' + total + ' orders submitted!');
-          foItems = [];
-          setTimeout(function() { showScreen('screen-name'); }, 600);
+          // Stay on page so user can share
+          var foBtn = document.getElementById('foSubmitBtn');
+          if (foBtn) { foBtn.textContent = '✓ Submitted'; foBtn.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
+          document.getElementById('foReadyCount').textContent = total + ' orders saved';
         }
       };
       const script = document.createElement('script');
@@ -4041,8 +4218,8 @@ function submitFoodOrder() {
         submitted++;
         if (submitted === total) {
           toast('⚠️ Some orders may have failed — check sheet');
-          foItems = [];
-          setTimeout(function() { showScreen('screen-name'); }, 600);
+          var foBtnErr = document.getElementById('foSubmitBtn');
+          if (foBtnErr) { foBtnErr.textContent = 'Retry'; foBtnErr.disabled = false; }
         }
       };
       document.head.appendChild(script);
