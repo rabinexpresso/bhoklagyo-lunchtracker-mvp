@@ -277,6 +277,7 @@
     font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.18s;
   }
   .btn-secondary:hover { border-color: var(--pr); color: var(--pr); }
+  .btn-secondary:disabled { opacity: 0.32; cursor: not-allowed; transform: none; box-shadow: none; }
   .btn-sm {
     background: var(--surface); color: var(--text2); border: none;
     border-radius: var(--radius-sm); padding: 10px 16px; font-family: 'Poppins', sans-serif;
@@ -1167,7 +1168,10 @@
     <!-- Submit bar -->
     <div class="group-submit-bar">
       <div id="groupOrderCount" class="group-order-count">0 orders ready</div>
-      <button class="btn-primary" onclick="submitGroupOrder()" id="groupSubmitBtn" style="width:auto;padding:9px 18px;font-size:13px" disabled>Submit all →</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="share-btn" onclick="shareGroupOrder()" style="background:rgba(255,255,255,0.1);color:white;border-color:rgba(255,255,255,0.2)">📤 Share</button>
+        <button class="btn-primary" onclick="submitGroupOrder()" id="groupSubmitBtn" style="width:auto;padding:9px 18px;font-size:13px" disabled>Submit all →</button>
+      </div>
     </div>
   </div>
 
@@ -3581,6 +3585,40 @@ function shareOrders() {
   });
   text += `
 💰 Grand Total: Rs ${grandTotal}`;
+
+  openShareSheet(text);
+}
+
+function shareGroupOrder() {
+  const readyRows = goRows.filter(row => {
+    if (!row.name) return false;
+    if (goMode === 'menu') return row.item && row.price > 0;
+    return row.customItems && row.customTotal;
+  });
+  if (readyRows.length === 0) { toast('No orders to share yet'); return; }
+
+  const { date: todayDate, day: dayName } = getNPTDate();
+
+  // Group by name
+  const grouped = {};
+  readyRows.forEach(row => {
+    if (!grouped[row.name]) grouped[row.name] = { items: [], total: 0 };
+    if (goMode === 'menu') {
+      grouped[row.name].items.push(row.item + ' x' + (row.qty||1));
+      grouped[row.name].total += row.price;
+    } else {
+      grouped[row.name].items.push(row.customItems);
+      grouped[row.name].total += parseInt(row.customTotal) || 0;
+    }
+  });
+
+  const grandTotal = Object.values(grouped).reduce((s, d) => s + d.total, 0);
+  let text = '🍱 Bhok Lagyo! - ' + dayName + ', ' + todayDate + '\n';
+  text += '📍 Alaya HLE\n\n';
+  Object.entries(grouped).forEach(([name, data]) => {
+    text += name + ' — ' + data.items.join(', ') + ' — Rs ' + data.total + '\n';
+  });
+  text += '\n💰 Grand Total: Rs ' + grandTotal;
 
   openShareSheet(text);
 }
