@@ -622,19 +622,19 @@
   .date-filter-row label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; font-family: 'Poppins', sans-serif; }
   .date-filter-row input[type="date"] { padding: 10px 12px; font-size: 13px; }
   .hist-day-group { margin-bottom: 20px; }
-  .hist-day-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--surface); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); cursor: pointer; margin-bottom: 6px; transition: box-shadow 0.18s; }
+  .hist-day-header { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; background: var(--surface); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); cursor: pointer; margin-bottom: 4px; transition: box-shadow 0.18s; }
   .hist-day-header:hover { box-shadow: var(--shadow-md); }
-  .hist-day-title { font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
-  .hist-day-count { font-size: 11px; color: var(--text3); margin-top: 2px; font-weight: 500; }
+  .hist-day-title { font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 700; color: var(--text); }
+  .hist-day-count { font-size: 10px; color: var(--text3); margin-top: 1px; font-weight: 500; }
   .hist-day-meta { display: flex; align-items: center; gap: 12px; }
-  .hist-day-total { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 800; color: var(--pr); }
+  .hist-day-total { font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 800; color: var(--pr); }
   .hist-day-chevron { font-size: 10px; color: var(--text3); transition: transform 0.22s; }
   .hist-day-chevron.open { transform: rotate(180deg); }
   .hist-day-body { display: none; }
   .hist-day-body.open { display: block; }
-  .hist-summary-row { display: grid; grid-template-columns: 26px 72px 1fr 66px; align-items: center; gap: 8px; padding: 7px 10px; background: var(--surface); border-radius: var(--radius-sm); margin-bottom: 4px; box-shadow: var(--shadow-sm); font-size: 12px; }
-  .hist-avatar { font-size: 18px; }
-  .hist-name { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--text); font-size: 13px; }
+  .hist-summary-row { display: grid; grid-template-columns: 22px 64px 1fr 60px; align-items: center; gap: 6px; padding: 5px 8px; background: var(--surface); border-radius: var(--radius-sm); margin-bottom: 3px; box-shadow: var(--shadow-sm); font-size: 11px; }
+  .hist-avatar { font-size: 15px; }
+  .hist-name { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--text); font-size: 11px; }
   .hist-items { color: var(--text3); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hist-total { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--pr); text-align: right; }
   .hist-stats-card { background: var(--surface); border-radius: var(--radius-sm); padding: 7px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; box-shadow: var(--shadow-sm); border: 1.5px solid var(--surface3); flex-wrap: wrap; }
@@ -1374,10 +1374,13 @@
           <label>To</label>
           <input type="date" id="histToDate" onchange="applyHistoryFilter()" />
         </div>
-        <button class="refresh-btn" id="histRefreshBtn" onclick="loadHistory()" style="margin-bottom:1px">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8A6 6 0 1 1 8 2"/><path d="M14 2v4h-4"/></svg>
-          Load
-        </button>
+        <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:1px">
+          <button class="share-btn" onclick="shareHistory()">📤 Share</button>
+          <button class="refresh-btn" id="histRefreshBtn" onclick="loadHistory()">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8A6 6 0 1 1 8 2"/><path d="M14 2v4h-4"/></svg>
+            Load
+          </button>
+        </div>
       </div>
       <div class="name-filter-row" id="histNameFilters"></div>
       <div id="histError" class="fetch-error" style="display:none"></div>
@@ -2790,9 +2793,11 @@ function renderHistoryList(orders) {
 
     const rows = group.orders.map(o => {
       const av = getNameEmoji(o.name, 0);
-      return `<div class="hist-summary-row">
-        <div class="hist-avatar" style="font-size:16px">${av}</div>
-        <div class="hist-name">${o.name || '—'}</div>
+      const nameColors = ['#00b0ff','#ff0065','#42db66','#ffc709','#000079'];
+      const nameColor = nameColors[state.names.indexOf(o.name) % nameColors.length] || '#00b0ff';
+      return `<div class="hist-summary-row" style="border-left:3px solid ${nameColor}">
+        <div class="hist-avatar" style="font-size:14px">${av}</div>
+        <div class="hist-name" style="color:${nameColor}">${o.name || '—'}</div>
         <div class="hist-items">${o.items || '—'}</div>
         <div class="hist-total">${o.total}</div>
       </div>`;
@@ -3570,113 +3575,168 @@ function doShare(platform) {
   }
 }
 
+function buildPriceReference(itemStrings, location) {
+  // Collect all unique item base names from order strings
+  var menu = location && location !== 'Generic' && state.locationMenus[location] && state.locationMenus[location].length > 0
+    ? state.locationMenus[location]
+    : state.menu;
+  var seen = {};
+  var lines = [];
+  itemStrings.forEach(function(itemsStr) {
+    var parts = (itemsStr||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+    parts.forEach(function(part) {
+      // Strip quantity suffix e.g. "Dal Bhat Set x2" -> "Dal Bhat Set"
+      var baseName = part.replace(/\s*x\d+\s*$/i, '').trim();
+      if (!baseName || seen[baseName]) return;
+      seen[baseName] = true;
+      var menuItem = menu.find(function(m){ return m.name.toLowerCase() === baseName.toLowerCase(); });
+      if (menuItem) lines.push('  ' + menuItem.name + ' — Rs ' + menuItem.price);
+    });
+  });
+  return lines;
+}
+
 function shareOrders() {
-  // Build summary from todayOrdersCache
   if (!todayOrdersCache || todayOrdersCache.length === 0) {
     toast('No orders to share yet — tap Refresh first');
     return;
   }
-  const { date: todayDate, day: dayName } = getNPTDate();
-  const grandTotal = todayOrdersCache.reduce((s, o) => s + (parseInt(String(o.total).replace(/[^0-9]/g,'')) || 0), 0);
-
-  let text = `🍱 Bhok Lagyo! - ${dayName}, ${todayDate}
-`;
-  text += `📍 Alaya HLE
-
-`;
-  todayOrdersCache.forEach(o => {
-    text += `${o.name} — ${o.items} — ${o.total}
-`;
+  var nl = String.fromCharCode(10);
+  var d = getNPTDate();
+  var grandTotal = todayOrdersCache.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
+  var text = 'Bhok Lagyo! - ' + d.day + ', ' + d.date + nl;
+  text += 'Alaya HLE' + nl + nl;
+  var allItemStrings = [];
+  todayOrdersCache.forEach(function(o) {
+    text += o.name + nl;
+    var parts = (o.items||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+    parts.forEach(function(item){ text += '  - ' + item + nl; });
+    text += '  Total: ' + o.total + nl + nl;
+    allItemStrings.push(o.items||'');
   });
-  text += `
-💰 Grand Total: Rs ${grandTotal}`;
+  text += 'Grand Total: Rs ' + grandTotal;
+  var priceRef = buildPriceReference(allItemStrings, state.activeLocation);
+  if (priceRef.length > 0) {
+    text += nl + nl + '---' + nl + 'Price reference:' + nl + priceRef.join(nl);
+  }
+  openShareSheet(text);
+}
 
+function shareHistory() {
+  if (!historyAllOrders || historyAllOrders.length === 0) {
+    toast('No history loaded — tap Load first');
+    return;
+  }
+  var nl = String.fromCharCode(10);
+  var fromDate = document.getElementById('histFromDate').value;
+  var toDate = document.getElementById('histToDate').value;
+  var filtered = historyActiveFilter === 'All'
+    ? historyAllOrders
+    : historyAllOrders.filter(function(o){ return o.name === historyActiveFilter; });
+  if (filtered.length === 0) { toast('No orders to share'); return; }
+  var grandTotal = filtered.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
+  var label = historyActiveFilter === 'All' ? 'All team' : historyActiveFilter;
+  var text = 'Bhok Lagyo! Order History' + nl;
+  text += 'Alaya HLE - ' + label + nl;
+  if (fromDate && toDate) text += fromDate + ' to ' + toDate + nl;
+  text += nl;
+  var byDate = {};
+  filtered.forEach(function(o){ if(!byDate[o.date]) byDate[o.date]=[]; byDate[o.date].push(o); });
+  Object.keys(byDate).sort().reverse().forEach(function(date) {
+    var orders = byDate[date];
+    var dayTotal = orders.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
+    text += (orders[0].day||date) + ' - ' + date + ' - Rs ' + dayTotal + nl;
+    orders.forEach(function(o) {
+      text += '  ' + o.name + nl;
+      var parts = (o.items||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+      parts.forEach(function(item){ text += '    - ' + item + nl; });
+      text += '    Total: ' + o.total + nl;
+    });
+    text += nl;
+  });
+  text += 'Grand Total: Rs ' + grandTotal;
+  var allItemStrings = filtered.map(function(o){ return o.items||''; });
+  var priceRef = buildPriceReference(allItemStrings, state.activeLocation);
+  if (priceRef.length > 0) {
+    text += nl + nl + '---' + nl + 'Price reference:' + nl + priceRef.join(nl);
+  }
   openShareSheet(text);
 }
 
 function shareGroupOrder() {
-  const readyRows = goRows.filter(row => {
+  var readyRows = goRows.filter(function(row) {
     if (!row.name) return false;
     if (goMode === 'menu') return row.item && row.price > 0;
     return row.customItems && row.customTotal;
   });
   if (readyRows.length === 0) { toast('No orders to share yet'); return; }
-
-  const { date: todayDate, day: dayName } = getNPTDate();
-
-  // Group by name
-  const grouped = {};
-  readyRows.forEach(row => {
-    if (!grouped[row.name]) grouped[row.name] = { items: [], total: 0 };
+  var nl = String.fromCharCode(10);
+  var d = getNPTDate();
+  var grouped = {};
+  readyRows.forEach(function(row) {
+    if (!grouped[row.name]) grouped[row.name] = { lines: [], total: 0 };
     if (goMode === 'menu') {
-      grouped[row.name].items.push(row.item + ' x' + (row.qty||1));
-      grouped[row.name].total += row.price;
+      var qty = row.qty || 1;
+      var lineTotal = row.price * qty;
+      grouped[row.name].lines.push(row.item + ' x' + qty + ' @ Rs ' + row.price + ' = Rs ' + lineTotal);
+      grouped[row.name].total += lineTotal;
     } else {
-      grouped[row.name].items.push(row.customItems);
+      grouped[row.name].lines.push(row.customItems);
       grouped[row.name].total += parseInt(row.customTotal) || 0;
     }
   });
-
-  const grandTotal = Object.values(grouped).reduce((s, d) => s + d.total, 0);
-  let text = '🍱 Bhok Lagyo! - ' + dayName + ', ' + todayDate + '\n';
-  text += '📍 Alaya HLE\n\n';
-  Object.entries(grouped).forEach(([name, data]) => {
-    text += name + ' — ' + data.items.join(', ') + ' — Rs ' + data.total + '\n';
+  var grandTotal = Object.values(grouped).reduce(function(s,d){ return s+d.total; },0);
+  var text = 'Bhok Lagyo! - ' + d.day + ', ' + d.date + nl;
+  text += 'Alaya HLE' + nl + nl;
+  Object.keys(grouped).forEach(function(name) {
+    var data = grouped[name];
+    text += name + nl;
+    data.lines.forEach(function(l){ text += '  - ' + l + nl; });
+    text += '  Total: Rs ' + data.total + nl + nl;
   });
-  text += '\n💰 Grand Total: Rs ' + grandTotal;
-
+  text += 'Grand Total: Rs ' + grandTotal;
+  var allGroupItems = readyRows.map(function(r){ return goMode==='menu' ? r.item : r.customItems; });
+  var priceRef = buildPriceReference(allGroupItems, goLocation);
+  if (priceRef.length > 0) {
+    text += nl + nl + '---' + nl + 'Price reference:' + nl + priceRef.join(nl);
+  }
   openShareSheet(text);
 }
 
 function shareFoodOrder() {
-  // Build restaurant summary from foItems
-  const readyItems = foItems.filter(f => f.item && f.qty > 0);
-  if (readyItems.length === 0) {
-    toast('No food items added yet');
-    return;
-  }
-  const { date: todayDate, day: dayName } = getNPTDate();
-  const grandTotal = foItems.reduce((s, f) => s + (f.price * f.qty), 0);
-
-  let text = `🍱 Bhok Lagyo! - ${dayName}, ${todayDate}
-`;
-  text += `📍 Alaya HLE
-
-`;
-  text += `🧾 Order Summary:
-`;
-  readyItems.forEach(f => {
-    text += `${f.item} x${f.qty}${f.price ? ' — Rs ' + (f.price * f.qty) : ''}
-`;
+  var readyItems = foItems.filter(function(f){ return f.item && f.qty > 0; });
+  if (readyItems.length === 0) { toast('No food items added yet'); return; }
+  var nl = String.fromCharCode(10);
+  var d = getNPTDate();
+  var grandTotal = foItems.reduce(function(s,f){ return s+(f.price*f.qty); },0);
+  var text = 'Bhok Lagyo! - ' + d.day + ', ' + d.date + nl;
+  text += 'Alaya HLE' + nl + nl;
+  text += 'Order Summary (for restaurant):' + nl;
+  readyItems.forEach(function(f) {
+    var lineTotal = f.price * f.qty;
+    text += '  - ' + f.item + ' x' + f.qty + ' @ Rs ' + f.price + ' = Rs ' + lineTotal + nl;
   });
-  text += `
-💰 Grand Total: Rs ${grandTotal}`;
-
-  // Add person assignments if any assigned
-  const assigned = foItems.filter(f => f.assignments && f.assignments.some(a => a !== ''));
+  text += nl + 'Grand Total: Rs ' + grandTotal;
+  var assigned = foItems.filter(function(f){ return f.assignments && f.assignments.some(function(a){ return a!==''; }); });
   if (assigned.length > 0) {
-    // Group by person
-    const grouped = {};
-    foItems.forEach(foodItem => {
-      if (!foodItem.item) return;
-      const sharePrice = foodItem.price || 0;
-      foodItem.assignments.forEach(name => {
+    var grouped = {};
+    foItems.forEach(function(fi) {
+      if (!fi.item) return;
+      fi.assignments.forEach(function(name) {
         if (!name) return;
-        if (!grouped[name]) grouped[name] = { items: [], total: 0 };
-        grouped[name].items.push(`${foodItem.item} x1`);
-        grouped[name].total += sharePrice;
+        if (!grouped[name]) grouped[name] = { lines: [], total: 0 };
+        grouped[name].lines.push(fi.item + ' x1 @ Rs ' + fi.price);
+        grouped[name].total += fi.price;
       });
     });
-    text += `
-
-👥 Per person:
-`;
-    Object.entries(grouped).forEach(([name, data]) => {
-      text += `${name} — ${data.items.join(', ')} — Rs ${data.total}
-`;
+    text += nl + nl + 'Per person breakdown:' + nl;
+    Object.keys(grouped).forEach(function(name) {
+      var data = grouped[name];
+      text += name + nl;
+      data.lines.forEach(function(l){ text += '  - ' + l + nl; });
+      text += '  Total: Rs ' + data.total + nl;
     });
   }
-
   openShareSheet(text);
 }
 
