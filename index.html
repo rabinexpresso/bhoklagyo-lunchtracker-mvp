@@ -531,6 +531,20 @@
      TODAY'S ORDERS
   ════════════════════════════════════ */
   .orders-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .share-btn { display: flex; align-items: center; gap: 5px; background: var(--surface); border: none; border-radius: var(--radius-sm); padding: 8px 12px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; color: var(--blue); cursor: pointer; transition: all 0.18s; box-shadow: var(--shadow-sm); }
+  .share-btn:hover { color: #0088cc; box-shadow: var(--shadow-md); }
+  .share-sheet { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 680px; background: var(--surface); border-radius: 20px 20px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.15); z-index: 200; padding: 16px; box-sizing: border-box; display: none; }
+  .share-sheet.open { display: block; animation: slideUp 0.25s cubic-bezier(0.22,1,0.36,1); }
+  @keyframes slideUp { from { transform: translateX(-50%) translateY(100%); } to { transform: translateX(-50%) translateY(0); } }
+  .share-sheet-title { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'Poppins', sans-serif; margin-bottom: 14px; text-align: center; }
+  .share-options { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; }
+  .share-option { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; padding: 10px 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--border2); background: var(--surface2); transition: all 0.15s; min-width: 72px; }
+  .share-option:hover { border-color: var(--blue); background: #e6f8ff; }
+  .share-option-icon { font-size: 26px; }
+  .share-option-label { font-size: 10px; font-weight: 700; color: var(--text2); font-family: 'Poppins', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+  .share-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 199; display: none; }
+  .share-overlay.open { display: block; }
+  .share-cancel { width: 100%; padding: 10px; border: none; border-radius: var(--radius-sm); background: var(--surface2); font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer; font-family: 'Poppins', sans-serif; }
   .grand-total-card { /* compact */
     background: linear-gradient(135deg, #e6f8ff 0%, #cceeff 100%);
     border-radius: var(--radius); padding: 22px; display: flex; align-items: center;
@@ -1194,7 +1208,10 @@
     <!-- Submit bar -->
     <div class="group-submit-bar">
       <div id="foReadyCount" class="group-order-count">0 of 0 assigned</div>
-      <button class="btn-primary" id="foSubmitBtn" onclick="submitFoodOrder()" style="width:auto;padding:9px 18px;font-size:13px" disabled>Submit all →</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="share-btn" onclick="shareFoodOrder()" style="background:rgba(255,255,255,0.1);color:white;border-color:rgba(255,255,255,0.2)">📤 Share</button>
+        <button class="btn-primary" id="foSubmitBtn" onclick="submitFoodOrder()" style="width:auto;padding:9px 18px;font-size:13px" disabled>Submit all →</button>
+      </div>
     </div>
   </div>
 
@@ -1289,10 +1306,13 @@
     <div class="page">
       <div class="orders-header">
         <span class="orders-date-label" id="ordersDateLabel"></span>
-        <button class="refresh-btn" id="refreshBtn" onclick="loadTodayOrders()">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8A6 6 0 1 1 8 2"/><path d="M14 2v4h-4"/></svg>
-          Refresh
-        </button>
+        <div style="display:flex;gap:6px">
+          <button class="share-btn" onclick="shareOrders()">📤 Share</button>
+          <button class="refresh-btn" id="refreshBtn" onclick="loadTodayOrders()">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8A6 6 0 1 1 8 2"/><path d="M14 2v4h-4"/></svg>
+            Refresh
+          </button>
+        </div>
       </div>
       <div class="today-filter-row" id="todayNameFilters"></div>
       <div class="select-all-row" id="selectAllRow" style="display:none">
@@ -1378,6 +1398,31 @@
         <button class="modal-btn confirm" id="modalConfirmBtn" onclick="resolveModal(true)">Delete</button>
       </div>
     </div>
+  </div>
+
+  <!-- SHARE SHEET -->
+  <div class="share-overlay" id="shareOverlay" onclick="closeShareSheet()"></div>
+  <div class="share-sheet" id="shareSheet">
+    <div class="share-sheet-title">📤 Share order summary</div>
+    <div class="share-options">
+      <div class="share-option" onclick="doShare('whatsapp')">
+        <span class="share-option-icon">💬</span>
+        <span class="share-option-label">WhatsApp</span>
+      </div>
+      <div class="share-option" onclick="doShare('viber')">
+        <span class="share-option-icon">📱</span>
+        <span class="share-option-label">Viber</span>
+      </div>
+      <div class="share-option" onclick="doShare('email')">
+        <span class="share-option-icon">📧</span>
+        <span class="share-option-label">Email</span>
+      </div>
+      <div class="share-option" onclick="doShare('copy')">
+        <span class="share-option-icon">📋</span>
+        <span class="share-option-label">Copy</span>
+      </div>
+    </div>
+    <button class="share-cancel" onclick="closeShareSheet()">Cancel</button>
   </div>
 
   <!-- INLINE EDIT MODAL -->
@@ -2129,6 +2174,7 @@ function syncUsersToSheet() {
 //  TODAY'S ORDERS — read from sheet via JSONP
 // ═══════════════════════════════════════
 
+let todayOrdersCache = [];
 let todayActiveFilter = 'All';
 
 function getNPTDate() {
@@ -3469,6 +3515,129 @@ function submitGroupOrder() {
   });
 }
 // ═══════════════════════════════════════
+//  SHARE
+// ═══════════════════════════════════════
+
+let shareText = '';
+
+function openShareSheet(text) {
+  shareText = text;
+  document.getElementById('shareSheet').classList.add('open');
+  document.getElementById('shareOverlay').classList.add('open');
+}
+
+function closeShareSheet() {
+  document.getElementById('shareSheet').classList.remove('open');
+  document.getElementById('shareOverlay').classList.remove('open');
+}
+
+function doShare(platform) {
+  const encoded = encodeURIComponent(shareText);
+  closeShareSheet();
+  switch(platform) {
+    case 'whatsapp':
+      window.open('https://wa.me/?text=' + encoded, '_blank');
+      break;
+    case 'viber':
+      window.open('viber://forward?text=' + encoded, '_blank');
+      break;
+    case 'email':
+      const subject = encodeURIComponent('Bhok Lagyo! - Todays Orders');
+      window.location.href = 'mailto:?subject=' + subject + '&body=' + encoded;
+      break;
+    case 'copy':
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareText).then(() => toast('📋 Copied to clipboard!'));
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = shareText;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('📋 Copied to clipboard!');
+      }
+      break;
+  }
+}
+
+function shareOrders() {
+  // Build summary from todayOrdersCache
+  if (!todayOrdersCache || todayOrdersCache.length === 0) {
+    toast('No orders to share yet — tap Refresh first');
+    return;
+  }
+  const { date: todayDate, day: dayName } = getNPTDate();
+  const grandTotal = todayOrdersCache.reduce((s, o) => s + (parseInt(String(o.total).replace(/[^0-9]/g,'')) || 0), 0);
+
+  let text = `🍱 Bhok Lagyo! - ${dayName}, ${todayDate}
+`;
+  text += `📍 Alaya HLE
+
+`;
+  todayOrdersCache.forEach(o => {
+    text += `${o.name} — ${o.items} — ${o.total}
+`;
+  });
+  text += `
+💰 Grand Total: Rs ${grandTotal}`;
+
+  openShareSheet(text);
+}
+
+function shareFoodOrder() {
+  // Build restaurant summary from foItems
+  const readyItems = foItems.filter(f => f.item && f.qty > 0);
+  if (readyItems.length === 0) {
+    toast('No food items added yet');
+    return;
+  }
+  const { date: todayDate, day: dayName } = getNPTDate();
+  const grandTotal = foItems.reduce((s, f) => s + (f.price * f.qty), 0);
+
+  let text = `🍱 Bhok Lagyo! - ${dayName}, ${todayDate}
+`;
+  text += `📍 Alaya HLE
+
+`;
+  text += `🧾 Order Summary:
+`;
+  readyItems.forEach(f => {
+    text += `${f.item} x${f.qty}${f.price ? ' — Rs ' + (f.price * f.qty) : ''}
+`;
+  });
+  text += `
+💰 Grand Total: Rs ${grandTotal}`;
+
+  // Add person assignments if any assigned
+  const assigned = foItems.filter(f => f.assignments && f.assignments.some(a => a !== ''));
+  if (assigned.length > 0) {
+    // Group by person
+    const grouped = {};
+    foItems.forEach(foodItem => {
+      if (!foodItem.item) return;
+      const sharePrice = foodItem.price || 0;
+      foodItem.assignments.forEach(name => {
+        if (!name) return;
+        if (!grouped[name]) grouped[name] = { items: [], total: 0 };
+        grouped[name].items.push(`${foodItem.item} x1`);
+        grouped[name].total += sharePrice;
+      });
+    });
+    text += `
+
+👥 Per person:
+`;
+    Object.entries(grouped).forEach(([name, data]) => {
+      text += `${name} — ${data.items.join(', ')} — Rs ${data.total}
+`;
+    });
+  }
+
+  openShareSheet(text);
+}
+
+// ═══════════════════════════════════════
 //  FOOD ORDER
 // ═══════════════════════════════════════
 
@@ -3731,35 +3900,50 @@ function submitFoodOrder() {
     total: 'Rs ' + data.total
   }));
 
+  if (orders.length === 0) {
+    toast('No assigned orders to submit');
+    btn.disabled = false;
+    btn.textContent = 'Submit all →';
+    return;
+  }
+
   let submitted = 0;
   const total = orders.length;
 
   orders.forEach((order, idx) => {
     setTimeout(() => {
       const callbackName = 'foodCb_' + Date.now() + '_' + idx;
-      const url = `${state.sheetUrl}?action=add` +
-        `&name=${encodeURIComponent(order.name)}` +
-        `&items=${encodeURIComponent(order.items)}` +
-        `&total=${encodeURIComponent(order.total)}` +
-        `&timestamp=${encodeURIComponent(ts)}` +
-        `&date=${encodeURIComponent(todayDate)}` +
-        `&day=${encodeURIComponent(dayName)}` +
-        `&callback=${callbackName}`;
+      const url = state.sheetUrl + '?action=add' +
+        '&name=' + encodeURIComponent(order.name) +
+        '&items=' + encodeURIComponent(order.items) +
+        '&total=' + encodeURIComponent(order.total) +
+        '&timestamp=' + encodeURIComponent(ts) +
+        '&date=' + encodeURIComponent(todayDate) +
+        '&day=' + encodeURIComponent(dayName) +
+        '&callback=' + callbackName;
 
-      window[callbackName] = function() {
+      window[callbackName] = function(data) {
         delete window[callbackName];
         submitted++;
         if (submitted === total) {
-          toast(`✅ ${total} orders submitted!`);
+          toast('✅ ' + total + ' orders submitted!');
           foItems = [];
-          setTimeout(() => showScreen('screen-name'), 600);
+          setTimeout(function() { showScreen('screen-name'); }, 600);
         }
       };
       const script = document.createElement('script');
       script.src = url;
-      script.onerror = () => { delete window[callbackName]; submitted++; };
+      script.onerror = function() {
+        delete window[callbackName];
+        submitted++;
+        if (submitted === total) {
+          toast('⚠️ Some orders may have failed — check sheet');
+          foItems = [];
+          setTimeout(function() { showScreen('screen-name'); }, 600);
+        }
+      };
       document.head.appendChild(script);
-      setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
+      setTimeout(function() { try { document.head.removeChild(script); } catch(e) {} }, 25000);
     }, idx * 300);
   });
 }
