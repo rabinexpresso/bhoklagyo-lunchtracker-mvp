@@ -2986,7 +2986,7 @@ function deleteOrderFromToday(idx) {
       '&date=' + encodeURIComponent(todayDate) +
       '&callback=' + cbDel;
 
-    toast('🌐 URL: ' + url.substring(0, 80));
+    toast('🗓 Deleting: name="' + order.name + '" date="' + todayDate + '"');
 
     const tDel = setTimeout(function() {
       delete window[cbDel];
