@@ -2522,14 +2522,9 @@ function loadTodayOrders() {
   const grandCard = document.getElementById('grandTotalCard');
 
   btn.classList.add('spinning');
-  // Show cached orders instantly while fetching fresh data
-  if (todayOrdersCache && todayOrdersCache.length > 0) {
-    applyTodayFilter();
-  } else {
-    listEl.innerHTML = '<div class="no-orders"><span class="emoji">⏳</span>Loading orders...</div>';
-    grandCard.style.display = 'none';
-  }
+  listEl.innerHTML = '<div class="no-orders"><span class="emoji">⏳</span>Loading orders...</div>';
   errorEl.style.display = 'none';
+  grandCard.style.display = 'none';
 
   if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) {
     btn.classList.remove('spinning');
@@ -2554,7 +2549,7 @@ function loadTodayOrders() {
       listEl.innerHTML = '';
     }
     delete window[callbackName];
-  }, 8000);
+  }, 15000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
