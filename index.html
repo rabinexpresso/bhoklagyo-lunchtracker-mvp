@@ -461,6 +461,23 @@
   .empty .emoji { font-size: 40px; display: block; margin-bottom: 12px; }
   .scroll-pad { height: 100px; }
 
+  /* ═══ MENU SEARCH ═══ */
+  .menu-search-wrap { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1.5px solid var(--border2); border-radius: var(--radius-pill); padding: 6px 12px; margin-bottom: 8px; transition: border-color 0.15s; }
+  .menu-search-wrap:focus-within { border-color: var(--blue); }
+  .menu-search-icon { font-size: 14px; flex-shrink: 0; }
+  .menu-search-input { flex: 1; border: none; background: transparent; font-size: 12px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; }
+  .menu-search-input::placeholder { color: var(--text3); }
+  .menu-search-clear { border: none; background: none; font-size: 12px; color: var(--text3); cursor: pointer; padding: 0; flex-shrink: 0; }
+
+  /* ═══ NOTES FIELD ═══ */
+  .notes-wrap { margin-bottom: 8px; }
+  .notes-input { width: 100%; border: 1.5px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12px; font-family: 'Poppins', sans-serif; color: var(--text); outline: none; background: var(--surface); box-sizing: border-box; transition: border-color 0.15s; }
+  .notes-input:focus { border-color: var(--blue); }
+
+  /* ═══ QUICK REORDER ═══ */
+  .reorder-chip { display: inline-flex; align-items: center; gap: 4px; background: #fff8e1; border: 1.5px solid #ffc709; border-radius: var(--radius-pill); padding: 3px 8px; font-size: 10px; font-weight: 600; color: #b07800; cursor: pointer; margin-top: 4px; font-family: 'Poppins', sans-serif; transition: all 0.15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+  .reorder-chip:hover { background: #ffc709; color: #000; }
+
   /* ═══ FOOD ORDER ═══ */
   .fo-table-header { display: flex; align-items: center; padding: 4px 2px; font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Poppins', sans-serif; margin-bottom: 4px; }
   .fo-th-drag { flex: 0 0 16px; }
@@ -1062,8 +1079,14 @@
   <!-- ═══════════ SCREEN: MENU ═══════════ -->
   <div class="screen" id="screen-menu">
     <div class="location-bar" id="menuLocBar"></div>
-    <div class="page" style="padding-bottom:0;padding-top:10px">
-      <div class="tabs-wrap">
+    <div class="page" style="padding-bottom:0;padding-top:8px">
+      <!-- Search bar -->
+      <div class="menu-search-wrap">
+        <span class="menu-search-icon">🔍</span>
+        <input type="text" id="menuSearch" class="menu-search-input" placeholder="Search food items..." oninput="filterMenuSearch(this.value)" />
+        <button class="menu-search-clear" id="menuSearchClear" onclick="clearMenuSearch()" style="display:none">✕</button>
+      </div>
+      <div class="tabs-wrap" id="catTabsWrap">
         <div class="tabs" id="catTabs"></div>
       </div>
     </div>
@@ -1093,6 +1116,10 @@
     <div class="page">
       <div class="label">Order summary</div>
       <div id="summaryCard" class="summary-card"></div>
+      <!-- Notes field -->
+      <div class="notes-wrap">
+        <input type="text" id="orderNotes" class="notes-input" placeholder="📝 Add note e.g. no chilli, extra sauce..." maxlength="100" />
+      </div>
       <div class="status-msg" id="statusMsg"></div>
       <div class="btn-gap">
         <button class="btn-primary" id="submitBtn" onclick="submitOrder()">Submit &amp; save to sheet →</button>
@@ -1650,10 +1677,13 @@ function renderNames() {
   state.names.forEach((name, idx) => {
     const card = document.createElement('div');
     card.className = 'name-card' + (state.currentUser === name ? ' sel' : '') + (nameEditMode ? ' edit-mode' : '');
+    const lastO = lastOrders[name];
+    const reorderHtml = (!nameEditMode && lastO) ? `<div class="reorder-chip" onclick="event.stopPropagation();quickReorder('${name}')">🔄 ${lastO.items.length > 18 ? lastO.items.substring(0,18)+'…' : lastO.items}</div>` : '';
     card.innerHTML = `
       ${nameEditMode ? `<button class="name-del-btn" onclick="event.stopPropagation();deleteName('${name}')" title="Remove ${name}">✕</button>` : ''}
       <span class="emoji-avatar">${getNameEmoji(name, idx)}</span>
       <div class="nname">${name}</div>
+      ${reorderHtml}
     `;
     if (!nameEditMode) {
       card.onclick = () => {
@@ -1747,6 +1777,7 @@ function renderMenuGrid() {
 }
 
 function changeQty(idx, delta) {
+  haptic('light');
   state.cart[idx] = (state.cart[idx] || 0) + delta;
   if (state.cart[idx] <= 0) delete state.cart[idx];
   renderMenuGrid();
@@ -1970,9 +2001,18 @@ function deleteLocationSheetTab(location) {
 async function submitOrder() {
   const items = getCartItems();
   if (!items.length) { showStatus('error', 'Please add at least one item.'); return; }
+  // Duplicate order warning
+  if (!state.isEditing && todayOrdersCache.length > 0) {
+    const existing = todayOrdersCache.find(o => o.name === state.currentUser);
+    if (existing) {
+      const ok = await showModal({ icon: '⚠️', title: 'Already ordered today!', desc: '<strong>' + state.currentUser + '</strong> already has an order today (' + existing.total + '). Submit another anyway?' });
+      if (!ok) return;
+    }
+  }
 
   const total = getCartTotal();
-  const itemsStr = items.map(i => `${i.name} x${i.qty}`).join(', ');
+  const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
+  const itemsStr = items.map(i => `${i.name} x${i.qty}`).join(', ') + (notes ? ' [' + notes + ']' : '');
   const now = new Date();
   // Convert to Nepal time manually — works reliably on all Android/iOS browsers
   const nptOffset = 5 * 60 + 45; // Nepal is UTC+5:45
@@ -2024,7 +2064,10 @@ async function submitOrder() {
       `<strong>${state.currentUser}</strong> — ${itemsStr}<br>` +
       `Total: <strong>Rs ${total}</strong>`
     );
+    haptic('success');
     btn.textContent = state.isEditing ? '✓ Updated' : '✓ Submitted';
+    // Save last order for quick reorder
+    if (!state.isEditing) saveLastOrder(state.currentUser, itemsStr, 'Rs ' + total);
     state.isEditing = false;
     updateUserPill();
   } catch(e) {
@@ -2213,6 +2256,7 @@ function syncUsersToSheet() {
 // ═══════════════════════════════════════
 
 let todayOrdersCache = [];
+var lastOrders = {}; // quick reorder — populated by loadLastOrders()
 let todayActiveFilter = 'All';
 
 function getNPTDate() {
@@ -3642,6 +3686,84 @@ function shareSummary() {
     text += nl + nl + '---' + nl + 'Price reference:' + nl + priceRef.join(nl);
   }
   openShareSheet(text);
+}
+
+// ═══════════════════════════════════════
+//  BATCH 1 FEATURES
+// ═══════════════════════════════════════
+
+// ── 1. HAPTIC FEEDBACK ──
+function haptic(type) {
+  if (!navigator.vibrate) return;
+  if (type === 'light') navigator.vibrate(10);
+  else if (type === 'medium') navigator.vibrate(30);
+  else if (type === 'success') navigator.vibrate([10, 50, 10]);
+  else if (type === 'error') navigator.vibrate([50, 30, 50]);
+}
+
+// ── 2. MENU SEARCH ──
+let menuSearchQuery = '';
+
+function filterMenuSearch(q) {
+  menuSearchQuery = q.trim().toLowerCase();
+  const clearBtn = document.getElementById('menuSearchClear');
+  const tabsWrap = document.getElementById('catTabsWrap');
+  if (clearBtn) clearBtn.style.display = menuSearchQuery ? 'block' : 'none';
+  if (tabsWrap) tabsWrap.style.display = menuSearchQuery ? 'none' : 'block';
+  renderMenuGrid();
+}
+
+function clearMenuSearch() {
+  menuSearchQuery = '';
+  const input = document.getElementById('menuSearch');
+  const clearBtn = document.getElementById('menuSearchClear');
+  const tabsWrap = document.getElementById('catTabsWrap');
+  if (input) input.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+  if (tabsWrap) tabsWrap.style.display = 'block';
+  renderMenuGrid();
+}
+
+// ── 3. QUICK REORDER ──
+
+function saveLastOrder(name, items, total) {
+  try {
+    var saved = JSON.parse(localStorage.getItem('bhok_last_orders') || '{}');
+    saved[name] = { items: items, total: total };
+    localStorage.setItem('bhok_last_orders', JSON.stringify(saved));
+    lastOrders = saved;
+  } catch(e) {}
+}
+
+function loadLastOrders() {
+  try {
+    lastOrders = JSON.parse(localStorage.getItem('bhok_last_orders') || '{}');
+  } catch(e) { lastOrders = {}; }
+}
+
+function quickReorder(name) {
+  haptic('medium');
+  const last = lastOrders[name];
+  if (!last) return;
+  // Pre-fill cart from last order
+  state.cart = {};
+  const menu = state.activeLocation === 'Generic' ? state.menu : (state.locationMenus[state.activeLocation] || state.menu);
+  const parts = last.items.split(',').map(function(s){return s.trim();});
+  parts.forEach(function(part) {
+    const m = part.match(/^(.+?)\s*x(\d+)$/i);
+    if (!m) return;
+    const itemName = m[1].trim();
+    const qty = parseInt(m[2]) || 1;
+    const idx = menu.findIndex(function(mi){ return mi.name === itemName; });
+    if (idx >= 0) state.cart[idx] = qty;
+  });
+  state.currentUser = name;
+  updateUserPill();
+  renderCategoryTabs();
+  renderMenuGrid();
+  updateCartBar();
+  showScreen('screen-menu');
+  toast('🔄 Reordering ' + name + ' — same as last time!');
 }
 
 function buildPriceReference(itemStrings, location) {
