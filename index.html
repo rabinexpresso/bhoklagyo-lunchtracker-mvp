@@ -2,6 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Force reload if PWA is running old cached version -->
+<script>
+(function(){
+  var V = 'bhok_app_v20260406';
+  if (localStorage.getItem('bhok_force_ver') !== V) {
+    localStorage.setItem('bhok_force_ver', V);
+    // Clear all caches then hard reload
+    if ('caches' in window) {
+      caches.keys().then(function(k){ k.forEach(function(n){ caches.delete(n); }); });
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(r){
+        r.forEach(function(reg){ reg.unregister(); });
+      });
+    }
+    window.location.reload(true);
+  }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
