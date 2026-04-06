@@ -2,25 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<!-- Force reload if PWA is running old cached version -->
-<script>
-(function(){
-  var V = 'bhok_app_v20260407b';
-  if (localStorage.getItem('bhok_force_ver') !== V) {
-    localStorage.setItem('bhok_force_ver', V);
-    // Clear all caches then hard reload
-    if ('caches' in window) {
-      caches.keys().then(function(k){ k.forEach(function(n){ caches.delete(n); }); });
-    }
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(r){
-        r.forEach(function(reg){ reg.unregister(); });
-      });
-    }
-    window.location.reload(true);
-  }
-})();
-</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -2541,9 +2522,14 @@ function loadTodayOrders() {
   const grandCard = document.getElementById('grandTotalCard');
 
   btn.classList.add('spinning');
-  listEl.innerHTML = '<div class="no-orders"><span class="emoji">⏳</span>Loading orders...</div>';
+  // Show cached orders instantly while fetching fresh data
+  if (todayOrdersCache && todayOrdersCache.length > 0) {
+    applyTodayFilter();
+  } else {
+    listEl.innerHTML = '<div class="no-orders"><span class="emoji">⏳</span>Loading orders...</div>';
+    grandCard.style.display = 'none';
+  }
   errorEl.style.display = 'none';
-  grandCard.style.display = 'none';
 
   if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) {
     btn.classList.remove('spinning');
@@ -2562,11 +2548,13 @@ function loadTodayOrders() {
   // Timeout in case script never loads
   const timeout = setTimeout(() => {
     btn.classList.remove('spinning');
-    errorEl.style.display = 'block';
-    errorEl.innerHTML = '<strong>Request timed out.</strong> Check that your Apps Script is deployed correctly and the URL is valid.';
-    listEl.innerHTML = '';
+    if (!todayOrdersCache || todayOrdersCache.length === 0) {
+      errorEl.style.display = 'block';
+      errorEl.innerHTML = '<strong>Request timed out.</strong> Check your Apps Script URL in Settings.';
+      listEl.innerHTML = '';
+    }
     delete window[callbackName];
-  }, 20000);
+  }, 8000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
@@ -2961,9 +2949,7 @@ function saveEditedOrder() {
 
 function deleteOrderFromToday(idx) {
   const order = todayOrdersCache[idx];
-  if (!order) { toast('❌ Order not found at idx ' + idx); return; }
-
-  toast('🔍 Opening delete modal for ' + order.name);
+  if (!order) { toast('Order not found'); return; }
 
   document.getElementById('modalIcon').textContent = '🗑️';
   document.getElementById('modalTitle').textContent = 'Delete order?';
@@ -2976,9 +2962,8 @@ function deleteOrderFromToday(idx) {
   _modalResolve = function(confirmed) {
     document.getElementById('confirmModal').classList.remove('open');
     _modalResolve = null;
-    if (!confirmed) { toast('❌ Delete cancelled'); return; }
+    if (!confirmed) return;
 
-    toast('⏳ Sending delete to sheet...');
     const { date: todayDate } = getNPTDate();
     const cbDel = 'delCb_' + Date.now();
     const url = state.sheetUrl + '?action=delete' +
@@ -2986,28 +2971,29 @@ function deleteOrderFromToday(idx) {
       '&date=' + encodeURIComponent(todayDate) +
       '&callback=' + cbDel;
 
-    toast('🗓 Deleting: name="' + order.name + '" date="' + todayDate + '"');
-
     const tDel = setTimeout(function() {
       delete window[cbDel];
-      toast('⏱ Delete TIMED OUT after 10s');
+      toast('⚠️ Delete timed out');
       loadTodayOrders();
     }, 10000);
 
     window[cbDel] = function(data) {
       clearTimeout(tDel);
       delete window[cbDel];
-      toast('✅ Sheet responded: ' + JSON.stringify(data));
-      setTimeout(function() { loadTodayOrders(); }, 600);
+      if (data && data.status === 'notfound') {
+        toast('⚠️ Order not found in sheet — may already be deleted');
+      } else {
+        toast('🗑 ' + order.name + '\'s order deleted');
+      }
+      setTimeout(function() { loadTodayOrders(); }, 3000);
     };
 
     const sDel = document.createElement('script');
     sDel.src = url;
-    sDel.onload = function() { toast('📥 Script loaded OK'); };
     sDel.onerror = function() {
       clearTimeout(tDel);
       delete window[cbDel];
-      toast('❌ Script ONERROR — network blocked?');
+      toast('❌ Delete failed — check connection');
       loadTodayOrders();
     };
     document.head.appendChild(sDel);
@@ -3283,8 +3269,6 @@ function loadLocationMenuFromSheet(location) {
   const callbackName = 'menuCb_' + safeLoc + '_' + Date.now();
   const url = `${state.sheetUrl}?action=getMenu&location=${encodeURIComponent(location)}&callback=${callbackName}`;
 
-  toast('📡 Loading menu: "' + location + '" len=' + location.length);
-
   const mg = document.getElementById('menuGrid');
   const hasCached = state.locationMenus[location] && state.locationMenus[location].length > 0;
   if (mg && !hasCached && state.activeLocation === location) {
@@ -3293,14 +3277,12 @@ function loadLocationMenuFromSheet(location) {
 
   const timeout = setTimeout(() => {
     delete window[callbackName];
-    toast('⏱ Menu TIMED OUT for ' + location);
     if (state.activeLocation === location && mg) renderMenuGrid();
   }, 8000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
     delete window[callbackName];
-    toast('✅ Menu received for ' + location + ': ' + (data.menu ? data.menu.length : 0) + ' items');
     if (data.status === 'ok' && data.menu) {
       state.locationMenus[location] = data.menu;
       saveState();
@@ -3317,11 +3299,9 @@ function loadLocationMenuFromSheet(location) {
 
   const script = document.createElement('script');
   script.src = url;
-  script.onload = function() { toast('📥 Menu script loaded: ' + location); };
   script.onerror = function() {
     clearTimeout(timeout);
     delete window[callbackName];
-    toast('❌ Menu script ONERROR: ' + location);
     if (state.activeLocation === location && mg) renderMenuGrid();
   };
   document.head.appendChild(script);
