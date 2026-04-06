@@ -2980,6 +2980,7 @@ function deleteOrderFromToday(idx) {
     window[cbDel] = function(data) {
       clearTimeout(tDel);
       delete window[cbDel];
+      toast('Sheet says: ' + JSON.stringify(data) + ' | name=' + order.name + ' | date=' + todayDate);
       if (data && data.status === 'notfound') {
         toast('⚠️ Order not found in sheet — may already be deleted');
       } else {
