@@ -4558,30 +4558,45 @@ function submitFoodOrder() {
 //  manifest.json is linked in <head> — deploy it alongside index.html + sw.js
 // ═══════════════════════════════════════════════════════════════
 (function() {
-  // ── Register Service Worker from ./sw.js ──
-  // Only runs on real hosting (GitHub Pages, localhost).
-  // Skipped silently on claudeusercontent.com and other sandboxed preview domains.
   var _swHosts = ['github.io', 'localhost', '127.0.0.1'];
   var _swHost  = location.hostname;
   var _swOk    = _swHosts.some(function(h) { return _swHost === h || _swHost.endsWith('.' + h); });
-  if ('serviceWorker' in navigator && _swOk) {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
-      .then(function(reg) {
-        window._swReg = reg;
-        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-        reg.addEventListener('updatefound', function() {
-          var sw = reg.installing;
-          if (sw) {
-            sw.addEventListener('statechange', function() {
-              if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-                // New SW ready — update banner handles the UX
-              }
-            });
+  if (!('serviceWorker' in navigator) || !_swOk) return;
+
+  navigator.serviceWorker.register('./sw.js', { scope: './' })
+    .then(function(reg) {
+      window._swReg = reg;
+
+      // Force check for SW update on every page load
+      reg.update();
+
+      // If a new SW is already waiting, activate it immediately
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+
+      // When a new SW is found installing, wait for it then activate
+      reg.addEventListener('updatefound', function() {
+        var newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', function() {
+          if (newSW.state === 'installed') {
+            // Immediately take over — no need to wait for user to refresh
+            newSW.postMessage({ type: 'SKIP_WAITING' });
           }
         });
-      })
-      .catch(function(err) { console.warn('SW register failed:', err); });
-  }
+      });
+
+      // When SW controller changes (new SW activated), reload the page
+      // so the new code runs. Only reload if page is not in middle of user action.
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+    })
+    .catch(function(err) { console.warn('SW register failed:', err); });
 })();
 
 // ═══════════════════════════════════════════════════════════════
