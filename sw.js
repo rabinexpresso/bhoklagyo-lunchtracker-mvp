@@ -40,15 +40,19 @@ self.addEventListener('fetch', function(e) {
   var url = e.request.url;
   var method = e.request.method;
 
-  // ── Always bypass SW for these — let browser handle directly ──
-  // Covers: Google Sheets JSONP calls, GitHub API, Google Fonts,
-  // and ANY cross-origin script tag injections (JSONP menu/order loads)
+  // ── Always pass through to network for these — never cache ──
+  // Bare `return` skips e.respondWith for navigational fetches but NOT
+  // for subresource fetches like <script> tags (JSONP). Use explicit
+  // e.respondWith(fetch()) so the request definitely hits the network.
   if (url.includes('script.google.com') ||
       url.includes('api.github.com') ||
       url.includes('fonts.googleapis.com') ||
       url.includes('fonts.gstatic.com') ||
       url.includes('googleapis.com') ||
       method !== 'GET') {
+    e.respondWith(fetch(e.request).catch(function() {
+      return new Response('', { status: 503 });
+    }));
     return;
   }
 

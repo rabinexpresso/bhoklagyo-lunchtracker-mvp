@@ -2057,10 +2057,11 @@ function switchLocation(loc) {
   state.cart = {};
   renderLocationBar();
   renderCategoryTabs();
-  renderMenuGrid();
+  renderMenuGrid(); // renders instantly from cache if available
   updateCartBar();
-  // Load from sheet if not cached
-  if (loc !== 'Generic' && !state.locationMenus[loc]) {
+  // Always fetch fresh from sheet for non-Generic locations
+  // (cache may be stale or from wrong location)
+  if (loc !== 'Generic') {
     loadLocationMenuFromSheet(loc);
   }
 }
@@ -3221,13 +3222,18 @@ function loadLocationMenuFromSheet(location) {
   const callbackName = 'menuCallback_' + Date.now();
   const url = `${state.sheetUrl}?action=getMenu&location=${encodeURIComponent(location)}&callback=${callbackName}`;
 
-  // Show loading in menu grid if on menu screen
+  // Only show loading spinner if we have NO cached data for this location.
+  // If we do have cached data, render it instantly and silently refresh in background.
   const mg = document.getElementById('menuGrid');
-  if (mg) mg.innerHTML = '<div class="menu-loading"><span class="spin">⏳</span><br>Loading ' + location + ' menu...</div>';
+  const hasCached = state.locationMenus[location] && state.locationMenus[location].length > 0;
+  if (mg && !hasCached && state.activeLocation === location) {
+    mg.innerHTML = '<div class="menu-loading"><span class="spin">⏳</span><br>Loading ' + location + ' menu...</div>';
+  }
 
   const timeout = setTimeout(() => {
     delete window[callbackName];
-    if (mg) { renderMenuGrid(); }
+    // On timeout, render whatever we have (cached or empty)
+    if (state.activeLocation === location && mg) renderMenuGrid();
   }, 8000);
 
   window[callbackName] = function(data) {
@@ -3236,7 +3242,7 @@ function loadLocationMenuFromSheet(location) {
     if (data.status === 'ok' && data.menu) {
       state.locationMenus[location] = data.menu;
       saveState();
-      // Re-render if still on this location
+      // Only re-render if the user is still looking at this location
       if (state.activeLocation === location) {
         state.activeCategory = 'All';
         renderCategoryTabs();
@@ -3250,7 +3256,11 @@ function loadLocationMenuFromSheet(location) {
 
   const script = document.createElement('script');
   script.src = url;
-  script.onerror = () => { clearTimeout(timeout); delete window[callbackName]; if (mg) renderMenuGrid(); };
+  script.onerror = () => {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    if (state.activeLocation === location && mg) renderMenuGrid();
+  };
   document.head.appendChild(script);
   setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
@@ -3596,10 +3606,14 @@ function handleModalOverlayClick(e) {
 // ═══════════════════════════════════════
 saveState();
 renderNames();
-// Always clear locationMenus cache on startup — forces fresh load from sheet.
-// This prevents the PWA serving stale menu data from localStorage.
-state.locationMenus = {};
-saveState();
+// Clear locationMenus cache once per SW/app version to force fresh sheet data.
+// After that, data is refreshed on every location switch and sync.
+var _menuClearVersion = 'bhok_menu_cleared_v4';
+if (!localStorage.getItem(_menuClearVersion)) {
+  state.locationMenus = {};
+  saveState();
+  localStorage.setItem(_menuClearVersion, '1');
+}
 // Sync locations from sheet on startup (sheet is master)
 setTimeout(() => {
   syncLocationsFromSheet();
