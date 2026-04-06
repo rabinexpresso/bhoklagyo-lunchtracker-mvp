@@ -5,7 +5,7 @@
 <!-- Force reload if PWA is running old cached version -->
 <script>
 (function(){
-  var V = 'bhok_app_v20260406';
+  var V = 'bhok_app_v20260407b';
   if (localStorage.getItem('bhok_force_ver') !== V) {
     localStorage.setItem('bhok_force_ver', V);
     // Clear all caches then hard reload
@@ -1729,7 +1729,7 @@ const DEFAULT_MENU = [
 
 const SHEET_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbzDASq6-9ArvcGgk6A9nVh2v3pethQRUUdCiv_UYM6Zsax_9PLlgM2aB9A4Qmy2qJW-/exec';
 
-const DEFAULT_LOCATIONS = ['Generic','Samjhana','XO Coffee Palace'];
+const DEFAULT_LOCATIONS = ['Generic','Samjhana','XO Coffeepalace'];
 
 let state = {
   names: [...DEFAULT_NAMES],
@@ -2064,7 +2064,7 @@ function renderLocationBar() {
 }
 
 function getLocationEmoji(loc) {
-  const map = { 'Generic':'🍽️','Samjhana':'🏠','XO Coffee Palace':'☕' };
+  const map = { 'Generic':'🍽️','Samjhana':'🏠','XO Coffeepalace':'☕' };
   return map[loc] || '📍';
 }
 
