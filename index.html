@@ -2684,42 +2684,40 @@ function renderTodayOrders(orders, skipCacheReset) {
       </div>
       <div class="opc-items">${itemRows}</div>
       <div class="opc-actions">
-        <button class="opc-edit-btn"  data-action="menu"   data-idx="${cacheIdx}">✏️ Menu</button>
-        <button class="opc-edit-btn"  data-action="custom" data-idx="${cacheIdx}" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom</button>
-        <button class="opc-split-btn" data-action="split"  data-idx="${cacheIdx}">💸 Split</button>
-        <button class="opc-del-btn"   data-action="delete" data-idx="${cacheIdx}">🗑 Del</button>
+        <button class="opc-edit-btn"  data-fn="editOrderFromToday"  data-i="${cacheIdx}">✏️ Menu</button>
+        <button class="opc-edit-btn"  data-fn="editOrderInline"     data-i="${cacheIdx}" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom</button>
+        <button class="opc-split-btn" data-fn="toggleSplitPanel"    data-i="${cacheIdx}">💸 Split</button>
+        <button class="opc-del-btn"   data-fn="deleteOrderFromToday" data-i="${cacheIdx}">🗑 Del</button>
       </div>
       <div class="split-panel" id="splitPanel_${cacheIdx}">
         <div class="split-panel-title">Who's sharing this bill?</div>
         <div class="split-people" id="splitPeople_${cacheIdx}"></div>
         <div class="split-preview" id="splitPreview_${cacheIdx}"></div>
-        <button class="split-confirm-btn" id="splitConfirm_${cacheIdx}" data-action="confirmsplit" data-idx="${cacheIdx}" disabled>
+        <button class="split-confirm-btn" data-fn="confirmSplit" data-i="${cacheIdx}" id="splitConfirm_${cacheIdx}" disabled>
           Record split
         </button>
       </div>
     </div>`;
   }).join('');
 
-  // Event delegation — one listener on the container
-  // Remove any previous listener first by cloning the node
-  const newList = listEl.cloneNode(true);
-  listEl.parentNode.replaceChild(newList, listEl);
-  newList.addEventListener('click', function(e) {
-    // Walk up from tap target to find the button with data-action
-    var el = e.target;
-    while (el && el !== newList) {
-      if (el.getAttribute && el.getAttribute('data-action')) break;
-      el = el.parentNode;
+  // Wire up buttons with addEventListener after innerHTML is set
+  // This is required for iOS PWA where onclick in innerHTML can be ignored
+  var fnMap = {
+    editOrderFromToday:  function(i){ editOrderFromToday(i); },
+    editOrderInline:     function(i){ editOrderInline(i); },
+    toggleSplitPanel:    function(i){ toggleSplitPanel(i); },
+    deleteOrderFromToday:function(i){ deleteOrderFromToday(i); },
+    confirmSplit:        function(i){ confirmSplit(i); }
+  };
+  listEl.querySelectorAll('[data-fn]').forEach(function(btn) {
+    var fn = btn.getAttribute('data-fn');
+    var i  = parseInt(btn.getAttribute('data-i'));
+    if (fnMap[fn]) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        fnMap[fn](i);
+      });
     }
-    if (!el || el === newList) return;
-    var action = el.getAttribute('data-action');
-    var idx = parseInt(el.getAttribute('data-idx'));
-    toast('Tap: ' + action + ' idx=' + idx);
-    if (action === 'menu')             editOrderFromToday(idx);
-    else if (action === 'custom')      editOrderInline(idx);
-    else if (action === 'split')       toggleSplitPanel(idx);
-    else if (action === 'delete')      deleteOrderFromToday(idx);
-    else if (action === 'confirmsplit') confirmSplit(idx);
   });
 }
 
@@ -2987,9 +2985,8 @@ function deleteOrderFromToday(idx) {
     window[cbDel] = function(data) {
       clearTimeout(tDel);
       delete window[cbDel];
-      toast('Sheet says: ' + JSON.stringify(data) + ' | name=' + order.name + ' | date=' + todayDate);
       if (data && data.status === 'notfound') {
-        toast('⚠️ Order not found in sheet — may already be deleted');
+        toast('⚠️ Order not found in sheet');
       } else {
         toast('🗑 ' + order.name + '\'s order deleted');
       }
@@ -2998,7 +2995,6 @@ function deleteOrderFromToday(idx) {
 
     const sDel = document.createElement('script');
     sDel.src = url;
-    sDel.onload = function() { toast('✅ Script tag loaded'); };
     sDel.onerror = function() {
       clearTimeout(tDel);
       delete window[cbDel];
@@ -3006,12 +3002,6 @@ function deleteOrderFromToday(idx) {
       loadTodayOrders();
     };
     document.head.appendChild(sDel);
-
-    // Also try fetch to see raw response
-    fetch(url).then(function(r){ return r.text(); }).then(function(t){
-      toast('Fetch response: ' + t.substring(0,100));
-    }).catch(function(e){ toast('Fetch error: ' + e); });
-
     setTimeout(function() { try { document.head.removeChild(sDel); } catch(e) {} }, 25000);
   };
 }
