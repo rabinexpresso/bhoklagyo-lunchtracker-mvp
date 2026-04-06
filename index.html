@@ -1541,6 +1541,9 @@ const SHEET_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbzDASq6-9Arvc
 
 const DEFAULT_LOCATIONS = ['Generic','Samjhana','XO Coffee Palace'];
 
+// ── BATCH 1: lastOrders must be declared before loadState() so renderNames() never hits undefined ──
+var lastOrders = {};
+
 let state = {
   names: [...DEFAULT_NAMES],
   menu: JSON.parse(JSON.stringify(DEFAULT_MENU)),
@@ -1582,6 +1585,7 @@ function saveState() {
   } catch(e) {}
 }
 loadState();
+loadLastOrders(); // Batch 1: populate lastOrders before first renderNames()
 
 // ═══════════════════════════════════════
 //  HELPERS
@@ -1743,13 +1747,20 @@ function renderMenuGrid() {
   const g = document.getElementById('menuGrid');
   g.innerHTML = '';
   const activeMenu = getActiveMenu();
-  const items = (state.activeCategory === 'All'
+  let items = (state.activeCategory === 'All'
     ? activeMenu
     : activeMenu.filter(m => m.cat === state.activeCategory))
     .slice().sort((a, b) => a.name.localeCompare(b.name));
 
+  // Batch 1: apply search filter if active
+  if (menuSearchQuery) {
+    items = items.filter(m => m.name.toLowerCase().startsWith(menuSearchQuery));
+  }
+
   if (!items.length) {
-    g.innerHTML = '<div class="empty" style="grid-column:span 2"><span class="emoji">🍽️</span>No items in this category</div>';
+    g.innerHTML = menuSearchQuery
+      ? '<div class="empty" style="grid-column:span 2"><span class="emoji">🔍</span>No items match "' + menuSearchQuery + '"</div>'
+      : '<div class="empty" style="grid-column:span 2"><span class="emoji">🍽️</span>No items in this category</div>';
     return;
   }
 
@@ -2256,7 +2267,7 @@ function syncUsersToSheet() {
 // ═══════════════════════════════════════
 
 let todayOrdersCache = [];
-var lastOrders = {}; // quick reorder — populated by loadLastOrders()
+
 let todayActiveFilter = 'All';
 
 function getNPTDate() {
