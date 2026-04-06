@@ -2948,10 +2948,10 @@ function saveEditedOrder() {
 
 function deleteOrderFromToday(idx) {
   const order = todayOrdersCache[idx];
-  if (!order) { toast('Order not found'); return; }
+  if (!order) { toast('❌ Order not found at idx ' + idx); return; }
 
-  // Show confirm modal directly without async/await
-  // (async/await can behave unexpectedly in some PWA contexts)
+  toast('🔍 Opening delete modal for ' + order.name);
+
   document.getElementById('modalIcon').textContent = '🗑️';
   document.getElementById('modalTitle').textContent = 'Delete order?';
   document.getElementById('modalDesc').innerHTML = 'Remove <strong>' + order.name + '</strong>\'s order of <strong>' + order.total + '</strong> from today\'s sheet.';
@@ -2960,12 +2960,12 @@ function deleteOrderFromToday(idx) {
   confirmBtn.style.color = 'var(--pr)';
   document.getElementById('confirmModal').classList.add('open');
 
-  // Store what to do when confirmed — overwrite _modalResolve
   _modalResolve = function(confirmed) {
     document.getElementById('confirmModal').classList.remove('open');
     _modalResolve = null;
-    if (!confirmed) return;
+    if (!confirmed) { toast('❌ Delete cancelled'); return; }
 
+    toast('⏳ Sending delete to sheet...');
     const { date: todayDate } = getNPTDate();
     const cbDel = 'delCb_' + Date.now();
     const url = state.sheetUrl + '?action=delete' +
@@ -2973,25 +2973,28 @@ function deleteOrderFromToday(idx) {
       '&date=' + encodeURIComponent(todayDate) +
       '&callback=' + cbDel;
 
+    toast('🌐 URL: ' + url.substring(0, 80));
+
     const tDel = setTimeout(function() {
       delete window[cbDel];
-      toast('⚠️ Delete timed out — check connection');
+      toast('⏱ Delete TIMED OUT after 10s');
       loadTodayOrders();
     }, 10000);
 
-    window[cbDel] = function() {
+    window[cbDel] = function(data) {
       clearTimeout(tDel);
       delete window[cbDel];
-      toast('🗑 ' + order.name + '\'s order deleted');
+      toast('✅ Sheet responded: ' + JSON.stringify(data));
       setTimeout(function() { loadTodayOrders(); }, 600);
     };
 
     const sDel = document.createElement('script');
     sDel.src = url;
+    sDel.onload = function() { toast('📥 Script loaded OK'); };
     sDel.onerror = function() {
       clearTimeout(tDel);
       delete window[cbDel];
-      toast('❌ Delete failed — try again');
+      toast('❌ Script ONERROR — network blocked?');
       loadTodayOrders();
     };
     document.head.appendChild(sDel);
@@ -3263,14 +3266,12 @@ function pushLocationMenuToSheet(location, menu) {
 
 function loadLocationMenuFromSheet(location) {
   if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
-  // Include location name in callback to prevent collision when multiple
-  // locations load simultaneously (same Date.now() millisecond)
   const safeLoc = location.replace(/[^a-zA-Z0-9]/g, '_');
   const callbackName = 'menuCb_' + safeLoc + '_' + Date.now();
   const url = `${state.sheetUrl}?action=getMenu&location=${encodeURIComponent(location)}&callback=${callbackName}`;
 
-  // Only show loading spinner if we have NO cached data for this location.
-  // If we do have cached data, render it instantly and silently refresh in background.
+  toast('📡 Loading menu: ' + location);
+
   const mg = document.getElementById('menuGrid');
   const hasCached = state.locationMenus[location] && state.locationMenus[location].length > 0;
   if (mg && !hasCached && state.activeLocation === location) {
@@ -3279,17 +3280,17 @@ function loadLocationMenuFromSheet(location) {
 
   const timeout = setTimeout(() => {
     delete window[callbackName];
-    // On timeout, render whatever we have (cached or empty)
+    toast('⏱ Menu TIMED OUT for ' + location);
     if (state.activeLocation === location && mg) renderMenuGrid();
   }, 8000);
 
   window[callbackName] = function(data) {
     clearTimeout(timeout);
     delete window[callbackName];
+    toast('✅ Menu received for ' + location + ': ' + (data.menu ? data.menu.length : 0) + ' items');
     if (data.status === 'ok' && data.menu) {
       state.locationMenus[location] = data.menu;
       saveState();
-      // Only re-render if the user is still looking at this location
       if (state.activeLocation === location) {
         state.activeCategory = 'All';
         renderCategoryTabs();
@@ -3303,9 +3304,11 @@ function loadLocationMenuFromSheet(location) {
 
   const script = document.createElement('script');
   script.src = url;
-  script.onerror = () => {
+  script.onload = function() { toast('📥 Menu script loaded: ' + location); };
+  script.onerror = function() {
     clearTimeout(timeout);
     delete window[callbackName];
+    toast('❌ Menu script ONERROR: ' + location);
     if (state.activeLocation === location && mg) renderMenuGrid();
   };
   document.head.appendChild(script);
