@@ -2700,20 +2700,27 @@ function renderTodayOrders(orders, skipCacheReset) {
     </div>`;
   }).join('');
 
-  // Attach one event listener to the list container (event delegation)
-  // This is more reliable than inline onclick in iOS PWA
-  listEl.onclick = null;
-  listEl.addEventListener('click', function(e) {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    const action = btn.getAttribute('data-action');
-    const idx = parseInt(btn.getAttribute('data-idx'));
-    if (action === 'menu')        editOrderFromToday(idx);
-    else if (action === 'custom') editOrderInline(idx);
-    else if (action === 'split')  toggleSplitPanel(idx);
-    else if (action === 'delete') deleteOrderFromToday(idx);
+  // Event delegation — one listener on the container
+  // Remove any previous listener first by cloning the node
+  const newList = listEl.cloneNode(true);
+  listEl.parentNode.replaceChild(newList, listEl);
+  newList.addEventListener('click', function(e) {
+    // Walk up from tap target to find the button with data-action
+    var el = e.target;
+    while (el && el !== newList) {
+      if (el.getAttribute && el.getAttribute('data-action')) break;
+      el = el.parentNode;
+    }
+    if (!el || el === newList) return;
+    var action = el.getAttribute('data-action');
+    var idx = parseInt(el.getAttribute('data-idx'));
+    toast('Tap: ' + action + ' idx=' + idx);
+    if (action === 'menu')             editOrderFromToday(idx);
+    else if (action === 'custom')      editOrderInline(idx);
+    else if (action === 'split')       toggleSplitPanel(idx);
+    else if (action === 'delete')      deleteOrderFromToday(idx);
     else if (action === 'confirmsplit') confirmSplit(idx);
-  }, { once: false });
+  });
 }
 
 function toggleOrderSelection(idx) {
@@ -2991,6 +2998,7 @@ function deleteOrderFromToday(idx) {
 
     const sDel = document.createElement('script');
     sDel.src = url;
+    sDel.onload = function() { toast('✅ Script tag loaded'); };
     sDel.onerror = function() {
       clearTimeout(tDel);
       delete window[cbDel];
@@ -2998,6 +3006,12 @@ function deleteOrderFromToday(idx) {
       loadTodayOrders();
     };
     document.head.appendChild(sDel);
+
+    // Also try fetch to see raw response
+    fetch(url).then(function(r){ return r.text(); }).then(function(t){
+      toast('Fetch response: ' + t.substring(0,100));
+    }).catch(function(e){ toast('Fetch error: ' + e); });
+
     setTimeout(function() { try { document.head.removeChild(sDel); } catch(e) {} }, 25000);
   };
 }
