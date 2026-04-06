@@ -2674,8 +2674,6 @@ function renderTodayOrders(orders, skipCacheReset) {
   document.getElementById('ordersCount').textContent = `${orders.length} order${orders.length !== 1 ? 's' : ''} placed`;
 
   listEl.innerHTML = orders.map((o, idx) => {
-    // Use the REAL index in todayOrdersCache, not the filtered position.
-    // All action functions (edit, delete, split) look up todayOrdersCache[cacheIdx].
     const cacheIdx = todayOrdersCache.indexOf(o);
     const itemParts = o.items.split(',').map(s => s.trim()).filter(Boolean);
     const itemRows = itemParts.map(part => {
@@ -2686,7 +2684,7 @@ function renderTodayOrders(orders, skipCacheReset) {
     const av = getNameEmoji(o.name, cacheIdx);
     const ringColors = ['#00b0ff','#ff0065','#42db66','#ffc709','#000079','#00b0ff','#ff0065','#42db66','#ffc709','#000079'];
     const ringColor = ringColors[cacheIdx % ringColors.length];
-    return `<div class="order-person-card" id="opc_${cacheIdx}" style="border-color:${ringColor}20">
+    return `<div class="order-person-card" id="opc_${cacheIdx}" style="border-color:${ringColor}20" data-idx="${cacheIdx}">
       <div class="opc-header">
         <div class="opc-checkbox"><input type="checkbox" id="chk_${cacheIdx}" onchange="toggleOrderSelection(${cacheIdx})" /></div>
         <div class="opc-avatar" style="border-color:${ringColor};background:${ringColor}15">${av}</div>
@@ -2698,21 +2696,36 @@ function renderTodayOrders(orders, skipCacheReset) {
       </div>
       <div class="opc-items">${itemRows}</div>
       <div class="opc-actions">
-        <button class="opc-edit-btn" onclick="editOrderFromToday(${cacheIdx})">✏️ Menu</button>
-        <button class="opc-edit-btn" onclick="editOrderInline(${cacheIdx})" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom</button>
-        <button class="opc-split-btn" onclick="toggleSplitPanel(${cacheIdx})">💸 Split</button>
-        <button class="opc-del-btn" onclick="deleteOrderFromToday(${cacheIdx})">🗑 Del</button>
+        <button class="opc-edit-btn"  data-action="menu"   data-idx="${cacheIdx}">✏️ Menu</button>
+        <button class="opc-edit-btn"  data-action="custom" data-idx="${cacheIdx}" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom</button>
+        <button class="opc-split-btn" data-action="split"  data-idx="${cacheIdx}">💸 Split</button>
+        <button class="opc-del-btn"   data-action="delete" data-idx="${cacheIdx}">🗑 Del</button>
       </div>
       <div class="split-panel" id="splitPanel_${cacheIdx}">
         <div class="split-panel-title">Who's sharing this bill?</div>
         <div class="split-people" id="splitPeople_${cacheIdx}"></div>
         <div class="split-preview" id="splitPreview_${cacheIdx}"></div>
-        <button class="split-confirm-btn" id="splitConfirm_${cacheIdx}" onclick="confirmSplit(${cacheIdx})" disabled>
+        <button class="split-confirm-btn" id="splitConfirm_${cacheIdx}" data-action="confirmsplit" data-idx="${cacheIdx}" disabled>
           Record split
         </button>
       </div>
     </div>`;
   }).join('');
+
+  // Attach one event listener to the list container (event delegation)
+  // This is more reliable than inline onclick in iOS PWA
+  listEl.onclick = null;
+  listEl.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.getAttribute('data-action');
+    const idx = parseInt(btn.getAttribute('data-idx'));
+    if (action === 'menu')        editOrderFromToday(idx);
+    else if (action === 'custom') editOrderInline(idx);
+    else if (action === 'split')  toggleSplitPanel(idx);
+    else if (action === 'delete') deleteOrderFromToday(idx);
+    else if (action === 'confirmsplit') confirmSplit(idx);
+  }, { once: false });
 }
 
 function toggleOrderSelection(idx) {
@@ -3270,7 +3283,7 @@ function loadLocationMenuFromSheet(location) {
   const callbackName = 'menuCb_' + safeLoc + '_' + Date.now();
   const url = `${state.sheetUrl}?action=getMenu&location=${encodeURIComponent(location)}&callback=${callbackName}`;
 
-  toast('📡 Loading menu: ' + location);
+  toast('📡 Loading menu: "' + location + '" len=' + location.length);
 
   const mg = document.getElementById('menuGrid');
   const hasCached = state.locationMenus[location] && state.locationMenus[location].length > 0;
