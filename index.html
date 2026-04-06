@@ -2269,30 +2269,45 @@ async function submitOrder() {
     return;
   }
 
-  try {
-    const url = `${state.sheetUrl}?action=${action}` +
-      `&name=${encodeURIComponent(state.currentUser)}` +
-      `&items=${encodeURIComponent(itemsStr)}` +
-      `&total=${encodeURIComponent('Rs ' + total)}` +
-      `&timestamp=${encodeURIComponent(timeOnly)}` +
-      `&date=${encodeURIComponent(todayDate)}&day=${encodeURIComponent(dayName)}`;
+  const url = `${state.sheetUrl}?action=${action}` +
+    `&name=${encodeURIComponent(state.currentUser)}` +
+    `&items=${encodeURIComponent(itemsStr)}` +
+    `&total=${encodeURIComponent('Rs ' + total)}` +
+    `&timestamp=${encodeURIComponent(timeOnly)}` +
+    `&date=${encodeURIComponent(todayDate)}&day=${encodeURIComponent(dayName)}`;
 
-    await fetch(url, { method: 'GET', mode: 'no-cors' });
-
-    const verb = state.isEditing ? 'updated' : 'saved';
-    showStatus('success',
-      `✅ <strong>Order ${verb} in Google Sheets!</strong><br>` +
-      `<strong>${state.currentUser}</strong> — ${itemsStr}<br>` +
-      `Total: <strong>Rs ${total}</strong>`
-    );
-    btn.textContent = state.isEditing ? '✓ Updated' : '✓ Submitted';
-    state.isEditing = false;
-    updateUserPill();
-  } catch(e) {
-    showStatus('error', `❌ Error: ${e.message}<br>Check your Apps Script URL in Settings.`);
+  // JSONP — works in PWA (fetch+no-cors fails silently in SW context)
+  const cbSubmit = 'submitCb_' + Date.now();
+  const urlSubmit = url + '&callback=' + cbSubmit;
+  const isEditing = state.isEditing;
+  const tSubmit = setTimeout(function() {
+    delete window[cbSubmit];
+    showStatus('error', '❌ Timed out — check your Apps Script URL in Settings.');
     btn.disabled = false;
     btn.textContent = 'Retry →';
-  }
+  }, 12000);
+  window[cbSubmit] = function() {
+    clearTimeout(tSubmit); delete window[cbSubmit];
+    const verb = isEditing ? 'updated' : 'saved';
+    showStatus('success',
+      '✅ <strong>Order ' + verb + ' in Google Sheets!</strong><br>' +
+      '<strong>' + state.currentUser + '</strong> — ' + itemsStr + '<br>' +
+      'Total: <strong>Rs ' + total + '</strong>'
+    );
+    btn.textContent = isEditing ? '✓ Updated' : '✓ Submitted';
+    state.isEditing = false;
+    updateUserPill();
+  };
+  const sSubmit = document.createElement('script');
+  sSubmit.src = urlSubmit;
+  sSubmit.onerror = function() {
+    clearTimeout(tSubmit); delete window[cbSubmit];
+    showStatus('error', '❌ Could not reach sheet. Check your Apps Script URL in Settings.');
+    btn.disabled = false;
+    btn.textContent = 'Retry →';
+  };
+  document.head.appendChild(sSubmit);
+  setTimeout(function() { try { document.head.removeChild(sSubmit); } catch(e) {} }, 25000);
 }
 
 // ═══════════════════════════════════════
@@ -2846,16 +2861,23 @@ function updateOrderTotal(idx, value) {
     `&items=${encodeURIComponent(order.items)}` +
     `&total=${encodeURIComponent(newTotal)}` +
     `&timestamp=${encodeURIComponent(order.time || '')}`;
-  fetch(url, { method: 'GET', mode: 'no-cors' })
-    .then(() => {
-      order.total = newTotal;
-      toast('✅ Total updated!');
-      // Refresh grand total
-      let grandTotal = 0;
-      todayOrdersCache.forEach(o => { grandTotal += parseInt(String(o.total).replace(/[^0-9]/g, '')) || 0; });
-      document.getElementById('grandTotalAmount').textContent = 'Rs ' + grandTotal;
-    })
-    .catch(() => toast('Error updating — try again'));
+  // JSONP — works in PWA
+  const cbUpd = 'updCb_' + Date.now();
+  const urlUpd = url + '&callback=' + cbUpd;
+  const tUpd = setTimeout(function() { delete window[cbUpd]; }, 10000);
+  window[cbUpd] = function() {
+    clearTimeout(tUpd); delete window[cbUpd];
+    order.total = newTotal;
+    toast('✅ Total updated!');
+    let grandTotal = 0;
+    todayOrdersCache.forEach(o => { grandTotal += parseInt(String(o.total).replace(/[^0-9]/g, '')) || 0; });
+    document.getElementById('grandTotalAmount').textContent = 'Rs ' + grandTotal;
+  };
+  const sUpd = document.createElement('script');
+  sUpd.src = urlUpd;
+  sUpd.onerror = function() { clearTimeout(tUpd); delete window[cbUpd]; toast('Error updating — try again'); };
+  document.head.appendChild(sUpd);
+  setTimeout(function() { try { document.head.removeChild(sUpd); } catch(e) {} }, 25000);
 }
 
 function closeEditOrderModal() {
@@ -2885,12 +2907,20 @@ function saveEditedOrder() {
     `&total=${encodeURIComponent(newTotal)}` +
     `&timestamp=${encodeURIComponent(order.time || '')}`;
 
-  fetch(url, { method: 'GET', mode: 'no-cors' })
-    .then(() => {
-      toast('✅ Order updated!');
-      setTimeout(() => loadTodayOrders(), 800);
-    })
-    .catch(() => toast('Error updating — try again'));
+  // JSONP — works in PWA
+  const cbEdit = 'editCb_' + Date.now();
+  const urlEdit = url + '&callback=' + cbEdit;
+  const tEdit = setTimeout(function() { delete window[cbEdit]; loadTodayOrders(); }, 10000);
+  window[cbEdit] = function() {
+    clearTimeout(tEdit); delete window[cbEdit];
+    toast('✅ Order updated!');
+    setTimeout(function() { loadTodayOrders(); }, 600);
+  };
+  const sEdit = document.createElement('script');
+  sEdit.src = urlEdit;
+  sEdit.onerror = function() { clearTimeout(tEdit); delete window[cbEdit]; toast('Error updating — try again'); };
+  document.head.appendChild(sEdit);
+  setTimeout(function() { try { document.head.removeChild(sEdit); } catch(e) {} }, 25000);
 }
 
 async function deleteOrderFromToday(idx) {
@@ -2901,17 +2931,27 @@ async function deleteOrderFromToday(idx) {
 
   const { date: todayDate } = getNPTDate();
 
-  try {
-    const url = `${state.sheetUrl}?action=delete` +
-      `&name=${encodeURIComponent(order.name)}` +
-      `&date=${encodeURIComponent(todayDate)}`;
-    await fetch(url, {method: 'GET', mode: 'no-cors'});
-    toast(`🗑 ${order.name}'s order deleted`);
-    // Refresh the list
-    setTimeout(() => loadTodayOrders(), 800);
-  } catch(e) {
-    toast('Error deleting — try again');
-  }
+  // JSONP — works in PWA (fetch+no-cors is intercepted by SW and fails silently)
+  const cbDel = 'delCb_' + Date.now();
+  const url = state.sheetUrl + '?action=delete' +
+    '&name=' + encodeURIComponent(order.name) +
+    '&date=' + encodeURIComponent(todayDate) +
+    '&callback=' + cbDel;
+  const tDel = setTimeout(function() {
+    delete window[cbDel];
+    toast('⚠️ Delete timed out');
+    loadTodayOrders();
+  }, 10000);
+  window[cbDel] = function() {
+    clearTimeout(tDel); delete window[cbDel];
+    toast('🗑 ' + order.name + '\'s order deleted');
+    setTimeout(function() { loadTodayOrders(); }, 600);
+  };
+  const sDel = document.createElement('script');
+  sDel.src = url;
+  sDel.onerror = function() { clearTimeout(tDel); delete window[cbDel]; toast('Error deleting — try again'); loadTodayOrders(); };
+  document.head.appendChild(sDel);
+  setTimeout(function() { try { document.head.removeChild(sDel); } catch(e) {} }, 25000);
 }
 
 // ═══════════════════════════════════════
@@ -3556,6 +3596,10 @@ function handleModalOverlayClick(e) {
 // ═══════════════════════════════════════
 saveState();
 renderNames();
+// Always clear locationMenus cache on startup — forces fresh load from sheet.
+// This prevents the PWA serving stale menu data from localStorage.
+state.locationMenus = {};
+saveState();
 // Sync locations from sheet on startup (sheet is master)
 setTimeout(() => {
   syncLocationsFromSheet();
@@ -4673,7 +4717,8 @@ function sendSystemNotif(title, body, tag) {
 (function() {
   var REPO    = 'rabinexpresso/bhoklagyo-lunchtracker-mvp';
   var API     = 'https://api.github.com/repos/' + REPO + '/commits/main';
-  var LS_KEY  = 'bhok_lagyo_sha';
+  var LS_KEY          = 'bhok_lagyo_sha';
+  var LS_DISMISSED    = 'bhok_lagyo_sha_dismissed';
 
   function fetchSHA(cb) {
     fetch(API, { cache: 'no-store', headers: { 'Accept': 'application/vnd.github.v3+json' } })
@@ -4682,20 +4727,41 @@ function sendSystemNotif(title, body, tag) {
       .catch(function() {});
   }
 
-  function onNewVersion(msg) {
+  function onNewVersion(sha, msg) {
+    // Only show banner if we haven't already shown it for this exact SHA
+    if (localStorage.getItem(LS_DISMISSED) === sha) return;
     document.getElementById('updateBanner').classList.add('visible');
     showRichNotif('🆕', 'App Updated!', msg || 'A new version of Bhok Lagyo is ready. Tap Refresh to get it.');
     sendSystemNotif('🆕 Bhok Lagyo Updated', msg || 'New version available — tap to refresh.', 'app-update');
   }
 
+  // Mark this SHA as dismissed when user clicks Refresh or ×
+  function markDismissed() {
+    var sha = localStorage.getItem(LS_KEY);
+    if (sha) localStorage.setItem(LS_DISMISSED, sha);
+  }
+
+  // Patch the banner buttons to record dismissal
+  document.addEventListener('DOMContentLoaded', function() {
+    var reloadBtn = document.querySelector('.update-reload-btn');
+    var dismissBtn = document.querySelector('.update-dismiss-btn');
+    if (reloadBtn) reloadBtn.addEventListener('click', markDismissed);
+    if (dismissBtn) dismissBtn.addEventListener('click', markDismissed);
+  });
+
   function check() {
     fetchSHA(function(sha, commitMsg) {
       var stored = localStorage.getItem(LS_KEY);
       if (!stored) {
+        // First visit — store silently, no banner
         localStorage.setItem(LS_KEY, sha);
       } else if (sha !== stored) {
-        onNewVersion(commitMsg);
+        // Genuinely new commit
         localStorage.setItem(LS_KEY, sha);
+        onNewVersion(sha, commitMsg);
+      } else {
+        // Same SHA — show banner only if not yet dismissed for this SHA
+        onNewVersion(sha, commitMsg);
       }
     });
   }
