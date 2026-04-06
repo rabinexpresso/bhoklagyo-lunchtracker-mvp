@@ -2927,35 +2927,57 @@ function saveEditedOrder() {
   setTimeout(function() { try { document.head.removeChild(sEdit); } catch(e) {} }, 25000);
 }
 
-async function deleteOrderFromToday(idx) {
+function deleteOrderFromToday(idx) {
   const order = todayOrdersCache[idx];
-  if (!order) return;
-  const okSingle = await showModal({ icon: '🗑️', title: 'Delete order?', desc: 'Remove <strong>' + order.name + '</strong>\'s order of <strong>' + order.total + '</strong> from today\'s sheet.' });
-  if (!okSingle) return;
+  if (!order) { toast('Order not found'); return; }
 
-  const { date: todayDate } = getNPTDate();
+  // Show confirm modal directly without async/await
+  // (async/await can behave unexpectedly in some PWA contexts)
+  document.getElementById('modalIcon').textContent = '🗑️';
+  document.getElementById('modalTitle').textContent = 'Delete order?';
+  document.getElementById('modalDesc').innerHTML = 'Remove <strong>' + order.name + '</strong>\'s order of <strong>' + order.total + '</strong> from today\'s sheet.';
+  const confirmBtn = document.getElementById('modalConfirmBtn');
+  confirmBtn.textContent = 'Delete';
+  confirmBtn.style.color = 'var(--pr)';
+  document.getElementById('confirmModal').classList.add('open');
 
-  // JSONP — works in PWA (fetch+no-cors is intercepted by SW and fails silently)
-  const cbDel = 'delCb_' + Date.now();
-  const url = state.sheetUrl + '?action=delete' +
-    '&name=' + encodeURIComponent(order.name) +
-    '&date=' + encodeURIComponent(todayDate) +
-    '&callback=' + cbDel;
-  const tDel = setTimeout(function() {
-    delete window[cbDel];
-    toast('⚠️ Delete timed out');
-    loadTodayOrders();
-  }, 10000);
-  window[cbDel] = function() {
-    clearTimeout(tDel); delete window[cbDel];
-    toast('🗑 ' + order.name + '\'s order deleted');
-    setTimeout(function() { loadTodayOrders(); }, 600);
+  // Store what to do when confirmed — overwrite _modalResolve
+  _modalResolve = function(confirmed) {
+    document.getElementById('confirmModal').classList.remove('open');
+    _modalResolve = null;
+    if (!confirmed) return;
+
+    const { date: todayDate } = getNPTDate();
+    const cbDel = 'delCb_' + Date.now();
+    const url = state.sheetUrl + '?action=delete' +
+      '&name=' + encodeURIComponent(order.name) +
+      '&date=' + encodeURIComponent(todayDate) +
+      '&callback=' + cbDel;
+
+    const tDel = setTimeout(function() {
+      delete window[cbDel];
+      toast('⚠️ Delete timed out — check connection');
+      loadTodayOrders();
+    }, 10000);
+
+    window[cbDel] = function() {
+      clearTimeout(tDel);
+      delete window[cbDel];
+      toast('🗑 ' + order.name + '\'s order deleted');
+      setTimeout(function() { loadTodayOrders(); }, 600);
+    };
+
+    const sDel = document.createElement('script');
+    sDel.src = url;
+    sDel.onerror = function() {
+      clearTimeout(tDel);
+      delete window[cbDel];
+      toast('❌ Delete failed — try again');
+      loadTodayOrders();
+    };
+    document.head.appendChild(sDel);
+    setTimeout(function() { try { document.head.removeChild(sDel); } catch(e) {} }, 25000);
   };
-  const sDel = document.createElement('script');
-  sDel.src = url;
-  sDel.onerror = function() { clearTimeout(tDel); delete window[cbDel]; toast('Error deleting — try again'); loadTodayOrders(); };
-  document.head.appendChild(sDel);
-  setTimeout(function() { try { document.head.removeChild(sDel); } catch(e) {} }, 25000);
 }
 
 // ═══════════════════════════════════════
@@ -3222,7 +3244,10 @@ function pushLocationMenuToSheet(location, menu) {
 
 function loadLocationMenuFromSheet(location) {
   if (!state.sheetUrl || !state.sheetUrl.includes('script.google.com')) return;
-  const callbackName = 'menuCallback_' + Date.now();
+  // Include location name in callback to prevent collision when multiple
+  // locations load simultaneously (same Date.now() millisecond)
+  const safeLoc = location.replace(/[^a-zA-Z0-9]/g, '_');
+  const callbackName = 'menuCb_' + safeLoc + '_' + Date.now();
   const url = `${state.sheetUrl}?action=getMenu&location=${encodeURIComponent(location)}&callback=${callbackName}`;
 
   // Only show loading spinner if we have NO cached data for this location.
