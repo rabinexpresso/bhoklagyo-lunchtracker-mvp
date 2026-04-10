@@ -4483,7 +4483,7 @@ function submitFoodOrder() {
   const grouped = {};
   foItems.forEach(foodItem => {
     if (!foodItem.item) return;
-    const sharePrice = foodItem.price > 0 ? foodItem.price : 0; // per item price
+    const sharePrice = foodItem.price > 0 ? foodItem.price : 0;
     foodItem.assignments.forEach(name => {
       if (!name) return;
       if (!grouped[name]) grouped[name] = { items: [], total: 0 };
@@ -4515,47 +4515,50 @@ function submitFoodOrder() {
     return;
   }
 
-  let submitted = 0;
-  const total = orders.length;
+  // Send ALL orders in ONE batch request — prevents dropped rows from
+  // concurrent individual requests hitting Google Apps Script simultaneously
+  const rowsPayload = orders.map(o => ({
+    name: o.name,
+    items: o.items,
+    total: o.total,
+    timestamp: ts
+  }));
 
-  orders.forEach((order, idx) => {
-    setTimeout(() => {
-      const callbackName = 'foodCb_' + Date.now() + '_' + idx;
-      const url = state.sheetUrl + '?action=add' +
-        '&name=' + encodeURIComponent(order.name) +
-        '&items=' + encodeURIComponent(order.items) +
-        '&total=' + encodeURIComponent(order.total) +
-        '&timestamp=' + encodeURIComponent(ts) +
-        '&date=' + encodeURIComponent(todayDate) +
-        '&day=' + encodeURIComponent(dayName) +
-        '&callback=' + callbackName;
+  const callbackName = 'foodBatchCb_' + Date.now();
+  const url = state.sheetUrl + '?action=addBatch' +
+    '&rows=' + encodeURIComponent(JSON.stringify(rowsPayload)) +
+    '&date=' + encodeURIComponent(todayDate) +
+    '&day=' + encodeURIComponent(dayName) +
+    '&callback=' + callbackName;
 
-      window[callbackName] = function(data) {
-        delete window[callbackName];
-        submitted++;
-        if (submitted === total) {
-          toast('✅ ' + total + ' orders submitted!');
-          // Stay on page so user can share
-          var foBtn = document.getElementById('foSubmitBtn');
-          if (foBtn) { foBtn.textContent = '✓ Submitted'; foBtn.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
-          document.getElementById('foReadyCount').textContent = total + ' orders saved';
-        }
-      };
-      const script = document.createElement('script');
-      script.src = url;
-      script.onerror = function() {
-        delete window[callbackName];
-        submitted++;
-        if (submitted === total) {
-          toast('⚠️ Some orders may have failed — check sheet');
-          var foBtnErr = document.getElementById('foSubmitBtn');
-          if (foBtnErr) { foBtnErr.textContent = 'Retry'; foBtnErr.disabled = false; }
-        }
-      };
-      document.head.appendChild(script);
-      setTimeout(function() { try { document.head.removeChild(script); } catch(e) {} }, 25000);
-    }, idx * 300);
-  });
+  const timeout = setTimeout(function() {
+    delete window[callbackName];
+    toast('⚠️ Submission timed out — check sheet');
+    var foBtn = document.getElementById('foSubmitBtn');
+    if (foBtn) { foBtn.textContent = 'Retry'; foBtn.disabled = false; }
+  }, 15000);
+
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    const total = orders.length;
+    toast('✅ ' + total + ' orders submitted!');
+    var foBtn = document.getElementById('foSubmitBtn');
+    if (foBtn) { foBtn.textContent = '✓ Submitted'; foBtn.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
+    document.getElementById('foReadyCount').textContent = total + ' orders saved';
+  };
+
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = function() {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    toast('⚠️ Could not reach sheet — check connection');
+    var foBtn = document.getElementById('foSubmitBtn');
+    if (foBtn) { foBtn.textContent = 'Retry'; foBtn.disabled = false; }
+  };
+  document.head.appendChild(script);
+  setTimeout(function() { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
 // ═══════════════════════════════════════════════════════════════
