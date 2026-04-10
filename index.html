@@ -2673,7 +2673,7 @@ function clearBulkSelection() {
 }
 
 function bulkDeleteSelected() {
-  const indices = [...selectedOrderIndices];
+  const indices = [...selectedOrderIndices].sort((a, b) => b - a); // descending so splice doesn't shift
   if (!indices.length) return;
   const orders = indices.map(i => todayOrdersCache[i]).filter(Boolean);
   const names = orders.map(o => o.name).join(', ');
@@ -2682,41 +2682,27 @@ function bulkDeleteSelected() {
 
   const { date: todayDate } = getNPTDate();
 
-  // Clear selection immediately so bulk bar disappears right away
+  // ── Optimistic UI: remove from local cache and re-render instantly ──
+  indices.forEach(idx => { todayOrdersCache.splice(idx, 1); });
   selectedOrderIndices = new Set();
-  updateBulkBar();
-  indices.forEach(idx => {
-    const card = document.getElementById('opc_' + idx);
-    if (card) { card.style.opacity = '0.3'; card.style.pointerEvents = 'none'; }
-  });
+  renderTodayNameChips();
+  applyTodayFilter();
+  toast('🗑 Deleted ' + orders.length + ' order' + (orders.length !== 1 ? 's' : ''));
 
+  // ── Sync to sheet in background ──
   const deleteItems = orders.map(o => ({ name: o.name, date: todayDate }));
   const callbackName = 'bulkDeleteCallback_' + Date.now();
   const url = `${state.sheetUrl}?action=deleteBatch` +
     `&items=${encodeURIComponent(JSON.stringify(deleteItems))}` +
     `&callback=${callbackName}`;
 
-  const timeout = setTimeout(() => {
-    delete window[callbackName];
-    selectedOrderIndices = new Set();
-    loadTodayOrders();
-  }, 10000);
-
-  window[callbackName] = function(data) {
-    clearTimeout(timeout);
-    delete window[callbackName];
-    toast('Deleted ' + orders.length + ' order' + (orders.length !== 1 ? 's' : ''));
-    selectedOrderIndices = new Set();
-    loadTodayOrders();
-  };
-
+  window[callbackName] = function() { delete window[callbackName]; };
   const script = document.createElement('script');
   script.src = url;
   script.onerror = () => {
-    clearTimeout(timeout);
     delete window[callbackName];
-    selectedOrderIndices = new Set();
-    loadTodayOrders();
+    toast('⚠️ Could not sync deletes to sheet');
+    loadTodayOrders(); // reload on error
   };
   document.head.appendChild(script);
   setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
@@ -2838,6 +2824,14 @@ function deleteOrderFromToday(idx) {
 
   if (!window.confirm('Delete ' + order.name + '\'s order of ' + order.total + '?')) return;
 
+  // ── Optimistic UI: remove from local cache and re-render instantly ──
+  todayOrdersCache.splice(idx, 1);
+  selectedOrderIndices = new Set();
+  renderTodayNameChips();
+  applyTodayFilter();
+  toast('🗑 ' + order.name + '\'s order deleted');
+
+  // ── Sync to sheet in background ──
   const { date: todayDate } = getNPTDate();
   const cbDel = 'delCb_' + Date.now();
   const url = state.sheetUrl + '?action=delete' +
@@ -2845,26 +2839,13 @@ function deleteOrderFromToday(idx) {
     '&date=' + encodeURIComponent(todayDate) +
     '&callback=' + cbDel;
 
-  const tDel = setTimeout(function() {
-    delete window[cbDel];
-    toast('⚠️ Delete timed out');
-    loadTodayOrders();
-  }, 10000);
-
-  window[cbDel] = function(data) {
-    clearTimeout(tDel);
-    delete window[cbDel];
-    toast(data && data.status === 'notfound' ? '⚠️ Order not found in sheet' : '🗑 ' + order.name + '\'s order deleted');
-    setTimeout(function() { loadTodayOrders(); }, 3000);
-  };
-
+  window[cbDel] = function() { delete window[cbDel]; };
   const sDel = document.createElement('script');
   sDel.src = url;
   sDel.onerror = function() {
-    clearTimeout(tDel);
     delete window[cbDel];
-    toast('❌ Delete failed');
-    loadTodayOrders();
+    toast('⚠️ Could not sync delete to sheet');
+    loadTodayOrders(); // reload from sheet on error
   };
   document.head.appendChild(sDel);
   setTimeout(function() { try { document.head.removeChild(sDel); } catch(e) {} }, 25000);
