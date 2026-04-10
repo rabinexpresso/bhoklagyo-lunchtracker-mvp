@@ -1372,7 +1372,7 @@
       </div>
 
       <!-- CUSTOM MODE -->
-      <div id="foCustomSection" style="display:none">
+      <div id="foCustomSection" style="display:none;margin-top:12px;border-top:1.5px solid var(--border2);padding-top:12px">
         <div class="go-row-header">
           <span style="width:88px;flex-shrink:0">Name</span>
           <span style="flex:1">Items (free text)</span>
@@ -4175,9 +4175,16 @@ function setFoMode(mode) {
   foMode = mode;
   document.getElementById('foModeMenu').classList.toggle('active', mode === 'menu');
   document.getElementById('foModeCustom').classList.toggle('active', mode === 'custom');
-  document.getElementById('foMenuSection').style.display = mode === 'menu' ? 'block' : 'none';
-  document.getElementById('foCustomSection').style.display = mode === 'custom' ? 'block' : 'none';
-  if (mode === 'custom' && foCustomRows.length === 0) addFoCustomRow();
+
+  // Both sections always visible — just show custom section when toggled
+  const customSection = document.getElementById('foCustomSection');
+  if (mode === 'custom') {
+    customSection.style.display = 'block';
+    if (foCustomRows.length === 0) addFoCustomRow();
+    // Scroll to custom section
+    setTimeout(function() { customSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+  }
+  // Menu section always visible — never hide it
   updateFoSubmitBar();
 }
 
@@ -4443,18 +4450,25 @@ function updateFoSummary() {
 }
 
 function updateFoSubmitBar() {
-  if (foMode === 'custom') {
-    const readyRows = foCustomRows.filter(r => r.name && r.items && r.total);
-    document.getElementById('foReadyCount').textContent = readyRows.length + ' of ' + foCustomRows.length + ' ready';
-    document.getElementById('foSubmitBtn').disabled = readyRows.length === 0;
+  const menuSlots = foItems.reduce((s, f) => s + (f.qty || 0), 0);
+  const menuAssigned = foItems.reduce((s, f) => s + f.assignments.filter(a => a !== '').length, 0);
+  const customReady = foCustomRows.filter(r => r.name && r.items && r.total).length;
+  const hasMenuItems = foItems.some(f => f.item && f.price > 0);
+  const menuAllAssigned = menuSlots > 0 && menuAssigned === menuSlots;
+  const hasAny = (hasMenuItems && menuAllAssigned) || customReady > 0;
+
+  let label = '';
+  if (menuSlots > 0 && customReady > 0) {
+    label = menuAssigned + '/' + menuSlots + ' assigned + ' + customReady + ' custom';
+  } else if (menuSlots > 0) {
+    label = menuAssigned + ' of ' + menuSlots + ' assigned';
+  } else if (customReady > 0) {
+    label = customReady + ' custom order' + (customReady !== 1 ? 's' : '') + ' ready';
   } else {
-    const totalSlots = foItems.reduce((s, f) => s + (f.qty || 0), 0);
-    const assignedSlots = foItems.reduce((s, f) => s + f.assignments.filter(a => a !== '').length, 0);
-    document.getElementById('foReadyCount').textContent = assignedSlots + ' of ' + totalSlots + ' assigned';
-    const hasItems = foItems.some(f => f.item && f.price > 0);
-    const allAssigned = totalSlots > 0 && assignedSlots === totalSlots;
-    document.getElementById('foSubmitBtn').disabled = !(hasItems && allAssigned);
+    label = '0 of 0 assigned';
   }
+  document.getElementById('foReadyCount').textContent = label;
+  document.getElementById('foSubmitBtn').disabled = !hasAny;
 }
 
 // ── Drag to reorder ──
@@ -4504,57 +4518,7 @@ function submitFoodOrder() {
   const dayName = new Date().toLocaleDateString('en-US', {timeZone:'Asia/Kathmandu', weekday:'long'});
   const ts = new Date().toLocaleTimeString('en-US', {timeZone:'Asia/Kathmandu', hour:'2-digit', minute:'2-digit'});
 
-  // Custom mode — submit directly
-  if (foMode === 'custom') {
-    const readyRows = foCustomRows.filter(r => r.name && r.items && r.total);
-    if (readyRows.length === 0) {
-      toast('No orders ready');
-      btn.disabled = false;
-      btn.textContent = 'Submit all →';
-      return;
-    }
-    let submitted = 0;
-    const total = readyRows.length;
-    readyRows.forEach(function(row, idx) {
-      setTimeout(function() {
-        const callbackName = 'foCustCb_' + Date.now() + '_' + idx;
-        const url = state.sheetUrl + '?action=add' +
-          '&name=' + encodeURIComponent(row.name) +
-          '&items=' + encodeURIComponent(row.items) +
-          '&total=' + encodeURIComponent('Rs ' + row.total) +
-          '&timestamp=' + encodeURIComponent(ts) +
-          '&date=' + encodeURIComponent(todayDate) +
-          '&day=' + encodeURIComponent(dayName) +
-          '&callback=' + callbackName;
-        window[callbackName] = function() {
-          delete window[callbackName];
-          submitted++;
-          if (submitted === total) {
-            toast('✅ ' + total + ' orders submitted!');
-            var submitBtn2 = document.getElementById('foSubmitBtn');
-            if (submitBtn2) { submitBtn2.textContent = '✓ Submitted'; submitBtn2.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
-            document.getElementById('foReadyCount').textContent = total + ' orders saved';
-            // Reset so next submission starts fresh
-            setTimeout(function() {
-              foCustomRows = [];
-              renderFoCustomRows();
-              var foBtnReset = document.getElementById('foSubmitBtn');
-              if (foBtnReset) { foBtnReset.textContent = 'Submit all →'; foBtnReset.style.background = ''; foBtnReset.disabled = false; }
-              document.getElementById('foReadyCount').textContent = '0 of 0 ready';
-            }, 2000);
-          }
-        };
-        const script = document.createElement('script');
-        script.src = url;
-        script.onerror = function() { delete window[callbackName]; submitted++; };
-        document.head.appendChild(script);
-        setTimeout(function() { try { document.head.removeChild(script); } catch(e) {} }, 25000);
-      }, idx * 300);
-    });
-    return;
-  }
-
-  // Menu mode — Group by person — combine all their items
+  // ── Build orders from MENU mode ──
   const grouped = {};
   foItems.forEach(foodItem => {
     if (!foodItem.item) return;
@@ -4562,19 +4526,43 @@ function submitFoodOrder() {
     foodItem.assignments.forEach(name => {
       if (!name) return;
       if (!grouped[name]) grouped[name] = { items: [], total: 0 };
-      grouped[name].items.push(`${foodItem.item} x1`);
+      grouped[name].items.push(foodItem.item + ' x1');
       grouped[name].total += sharePrice;
     });
   });
-
-  // Merge duplicate items for same person
+  // Merge duplicate items per person
   Object.keys(grouped).forEach(name => {
-    const itemCounts = {};
+    const counts = {};
     grouped[name].items.forEach(it => {
       const base = it.replace(/ x\d+$/, '');
-      itemCounts[base] = (itemCounts[base] || 0) + 1;
+      counts[base] = (counts[base] || 0) + 1;
     });
-    grouped[name].items = Object.entries(itemCounts).map(([base, cnt]) => `${base} x${cnt}`);
+    grouped[name].items = Object.entries(counts).map(([base, cnt]) => base + ' x' + cnt);
+  });
+
+  // ── Merge CUSTOM mode rows into grouped ──
+  const customReady = foCustomRows.filter(r => r.name && r.items && r.total);
+  customReady.forEach(row => {
+    const name = row.name;
+    const total = parseInt(row.total) || 0;
+    if (!grouped[name]) grouped[name] = { items: [], total: 0 };
+    // Parse custom item string and merge
+    row.items.split(',').forEach(part => {
+      part = part.trim();
+      if (part) grouped[name].items.push(part);
+    });
+    grouped[name].total += total;
+  });
+  // Merge duplicate items again after combining
+  Object.keys(grouped).forEach(name => {
+    const counts = {};
+    grouped[name].items.forEach(it => {
+      it = it.trim();
+      const m = it.match(/^(.+?)\s*x\s*(\d+)$/i);
+      if (m) { const k = m[1].trim(); counts[k] = (counts[k] || 0) + parseInt(m[2]); }
+      else if (it) { counts[it] = (counts[it] || 0) + 1; }
+    });
+    grouped[name].items = Object.entries(counts).map(([k, v]) => k + ' x' + v);
   });
 
   const orders = Object.entries(grouped).map(([name, data]) => ({
@@ -4584,14 +4572,16 @@ function submitFoodOrder() {
   }));
 
   if (orders.length === 0) {
-    toast('No assigned orders to submit');
+    toast('No orders ready to submit');
     btn.disabled = false;
     btn.textContent = 'Submit all →';
     return;
   }
 
-  // Send ALL orders in ONE batch request — prevents dropped rows from
-  // concurrent individual requests hitting Google Apps Script simultaneously
+  // ── Auto-update menu with new custom items ──
+  autoAddCustomItemsToMenu(customReady);
+
+  // ── Send all orders as ONE batch request ──
   const rowsPayload = orders.map(o => ({
     name: o.name,
     items: o.items,
@@ -4618,22 +4608,19 @@ function submitFoodOrder() {
     delete window[callbackName];
     const total = orders.length;
     toast('✅ ' + total + ' orders submitted!');
-    // Accumulate into per-person summary
     accumulateSubmittedOrders(orders);
     var foBtn = document.getElementById('foSubmitBtn');
     if (foBtn) { foBtn.textContent = '✓ Submitted'; foBtn.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
     document.getElementById('foReadyCount').textContent = total + ' orders saved';
-    // Reset food items so next submission starts fresh, but keep summary visible
+    // Reset both menu and custom items after success
     setTimeout(function() {
       foItems = [];
+      foCustomRows = [];
       renderFoFoodList();
-      updateFoSummary(); // re-render with per-person breakdown + empty current order
+      renderFoCustomList();
+      updateFoSummary();
       var foBtnReset = document.getElementById('foSubmitBtn');
-      if (foBtnReset) {
-        foBtnReset.textContent = 'Submit all →';
-        foBtnReset.style.background = '';
-        foBtnReset.disabled = false;
-      }
+      if (foBtnReset) { foBtnReset.textContent = 'Submit all →'; foBtnReset.style.background = ''; foBtnReset.disabled = false; }
       document.getElementById('foReadyCount').textContent = '0 of 0 assigned';
     }, 2000);
   };
@@ -4649,6 +4636,44 @@ function submitFoodOrder() {
   };
   document.head.appendChild(script);
   setTimeout(function() { try { document.head.removeChild(script); } catch(e) {} }, 25000);
+}
+
+// ── Auto-add new items from custom orders into the location menu ──
+function autoAddCustomItemsToMenu(customRows) {
+  if (!customRows || customRows.length === 0) return;
+  const currentMenu = state.locationMenus[foLocation] || (foLocation === 'Generic' ? state.menu : []);
+  const existingNames = new Set(currentMenu.map(m => m.name.toLowerCase().trim()));
+  const newItems = [];
+
+  customRows.forEach(row => {
+    if (!row.items) return;
+    row.items.split(',').forEach(part => {
+      part = part.trim();
+      const m = part.match(/^(.+?)\s*x\s*\d+$/i);
+      const itemName = m ? m[1].trim() : part;
+      if (itemName && !existingNames.has(itemName.toLowerCase())) {
+        existingNames.add(itemName.toLowerCase()); // prevent duplicates within this batch
+        newItems.push({ name: itemName, price: 0, cat: 'Other' });
+      }
+    });
+  });
+
+  if (newItems.length === 0) return;
+
+  // Add to local state
+  const updatedMenu = [...currentMenu, ...newItems];
+  if (foLocation === 'Generic') {
+    state.menu = updatedMenu;
+  } else {
+    state.locationMenus[foLocation] = updatedMenu;
+  }
+  saveState();
+
+  // Push to sheet
+  if (state.sheetUrl && state.sheetUrl.includes('script.google.com')) {
+    pushLocationMenuToSheet(foLocation, updatedMenu);
+    toast('📋 ' + newItems.map(i => i.name).join(', ') + ' added to ' + foLocation + ' menu');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
