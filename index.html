@@ -4463,10 +4463,17 @@ function submitFoodOrder() {
           submitted++;
           if (submitted === total) {
             toast('✅ ' + total + ' orders submitted!');
-            // Stay on page so user can share
             var submitBtn2 = document.getElementById('foSubmitBtn');
             if (submitBtn2) { submitBtn2.textContent = '✓ Submitted'; submitBtn2.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
             document.getElementById('foReadyCount').textContent = total + ' orders saved';
+            // Reset so next submission starts fresh
+            setTimeout(function() {
+              foCustomRows = [];
+              renderFoCustomRows();
+              var foBtnReset = document.getElementById('foSubmitBtn');
+              if (foBtnReset) { foBtnReset.textContent = 'Submit all →'; foBtnReset.style.background = ''; foBtnReset.disabled = false; }
+              document.getElementById('foReadyCount').textContent = '0 of 0 ready';
+            }, 2000);
           }
         };
         const script = document.createElement('script');
@@ -4546,6 +4553,18 @@ function submitFoodOrder() {
     var foBtn = document.getElementById('foSubmitBtn');
     if (foBtn) { foBtn.textContent = '✓ Submitted'; foBtn.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
     document.getElementById('foReadyCount').textContent = total + ' orders saved';
+    // Reset food items so next submission doesn't re-include these items
+    setTimeout(function() {
+      foItems = [];
+      renderFoFoodList();
+      var foBtnReset = document.getElementById('foSubmitBtn');
+      if (foBtnReset) {
+        foBtnReset.textContent = 'Submit all →';
+        foBtnReset.style.background = '';
+        foBtnReset.disabled = false;
+      }
+      document.getElementById('foReadyCount').textContent = '0 of 0 assigned';
+    }, 2000);
   };
 
   const script = document.createElement('script');
