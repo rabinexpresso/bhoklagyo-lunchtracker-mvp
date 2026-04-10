@@ -1136,9 +1136,6 @@
         <button class="btn-primary" id="startBtn" onclick="goMenu(false)" disabled>
           Start ordering individually →
         </button>
-        <button class="btn-secondary" id="startGroupBtn" onclick="goGroupOrder()" disabled style="background:linear-gradient(135deg,#42db66,#2db554);border-color:#42db66;color:white;">
-          🍱 Start ordering for everyone →
-        </button>
         <button class="btn-secondary" id="startFoodBtn" onclick="goFoodOrder()" disabled style="background:linear-gradient(135deg,#00b0ff,#0088cc);border-color:#00b0ff;color:white;">
           🧾 Start ordering by food →
         </button>
@@ -1259,84 +1256,7 @@
   </div>
 
   <!-- ═══════════ SCREEN: GROUP ORDER ═══════════ -->
-  <div class="screen" id="screen-group">
-    <div class="back-nav">
-      <button class="back-btn" onclick="showScreen('screen-name')">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
-        Back
-      </button>
-      <span class="back-nav-title">Order for everyone</span>
-    </div>
-    <div class="page" style="padding-top:8px;padding-bottom:100px">
-
-      <!-- Location selector -->
-      <div class="go-section-label">📍 Location</div>
-      <div id="goLocationBar" class="go-location-bar"></div>
-
-      <!-- Mode toggle -->
-      <div class="go-mode-row">
-        <button class="go-mode-btn active" id="goModeMenu" onclick="setGoMode('menu')">📋 Menu order</button>
-        <button class="go-mode-btn" id="goModeCustom" onclick="setGoMode('custom')">📝 Custom order</button>
-      </div>
-
-      <!-- How many people -->
-      <div class="go-section-label" style="margin-top:12px">👥 How many food orders?</div>
-      <div class="go-count-row">
-        <select id="goCountSelect" onchange="renderGoRows()" class="go-select" style="width:100px">
-          <option value="1">1 order</option>
-          <option value="2">2 orders</option>
-          <option value="3">3 orders</option>
-          <option value="4">4 orders</option>
-          <option value="5">5 orders</option>
-          <option value="6">6 orders</option>
-          <option value="7">7 orders</option>
-          <option value="8">8 orders</option>
-          <option value="9">9 orders</option>
-          <option value="10">10 orders</option>
-        </select>
-      </div>
-
-      <!-- Order rows — MENU MODE -->
-      <div id="goMenuRows" style="margin-top:10px">
-        <div class="go-row-header">
-          <span style="width:88px;flex-shrink:0">Name</span>
-          <span style="flex:1">Food item</span>
-          <span style="width:36px;flex-shrink:0;text-align:center">Qty</span>
-          <span style="width:56px;flex-shrink:0;text-align:right">Price</span>
-          <span style="width:28px;flex-shrink:0"></span>
-        </div>
-        <div id="goMenuRowsList"></div>
-      </div>
-
-      <!-- Order rows — CUSTOM MODE -->
-      <div id="goCustomRows" style="margin-top:10px;display:none;border-top:1.5px solid var(--border2);padding-top:10px">
-        <div class="go-row-header">
-          <span style="flex:1.2">Name</span>
-          <span style="flex:2">Items (free text)</span>
-          <span style="flex:0.8;text-align:right">Total</span>
-          <span style="width:24px"></span>
-        </div>
-        <div id="goCustomRowsList"></div>
-      </div>
-
-      <!-- Grand total -->
-      <div id="goTotalBar" class="go-total-bar" style="display:none">
-        <span style="font-size:12px;color:var(--text3)">Grand total</span>
-        <span class="go-grand-total" id="goGrandTotal">Rs 0</span>
-      </div>
-
-    </div>
-    <!-- Submit bar -->
-    <div class="group-submit-bar">
-      <div id="groupOrderCount" class="group-order-count">0 orders ready</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="share-btn" onclick="shareGroupOrder()" style="background:rgba(255,255,255,0.1);color:white;border-color:rgba(255,255,255,0.2)">📤 Share</button>
-        <button class="btn-primary" onclick="submitGroupOrder()" id="groupSubmitBtn" style="width:auto;padding:9px 18px;font-size:13px" disabled>Submit all →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════ SCREEN: FOOD ORDER ═══════════ -->
+    <!-- ═══════════ SCREEN: FOOD ORDER ═══════════ -->
   <div class="screen" id="screen-food">
     <div class="back-nav">
       <button class="back-btn" onclick="showScreen('screen-name')">
@@ -1757,7 +1677,6 @@ function showScreen(id) {
     const editBtn = document.getElementById('editNamesBtn');
     if (editBtn) { editBtn.textContent = '✏️ Edit names'; editBtn.style.color = ''; }
     document.getElementById('startBtn').disabled = true;
-  if (document.getElementById('startGroupBtn')) document.getElementById('startGroupBtn').disabled = true;
   if (document.getElementById('startFoodBtn')) document.getElementById('startFoodBtn').disabled = true;
     document.getElementById('userPill').classList.remove('visible');
     renderNames();
@@ -1845,7 +1764,6 @@ function renderNames() {
         state.currentUser = name;
         renderNames();
         document.getElementById('startBtn').disabled = false;
-      document.getElementById('startGroupBtn').disabled = false;
       document.getElementById('startFoodBtn').disabled = false;
       };
     }
@@ -1871,7 +1789,7 @@ function addNewName() {
 
 function deleteName(name) {
   if (state.names.length <= 1) { toast('Need at least one name'); return; }
-  if (state.currentUser === name) { state.currentUser = null; document.getElementById('startBtn').disabled = true; document.getElementById('startGroupBtn').disabled = true; document.getElementById('startFoodBtn').disabled = true; }
+  if (state.currentUser === name) { state.currentUser = null; document.getElementById('startBtn').disabled = true; document.getElementById('startFoodBtn').disabled = true; }
   state.names = state.names.filter(n => n !== name);
   saveState();
   renderNames();
@@ -3619,327 +3537,6 @@ setTimeout(() => {
 //  GROUP ORDER
 // ═══════════════════════════════════════
 
-let goMode = 'menu';       // 'menu' | 'custom'
-let goLocation = null;     // active location name
-let goRows = [];           // array of row data objects
-
-function goGroupOrder() {
-  if (!state.currentUser) return;
-  goMode = 'menu';
-  goRows = [];
-  goLocation = state.activeLocation || state.locations[0] || 'Generic';
-  // Reset submit button in case it was stuck
-  const btn = document.getElementById('groupSubmitBtn');
-  if (btn) { btn.textContent = 'Submit all →'; btn.disabled = true; }
-  renderGoLocationBar();
-  setGoMode('menu');
-  renderGoRows();
-  updateGroupSubmitBar();
-  showScreen('screen-group');
-}
-
-function renderGoLocationBar() {
-  const bar = document.getElementById('goLocationBar');
-  if (!bar) return;
-  bar.innerHTML = state.locations.map(loc =>
-    `<button class="go-loc-btn${goLocation===loc?' active':''}" onclick="selectGoLocation('${loc}')">${loc}</button>`
-  ).join('');
-}
-
-function selectGoLocation(loc) {
-  goLocation = loc;
-  renderGoLocationBar();
-  if (loc !== 'Generic' && (!state.locationMenus[loc] || state.locationMenus[loc].length === 0)) {
-    toast('Loading ' + loc + ' menu...');
-    loadLocationMenuFromSheet(loc);
-    var attempts = 0;
-    var poll = setInterval(function() {
-      attempts++;
-      if ((state.locationMenus[loc] && state.locationMenus[loc].length > 0) || attempts > 20) {
-        clearInterval(poll);
-        if (goLocation === loc) renderGoRows();
-      }
-    }, 500);
-  } else {
-    renderGoRows();
-  }
-}
-
-function fetchLocationMenu(loc, cb) {
-  if (!state.sheetUrl) return;
-  const callbackName = 'goMenuCallback_' + Date.now();
-  const url = `${state.sheetUrl}?action=getMenu&location=${encodeURIComponent(loc)}&callback=${callbackName}`;
-  window[callbackName] = function(data) {
-    delete window[callbackName];
-    if (data && data.menu) { state.locationMenus[loc] = data.menu; saveState(); }
-    if (cb) cb();
-  };
-  const script = document.createElement('script');
-  script.src = url;
-  document.head.appendChild(script);
-  setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
-}
-
-function getGoMenu() {
-  const m = (!goLocation || goLocation === 'Generic')
-    ? state.menu
-    : (state.locationMenus[goLocation] || []);
-  return [...m].sort((a, b) => a.name.localeCompare(b.name));
-}
-
-function setGoMode(mode) {
-  goMode = mode;
-  document.getElementById('goModeMenu').classList.toggle('active', mode==='menu');
-  document.getElementById('goModeCustom').classList.toggle('active', mode==='custom');
-  // Menu rows always visible; custom rows shown when custom mode activated
-  if (mode === 'custom') {
-    document.getElementById('goCustomRows').style.display = 'block';
-    // Add a custom row if none exist yet
-    const hasCustom = goRows.some(r => r.isCustom);
-    if (!hasCustom) addGoRow(true);
-    setTimeout(function() {
-      document.getElementById('goCustomRows').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-    // Switch button back to menu so it acts as a toggle
-    goMode = 'menu';
-    document.getElementById('goModeMenu').classList.add('active');
-    document.getElementById('goModeCustom').classList.remove('active');
-  }
-  renderGoRows();
-}
-
-function renderGoRows() {
-  const count = parseInt(document.getElementById('goCountSelect').value) || 1;
-  const menuRows = goRows.filter(r => !r.isCustom);
-  const customRows = goRows.filter(r => r.isCustom);
-
-  // Pad/trim menu rows to match count selector
-  while (menuRows.length < count) { const r = { name: '', item: '', qty: 1, price: 0, customItems: '', customTotal: '', isCustom: false }; menuRows.push(r); goRows.push(r); }
-  // Trim if count decreased
-  if (menuRows.length > count) {
-    let trimmed = 0;
-    goRows = goRows.filter(r => { if (!r.isCustom && trimmed < menuRows.length - count) { trimmed++; return false; } return true; });
-  }
-
-  const menu = getGoMenu();
-
-  // ── Render menu rows ──
-  document.getElementById('goMenuRowsList').innerHTML = goRows.filter(r => !r.isCustom).map((row, i) => {
-    const realIdx = goRows.indexOf(row);
-    return `<div class="go-row" id="goRow_${realIdx}">
-        <select class="go-name-sel" onchange="updateGoRow(${realIdx},'name',this.value)">
-          <option value="">— Name —</option>
-          ${state.names.map(n => `<option value="${n}"${row.name===n?' selected':''}>${n}</option>`).join('')}
-        </select>
-        <select class="go-item-sel" onchange="updateGoRowItem(${realIdx},this)">
-          <option value="">— Food item —</option>
-          ${menu.map(m => `<option value="${m.name}" data-price="${m.price}"${row.item===m.name?' selected':''}>${m.name}</option>`).join('')}
-        </select>
-        <select class="go-qty-sel" onchange="updateGoRow(${realIdx},'qty',parseInt(this.value))">
-          ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${row.qty===n?' selected':''}>${n}</option>`).join('')}
-        </select>
-        <input class="go-price-input" type="number" id="goPrice_${realIdx}" value="${row.price > 0 ? row.price : ''}" placeholder="Rs" onchange="updateGoRowPrice(${realIdx}, parseInt(this.value)||0)" />
-        <button class="go-del-btn" onclick="removeGoRow(${realIdx})">×</button>
-      </div>`;
-  }).join('') + `<button class="go-add-btn" onclick="addGoRow(false)">+ Add another person</button>`;
-
-  // ── Render custom rows ──
-  const customEl = document.getElementById('goCustomRowsList');
-  if (customEl) {
-    const cRows = goRows.filter(r => r.isCustom);
-    customEl.innerHTML = cRows.map((row) => {
-      const realIdx = goRows.indexOf(row);
-      return `<div class="go-row" id="goRowC_${realIdx}">
-          <select class="go-name-sel" onchange="updateGoRow(${realIdx},'name',this.value)">
-            <option value="">— Name —</option>
-            ${state.names.map(n => `<option value="${n}"${row.name===n?' selected':''}>${n}</option>`).join('')}
-          </select>
-          <input class="go-custom-items" placeholder="Items e.g. Momo x2" value="${row.customItems||''}" onchange="updateGoRow(${realIdx},'customItems',this.value)" />
-          <input class="go-custom-total" type="number" placeholder="Rs" value="${row.customTotal||''}" onchange="updateGoRow(${realIdx},'customTotal',this.value)" />
-          <button class="go-del-btn" onclick="removeGoRow(${realIdx})">×</button>
-        </div>`;
-    }).join('') + `<button class="go-add-btn" onclick="addGoRow(true)">+ Add person</button>`;
-  }
-
-  updateGoTotalBar();
-  updateGroupSubmitBar();
-}
-
-function updateGoRow(i, field, value) {
-  if (!goRows[i]) return;
-  goRows[i][field] = value;
-  updateGoTotalBar();
-  updateGroupSubmitBar();
-}
-
-function updateGoRowItem(i, sel) {
-  if (!goRows[i]) return;
-  const opt = sel.options[sel.selectedIndex];
-  goRows[i].item = sel.value;
-  goRows[i].price = parseInt(opt.getAttribute('data-price')) || 0;
-  const priceInput = document.getElementById('goPrice_' + i);
-  if (priceInput) priceInput.value = goRows[i].price > 0 ? goRows[i].price : '';
-  updateGoTotalBar();
-  updateGroupSubmitBar();
-}
-
-function updateGoRowPrice(i, price) {
-  if (!goRows[i]) return;
-  goRows[i].price = price;
-  updateGoTotalBar();
-  updateGroupSubmitBar();
-}
-
-function addGoRow(isCustom) {
-  goRows.push({ name: '', item: '', qty: 1, price: 0, customItems: '', customTotal: '', isCustom: !!isCustom });
-  // Only update count select for menu rows
-  if (!isCustom) {
-    const sel = document.getElementById('goCountSelect');
-    if (sel) sel.value = goRows.filter(r => !r.isCustom).length || 1;
-  }
-  renderGoRows();
-}
-
-function removeGoRow(i) {
-  goRows.splice(i, 1);
-  const sel = document.getElementById('goCountSelect');
-  if (sel) sel.value = Math.max(1, goRows.length);
-  renderGoRows();
-}
-
-function updateGoTotalBar() {
-  let total = 0;
-  goRows.forEach(row => {
-    if (row.isCustom) total += parseInt(row.customTotal) || 0;
-    else total += (row.price || 0) * (row.qty || 1);
-  });
-  const bar = document.getElementById('goTotalBar');
-  const tot = document.getElementById('goGrandTotal');
-  if (bar) bar.style.display = total > 0 ? 'flex' : 'none';
-  if (tot) tot.textContent = 'Rs ' + total;
-}
-
-function updateGroupSubmitBar() {
-  const readyRows = goRows.filter(row => {
-    if (!row.name) return false;
-    if (row.isCustom) return row.customItems && row.customTotal;
-    return row.item && row.item !== '' && row.price > 0;
-  });
-  document.getElementById('groupOrderCount').textContent = readyRows.length + ' order' + (readyRows.length !== 1 ? 's' : '') + ' ready';
-  document.getElementById('groupSubmitBtn').disabled = readyRows.length === 0;
-}
-
-function submitGroupOrder() {
-  const readyRows = goRows.filter(row => {
-    if (!row.name) return false;
-    if (row.isCustom) return row.customItems && row.customTotal;
-    return row.customItems && row.customTotal;
-  });
-  if (readyRows.length === 0) return;
-
-  const btn = document.getElementById('groupSubmitBtn');
-  btn.disabled = true;
-  btn.textContent = 'Submitting...';
-
-  const { date: todayDate } = getNPTDate();
-  const ts = new Date().toLocaleTimeString('en-US', {timeZone: 'Asia/Kathmandu', hour: '2-digit', minute: '2-digit'});
-  const dayName = new Date().toLocaleDateString('en-US', {timeZone:'Asia/Kathmandu', weekday:'long'});
-
-  // Auto-add new custom items to location menu
-  autoAddGoCustomItemsToMenu(readyRows.filter(r => r.isCustom));
-
-  // Group rows by name — combine items and sum totals (handles both menu + custom)
-  const grouped = {};
-  readyRows.forEach(row => {
-    if (!grouped[row.name]) grouped[row.name] = { items: [], total: 0 };
-    if (row.isCustom) {
-      grouped[row.name].items.push(row.customItems);
-      grouped[row.name].total += parseInt(row.customTotal) || 0;
-    } else {
-      grouped[row.name].items.push(row.item + ' x' + (row.qty || 1));
-      grouped[row.name].total += (row.price || 0) * (row.qty || 1);
-    }
-  });
-
-  const orders = Object.entries(grouped).map(([name, data]) => ({
-    name,
-    items: data.items.join(', '),
-    total: 'Rs ' + data.total
-  }));
-
-  // Send all as ONE batch request — prevents dropped orders
-  const rowsPayload = orders.map(o => ({ name: o.name, items: o.items, total: o.total, timestamp: ts }));
-  const callbackName = 'groupBatchCb_' + Date.now();
-  const url = state.sheetUrl + '?action=addBatch' +
-    '&rows=' + encodeURIComponent(JSON.stringify(rowsPayload)) +
-    '&date=' + encodeURIComponent(todayDate) +
-    '&day=' + encodeURIComponent(dayName) +
-    '&callback=' + callbackName;
-
-  const timeout = setTimeout(function() {
-    delete window[callbackName];
-    toast('⚠️ Submission timed out');
-    var b = document.getElementById('groupSubmitBtn');
-    if (b) { b.textContent = 'Retry'; b.disabled = false; }
-  }, 15000);
-
-  window[callbackName] = function(data) {
-    clearTimeout(timeout);
-    delete window[callbackName];
-    toast('✅ ' + orders.length + ' orders submitted!');
-    goRows = [];
-    var submitBtn = document.getElementById('groupSubmitBtn');
-    if (submitBtn) { submitBtn.textContent = '✓ Submitted'; submitBtn.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
-    document.getElementById('groupOrderCount').textContent = orders.length + ' orders saved';
-  };
-
-  const script = document.createElement('script');
-  script.src = url;
-  script.onerror = function() {
-    clearTimeout(timeout);
-    delete window[callbackName];
-    toast('⚠️ Could not reach sheet');
-    var b = document.getElementById('groupSubmitBtn');
-    if (b) { b.textContent = 'Retry'; b.disabled = false; }
-  };
-  document.head.appendChild(script);
-  setTimeout(function() { try { document.head.removeChild(script); } catch(e) {} }, 25000);
-}
-
-// ── Auto-add new custom items from group order into location menu ──
-function autoAddGoCustomItemsToMenu(customRows) {
-  if (!customRows || customRows.length === 0) return;
-  const loc = goLocation || 'Generic';
-  const currentMenu = loc === 'Generic' ? state.menu : (state.locationMenus[loc] || []);
-  const existingNames = new Set(currentMenu.map(m => m.name.toLowerCase().trim()));
-  const newItems = [];
-
-  customRows.forEach(row => {
-    if (!row.customItems) return;
-    // Parse "Momo x2, Tea x1" → extract item names
-    row.customItems.split(',').forEach(part => {
-      part = part.trim();
-      const m = part.match(/^(.+?)\s*x\s*\d+$/i);
-      const itemName = m ? m[1].trim() : part;
-      if (itemName && !existingNames.has(itemName.toLowerCase())) {
-        existingNames.add(itemName.toLowerCase());
-        // Try to derive price: total / qty if only one item
-        const price = 0; // can't reliably derive price from free text
-        newItems.push({ name: itemName, price: price, cat: 'Other' });
-      }
-    });
-  });
-
-  if (newItems.length === 0) return;
-  const updatedMenu = [...currentMenu, ...newItems];
-  if (loc === 'Generic') state.menu = updatedMenu;
-  else state.locationMenus[loc] = updatedMenu;
-  saveState();
-  if (state.sheetUrl && state.sheetUrl.includes('script.google.com')) {
-    pushLocationMenuToSheet(loc, updatedMenu);
-    toast('📋 Added to ' + loc + ' menu: ' + newItems.map(i => i.name).join(', '));
-  }
-}
 // ═══════════════════════════════════════
 //  SHARE
 // ═══════════════════════════════════════
@@ -4107,46 +3704,6 @@ function shareHistory() {
   text += 'Grand Total: Rs ' + grandTotal;
   var allItemStrings = filtered.map(function(o){ return o.items||''; });
   var priceRef = buildPriceReference(allItemStrings, state.activeLocation);
-  if (priceRef.length > 0) {
-    text += nl + nl + '---' + nl + 'Price reference:' + nl + priceRef.join(nl);
-  }
-  openShareSheet(text);
-}
-
-function shareGroupOrder() {
-  var readyRows = goRows.filter(function(row) {
-    if (!row.name) return false;
-    if (goMode === 'menu') return row.item && row.price > 0;
-    return row.customItems && row.customTotal;
-  });
-  if (readyRows.length === 0) { toast('No orders to share yet'); return; }
-  var nl = String.fromCharCode(10);
-  var d = getNPTDate();
-  var grouped = {};
-  readyRows.forEach(function(row) {
-    if (!grouped[row.name]) grouped[row.name] = { lines: [], total: 0 };
-    if (goMode === 'menu') {
-      var qty = row.qty || 1;
-      var lineTotal = row.price * qty;
-      grouped[row.name].lines.push(row.item + ' x' + qty + ' @ Rs ' + row.price + ' = Rs ' + lineTotal);
-      grouped[row.name].total += lineTotal;
-    } else {
-      grouped[row.name].lines.push(row.customItems);
-      grouped[row.name].total += parseInt(row.customTotal) || 0;
-    }
-  });
-  var grandTotal = Object.values(grouped).reduce(function(s,d){ return s+d.total; },0);
-  var text = 'Bhok Lagyo! - ' + d.day + ', ' + d.date + nl;
-  text += 'Alaya HLE' + nl + nl;
-  Object.keys(grouped).forEach(function(name) {
-    var data = grouped[name];
-    text += name + nl;
-    data.lines.forEach(function(l){ text += '  - ' + l + nl; });
-    text += '  Total: Rs ' + data.total + nl + nl;
-  });
-  text += 'Grand Total: Rs ' + grandTotal;
-  var allGroupItems = readyRows.map(function(r){ return goMode==='menu' ? r.item : r.customItems; });
-  var priceRef = buildPriceReference(allGroupItems, goLocation);
   if (priceRef.length > 0) {
     text += nl + nl + '---' + nl + 'Price reference:' + nl + priceRef.join(nl);
   }
