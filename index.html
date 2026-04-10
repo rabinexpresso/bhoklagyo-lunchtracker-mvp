@@ -1939,7 +1939,8 @@ function changeQty(idx, delta) {
 }
 
 function getActiveMenuForCart() {
-  return state.activeLocation === 'Generic' ? state.menu : (state.locationMenus[state.activeLocation] || []);
+  const m = state.activeLocation === 'Generic' ? state.menu : (state.locationMenus[state.activeLocation] || []);
+  return [...m].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function updateCartBar() {
@@ -2036,8 +2037,8 @@ function getLocationEmoji(loc) {
 }
 
 function getActiveMenu() {
-  if (state.activeLocation === 'Generic') return state.menu;
-  return state.locationMenus[state.activeLocation] || [];
+  const m = state.activeLocation === 'Generic' ? state.menu : (state.locationMenus[state.activeLocation] || []);
+  return [...m].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function switchLocation(loc) {
@@ -4250,10 +4251,14 @@ function selectFoLocation(loc) {
 }
 
 function getFoMenu() {
-  if (!foLocation || foLocation === 'Generic') return state.menu;
-  // Return location menu if it has items, empty array if loading (never fall back to Generic)
-  const locMenu = state.locationMenus[foLocation];
-  return (locMenu && locMenu.length > 0) ? locMenu : [];
+  let menu;
+  if (!foLocation || foLocation === 'Generic') {
+    menu = state.menu;
+  } else {
+    const locMenu = state.locationMenus[foLocation];
+    menu = (locMenu && locMenu.length > 0) ? locMenu : [];
+  }
+  return [...menu].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function addFoItem(isCustom) {
