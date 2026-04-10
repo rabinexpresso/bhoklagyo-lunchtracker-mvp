@@ -1309,7 +1309,7 @@
       </div>
 
       <!-- Order rows — CUSTOM MODE -->
-      <div id="goCustomRows" style="margin-top:10px;display:none">
+      <div id="goCustomRows" style="margin-top:10px;display:none;border-top:1.5px solid var(--border2);padding-top:10px">
         <div class="go-row-header">
           <span style="flex:1.2">Name</span>
           <span style="flex:2">Items (free text)</span>
@@ -3691,52 +3691,74 @@ function setGoMode(mode) {
   goMode = mode;
   document.getElementById('goModeMenu').classList.toggle('active', mode==='menu');
   document.getElementById('goModeCustom').classList.toggle('active', mode==='custom');
-  document.getElementById('goMenuRows').style.display = mode==='menu' ? 'block' : 'none';
-  document.getElementById('goCustomRows').style.display = mode==='custom' ? 'block' : 'none';
+  // Menu rows always visible; custom rows shown when custom mode activated
+  if (mode === 'custom') {
+    document.getElementById('goCustomRows').style.display = 'block';
+    // Add a custom row if none exist yet
+    const hasCustom = goRows.some(r => r.isCustom);
+    if (!hasCustom) addGoRow(true);
+    setTimeout(function() {
+      document.getElementById('goCustomRows').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    // Switch button back to menu so it acts as a toggle
+    goMode = 'menu';
+    document.getElementById('goModeMenu').classList.add('active');
+    document.getElementById('goModeCustom').classList.remove('active');
+  }
   renderGoRows();
 }
 
 function renderGoRows() {
   const count = parseInt(document.getElementById('goCountSelect').value) || 1;
-  // Pad or trim goRows to match count
-  while (goRows.length < count) goRows.push({ name: '', item: '', qty: 1, price: 0, customItems: '', customTotal: '' });
-  goRows = goRows.slice(0, count);
+  const menuRows = goRows.filter(r => !r.isCustom);
+  const customRows = goRows.filter(r => r.isCustom);
+
+  // Pad/trim menu rows to match count selector
+  while (menuRows.length < count) { const r = { name: '', item: '', qty: 1, price: 0, customItems: '', customTotal: '', isCustom: false }; menuRows.push(r); goRows.push(r); }
+  // Trim if count decreased
+  if (menuRows.length > count) {
+    let trimmed = 0;
+    goRows = goRows.filter(r => { if (!r.isCustom && trimmed < menuRows.length - count) { trimmed++; return false; } return true; });
+  }
 
   const menu = getGoMenu();
-  const nameOptions = state.names.map(n => `<option value="${n}">${n}</option>`).join('');
-  const itemOptions = menu.map(m => `<option value="${m.name}" data-price="${m.price}">${m.name} — Rs ${m.price}</option>`).join('');
 
-  if (goMode === 'menu') {
-    document.getElementById('goMenuRowsList').innerHTML = goRows.map((row, i) => `
-      <div class="go-row" id="goRow_${i}">
-        <select class="go-name-sel" onchange="updateGoRow(${i},'name',this.value)">
+  // ── Render menu rows ──
+  document.getElementById('goMenuRowsList').innerHTML = goRows.filter(r => !r.isCustom).map((row, i) => {
+    const realIdx = goRows.indexOf(row);
+    return `<div class="go-row" id="goRow_${realIdx}">
+        <select class="go-name-sel" onchange="updateGoRow(${realIdx},'name',this.value)">
           <option value="">— Name —</option>
           ${state.names.map(n => `<option value="${n}"${row.name===n?' selected':''}>${n}</option>`).join('')}
         </select>
-        <select class="go-item-sel" onchange="updateGoRowItem(${i},this)">
+        <select class="go-item-sel" onchange="updateGoRowItem(${realIdx},this)">
           <option value="">— Food item —</option>
           ${menu.map(m => `<option value="${m.name}" data-price="${m.price}"${row.item===m.name?' selected':''}>${m.name}</option>`).join('')}
         </select>
-        <select class="go-qty-sel" onchange="updateGoRow(${i},'qty',parseInt(this.value))">
+        <select class="go-qty-sel" onchange="updateGoRow(${realIdx},'qty',parseInt(this.value))">
           ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${row.qty===n?' selected':''}>${n}</option>`).join('')}
         </select>
-        <input class="go-price-input" type="number" id="goPrice_${i}" value="${row.price > 0 ? row.price : ''}" placeholder="Rs" onchange="updateGoRowPrice(${i}, parseInt(this.value)||0)" />
-        <button class="go-del-btn" onclick="removeGoRow(${i})">×</button>
-      </div>`).join('');
-    // Add row button
-    document.getElementById('goMenuRowsList').innerHTML += `<button class="go-add-btn" onclick="addGoRow()">+ Add another person</button>`;
-  } else {
-    document.getElementById('goCustomRowsList').innerHTML = goRows.map((row, i) => `
-      <div class="go-row" id="goRowC_${i}">
-        <select class="go-name-sel" onchange="updateGoRow(${i},'name',this.value)">
-          <option value="">— Name —</option>
-          ${state.names.map(n => `<option value="${n}"${row.name===n?' selected':''}>${n}</option>`).join('')}
-        </select>
-        <input class="go-custom-items" placeholder="Items e.g. Momo x2" value="${row.customItems||''}" onchange="updateGoRow(${i},'customItems',this.value)" />
-        <input class="go-custom-total" type="number" placeholder="Rs" value="${row.customTotal||''}" onchange="updateGoRow(${i},'customTotal',this.value)" />
-        <button class="go-del-btn" onclick="removeGoRow(${i})">×</button>
-      </div>`).join('');
-    document.getElementById('goCustomRowsList').innerHTML += `<button class="go-add-btn" onclick="addGoRow()">+ Add another person</button>`;
+        <input class="go-price-input" type="number" id="goPrice_${realIdx}" value="${row.price > 0 ? row.price : ''}" placeholder="Rs" onchange="updateGoRowPrice(${realIdx}, parseInt(this.value)||0)" />
+        <button class="go-del-btn" onclick="removeGoRow(${realIdx})">×</button>
+      </div>`;
+  }).join('') + `<button class="go-add-btn" onclick="addGoRow(false)">+ Add another person</button>`;
+
+  // ── Render custom rows ──
+  const customEl = document.getElementById('goCustomRowsList');
+  if (customEl) {
+    const cRows = goRows.filter(r => r.isCustom);
+    customEl.innerHTML = cRows.map((row) => {
+      const realIdx = goRows.indexOf(row);
+      return `<div class="go-row" id="goRowC_${realIdx}">
+          <select class="go-name-sel" onchange="updateGoRow(${realIdx},'name',this.value)">
+            <option value="">— Name —</option>
+            ${state.names.map(n => `<option value="${n}"${row.name===n?' selected':''}>${n}</option>`).join('')}
+          </select>
+          <input class="go-custom-items" placeholder="Items e.g. Momo x2" value="${row.customItems||''}" onchange="updateGoRow(${realIdx},'customItems',this.value)" />
+          <input class="go-custom-total" type="number" placeholder="Rs" value="${row.customTotal||''}" onchange="updateGoRow(${realIdx},'customTotal',this.value)" />
+          <button class="go-del-btn" onclick="removeGoRow(${realIdx})">×</button>
+        </div>`;
+    }).join('') + `<button class="go-add-btn" onclick="addGoRow(true)">+ Add person</button>`;
   }
 
   updateGoTotalBar();
@@ -3768,11 +3790,13 @@ function updateGoRowPrice(i, price) {
   updateGroupSubmitBar();
 }
 
-function addGoRow() {
-  goRows.push({ name: '', item: '', qty: 1, price: 0, customItems: '', customTotal: '' });
-  // Update count select
-  const sel = document.getElementById('goCountSelect');
-  if (sel) sel.value = goRows.length;
+function addGoRow(isCustom) {
+  goRows.push({ name: '', item: '', qty: 1, price: 0, customItems: '', customTotal: '', isCustom: !!isCustom });
+  // Only update count select for menu rows
+  if (!isCustom) {
+    const sel = document.getElementById('goCountSelect');
+    if (sel) sel.value = goRows.filter(r => !r.isCustom).length || 1;
+  }
   renderGoRows();
 }
 
@@ -3786,8 +3810,8 @@ function removeGoRow(i) {
 function updateGoTotalBar() {
   let total = 0;
   goRows.forEach(row => {
-    if (goMode === 'menu') total += row.price || 0;
-    else total += parseInt(row.customTotal) || 0;
+    if (row.isCustom) total += parseInt(row.customTotal) || 0;
+    else total += (row.price || 0) * (row.qty || 1);
   });
   const bar = document.getElementById('goTotalBar');
   const tot = document.getElementById('goGrandTotal');
@@ -3798,17 +3822,17 @@ function updateGoTotalBar() {
 function updateGroupSubmitBar() {
   const readyRows = goRows.filter(row => {
     if (!row.name) return false;
-    if (goMode === 'menu') return row.item && row.item !== '' && row.price > 0;
-    return row.customItems && row.customTotal;
+    if (row.isCustom) return row.customItems && row.customTotal;
+    return row.item && row.item !== '' && row.price > 0;
   });
-  document.getElementById('groupOrderCount').textContent = `${readyRows.length} of ${goRows.length} ready`;
+  document.getElementById('groupOrderCount').textContent = readyRows.length + ' order' + (readyRows.length !== 1 ? 's' : '') + ' ready';
   document.getElementById('groupSubmitBtn').disabled = readyRows.length === 0;
 }
 
 function submitGroupOrder() {
   const readyRows = goRows.filter(row => {
     if (!row.name) return false;
-    if (goMode === 'menu') return row.item && row.item !== '' && row.price > 0;
+    if (row.isCustom) return row.customItems && row.customTotal;
     return row.customItems && row.customTotal;
   });
   if (readyRows.length === 0) return;
@@ -3821,16 +3845,19 @@ function submitGroupOrder() {
   const ts = new Date().toLocaleTimeString('en-US', {timeZone: 'Asia/Kathmandu', hour: '2-digit', minute: '2-digit'});
   const dayName = new Date().toLocaleDateString('en-US', {timeZone:'Asia/Kathmandu', weekday:'long'});
 
-  // Group rows by name — combine items and sum totals
+  // Auto-add new custom items to location menu
+  autoAddGoCustomItemsToMenu(readyRows.filter(r => r.isCustom));
+
+  // Group rows by name — combine items and sum totals (handles both menu + custom)
   const grouped = {};
   readyRows.forEach(row => {
     if (!grouped[row.name]) grouped[row.name] = { items: [], total: 0 };
-    if (goMode === 'menu') {
-      grouped[row.name].items.push(`${row.item} x${row.qty||1}`);
-      grouped[row.name].total += row.price;
-    } else {
+    if (row.isCustom) {
       grouped[row.name].items.push(row.customItems);
       grouped[row.name].total += parseInt(row.customTotal) || 0;
+    } else {
+      grouped[row.name].items.push(row.item + ' x' + (row.qty || 1));
+      grouped[row.name].total += (row.price || 0) * (row.qty || 1);
     }
   });
 
@@ -3840,42 +3867,78 @@ function submitGroupOrder() {
     total: 'Rs ' + data.total
   }));
 
-  // Submit each person as a separate JSONP call — avoids URL length limits
-  let submitted = 0;
-  const total = orders.length;
+  // Send all as ONE batch request — prevents dropped orders
+  const rowsPayload = orders.map(o => ({ name: o.name, items: o.items, total: o.total, timestamp: ts }));
+  const callbackName = 'groupBatchCb_' + Date.now();
+  const url = state.sheetUrl + '?action=addBatch' +
+    '&rows=' + encodeURIComponent(JSON.stringify(rowsPayload)) +
+    '&date=' + encodeURIComponent(todayDate) +
+    '&day=' + encodeURIComponent(dayName) +
+    '&callback=' + callbackName;
 
-  orders.forEach((order, idx) => {
-    setTimeout(() => {
-      const callbackName = 'groupCb_' + Date.now() + '_' + idx;
-      const url = `${state.sheetUrl}?action=add` +
-        `&name=${encodeURIComponent(order.name)}` +
-        `&items=${encodeURIComponent(order.items)}` +
-        `&total=${encodeURIComponent(order.total)}` +
-        `&timestamp=${encodeURIComponent(ts)}` +
-        `&date=${encodeURIComponent(todayDate)}` +
-        `&day=${encodeURIComponent(dayName)}` +
-        `&callback=${callbackName}`;
+  const timeout = setTimeout(function() {
+    delete window[callbackName];
+    toast('⚠️ Submission timed out');
+    var b = document.getElementById('groupSubmitBtn');
+    if (b) { b.textContent = 'Retry'; b.disabled = false; }
+  }, 15000);
 
-      window[callbackName] = function(data) {
-        delete window[callbackName];
-        submitted++;
-        if (submitted === total) {
-          toast('✅ ' + total + ' orders submitted!');
-          goRows = [];
-          // Stay on page so user can share — reset button
-          var submitBtn = document.getElementById('groupSubmitBtn');
-          if (submitBtn) { submitBtn.textContent = '✓ Submitted'; submitBtn.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
-          document.getElementById('groupOrderCount').textContent = total + ' orders saved';
-        }
-      };
+  window[callbackName] = function(data) {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    toast('✅ ' + orders.length + ' orders submitted!');
+    goRows = [];
+    var submitBtn = document.getElementById('groupSubmitBtn');
+    if (submitBtn) { submitBtn.textContent = '✓ Submitted'; submitBtn.style.background = 'linear-gradient(135deg,#42db66,#2db554)'; }
+    document.getElementById('groupOrderCount').textContent = orders.length + ' orders saved';
+  };
 
-      const script = document.createElement('script');
-      script.src = url;
-      script.onerror = () => { delete window[callbackName]; submitted++; };
-      document.head.appendChild(script);
-      setTimeout(() => { try { document.head.removeChild(script); } catch(e) {} }, 25000);
-    }, idx * 300); // stagger by 300ms to avoid overwhelming Apps Script
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = function() {
+    clearTimeout(timeout);
+    delete window[callbackName];
+    toast('⚠️ Could not reach sheet');
+    var b = document.getElementById('groupSubmitBtn');
+    if (b) { b.textContent = 'Retry'; b.disabled = false; }
+  };
+  document.head.appendChild(script);
+  setTimeout(function() { try { document.head.removeChild(script); } catch(e) {} }, 25000);
+}
+
+// ── Auto-add new custom items from group order into location menu ──
+function autoAddGoCustomItemsToMenu(customRows) {
+  if (!customRows || customRows.length === 0) return;
+  const loc = goLocation || 'Generic';
+  const currentMenu = loc === 'Generic' ? state.menu : (state.locationMenus[loc] || []);
+  const existingNames = new Set(currentMenu.map(m => m.name.toLowerCase().trim()));
+  const newItems = [];
+
+  customRows.forEach(row => {
+    if (!row.customItems) return;
+    // Parse "Momo x2, Tea x1" → extract item names
+    row.customItems.split(',').forEach(part => {
+      part = part.trim();
+      const m = part.match(/^(.+?)\s*x\s*\d+$/i);
+      const itemName = m ? m[1].trim() : part;
+      if (itemName && !existingNames.has(itemName.toLowerCase())) {
+        existingNames.add(itemName.toLowerCase());
+        // Try to derive price: total / qty if only one item
+        const price = 0; // can't reliably derive price from free text
+        newItems.push({ name: itemName, price: price, cat: 'Other' });
+      }
+    });
   });
+
+  if (newItems.length === 0) return;
+  const updatedMenu = [...currentMenu, ...newItems];
+  if (loc === 'Generic') state.menu = updatedMenu;
+  else state.locationMenus[loc] = updatedMenu;
+  saveState();
+  if (state.sheetUrl && state.sheetUrl.includes('script.google.com')) {
+    pushLocationMenuToSheet(loc, updatedMenu);
+    toast('📋 Added to ' + loc + ' menu: ' + newItems.map(i => i.name).join(', '));
+  }
 }
 // ═══════════════════════════════════════
 //  SHARE
