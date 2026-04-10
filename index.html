@@ -612,10 +612,10 @@
   .select-all-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text2); font-family: 'Poppins', sans-serif; user-select: none; -webkit-user-select: none; padding: 4px 0; }
   .select-all-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--pr); cursor: pointer; flex-shrink: 0; }
   .select-all-label input[type="checkbox"]:checked + span { color: var(--pr); }
-  .bulk-bar { display: none; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 14px; box-shadow: var(--shadow-md); border: 1.5px solid rgba(255,69,0,0.15); }
+  .bulk-bar { display: none; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 14px; box-shadow: var(--shadow-md); border: 1.5px solid rgba(255,69,0,0.15); flex-wrap: nowrap; }
   .bulk-bar.visible { display: flex; }
   .bulk-count { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'Poppins', sans-serif; }
-  .bulk-del-btn { background: var(--error); color: white; border: none; border-radius: var(--radius-sm); padding: 9px 18px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 3px 10px rgba(204,34,0,0.3); }
+  .bulk-del-btn { background: var(--error); color: white; border: none; border-radius: var(--radius-sm); padding: 8px 14px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 3px 10px rgba(204,34,0,0.3); white-space: nowrap; }
   .bulk-del-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(204,34,0,0.4); }
   .bulk-clear-btn { background: none; border: none; color: var(--text3); font-size: 12px; cursor: pointer; font-family: 'Poppins', sans-serif; padding: 4px; }
   .today-filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -1461,7 +1461,7 @@
         </label>
       </div>
       <div id="bulkBar" class="bulk-bar">
-        <span class="bulk-count" id="bulkCount">0 selected</span>
+        <span class="bulk-count" id="bulkCount" style="white-space:nowrap">0 selected</span>
         <div style="display:flex;gap:8px;align-items:center">
           <button class="bulk-clear-btn" onclick="clearBulkSelection()">Clear</button>
           <button class="bulk-del-btn" onclick="bulkDeleteSelected()">🗑 Delete selected</button>
@@ -2584,7 +2584,7 @@ function renderTodayOrders(orders, skipCacheReset) {
       </div>
       <div class="opc-items">${itemRows}</div>
       <div class="opc-actions">
-        <button class="opc-edit-btn"  onclick="editOrderFromToday(${cacheIdx})">✏️ Menu</button>
+        <button class="opc-edit-btn"  onclick="editOrderFromToday(${cacheIdx})">🔄 Change</button>
         <button class="opc-edit-btn"  onclick="editOrderInline(${cacheIdx})" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom</button>
         <button class="opc-split-btn" onclick="toggleSplitPanel(${cacheIdx})">💸 Split</button>
         <button class="opc-del-btn"   onclick="deleteOrderFromToday(${cacheIdx})">🗑 Del</button>
@@ -2682,11 +2682,13 @@ function bulkDeleteSelected() {
 
   const { date: todayDate } = getNPTDate();
 
+  // Clear selection immediately so bulk bar disappears right away
+  selectedOrderIndices = new Set();
+  updateBulkBar();
   indices.forEach(idx => {
     const card = document.getElementById('opc_' + idx);
     if (card) { card.style.opacity = '0.3'; card.style.pointerEvents = 'none'; }
   });
-  updateBulkBar();
 
   const deleteItems = orders.map(o => ({ name: o.name, date: todayDate }));
   const callbackName = 'bulkDeleteCallback_' + Date.now();
