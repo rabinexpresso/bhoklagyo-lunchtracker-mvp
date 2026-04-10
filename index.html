@@ -1371,21 +1371,7 @@
         <button class="go-add-btn" onclick="addFoItem()" style="margin-top:4px">+ Add food item</button>
       </div>
 
-      <!-- CUSTOM MODE -->
-      <div id="foCustomSection" style="display:none;margin-top:12px;border-top:1.5px solid var(--border2);padding-top:12px">
-        <div class="go-row-header">
-          <span style="width:88px;flex-shrink:0">Name</span>
-          <span style="flex:1">Items (free text)</span>
-          <span style="width:90px;flex-shrink:0;text-align:right;padding-right:6px">Total</span>
-          <span style="width:28px;flex-shrink:0"></span>
-        </div>
-        <div id="foCustomList"></div>
-        <button class="go-add-btn" onclick="addFoCustomRow()" style="margin-top:4px">+ Add person</button>
-        <div id="foCustomTotalBar" class="go-total-bar" style="display:none;margin-top:10px">
-          <span style="font-size:12px;color:var(--text3)">Grand total</span>
-          <span class="go-grand-total" id="foCustomGrandTotal">Rs 0</span>
-        </div>
-      </div>
+
 
       <!-- Restaurant summary -->
       <div id="foSummaryBar" class="fo-summary-bar" style="display:none">
@@ -4155,7 +4141,7 @@ function goFoodOrder() {
   if (!state.currentUser) return;
   foItems = [];
   foCustomRows = [];
-  foSubmittedOrders = {}; // clear cumulative history when entering fresh
+  foSubmittedOrders = {};
   foMode = 'menu';
   foLocation = state.activeLocation || state.locations[0] || 'Generic';
   const btn = document.getElementById('foSubmitBtn');
@@ -4175,16 +4161,19 @@ function setFoMode(mode) {
   foMode = mode;
   document.getElementById('foModeMenu').classList.toggle('active', mode === 'menu');
   document.getElementById('foModeCustom').classList.toggle('active', mode === 'custom');
-
-  // Both sections always visible — just show custom section when toggled
-  const customSection = document.getElementById('foCustomSection');
   if (mode === 'custom') {
-    customSection.style.display = 'block';
-    if (foCustomRows.length === 0) addFoCustomRow();
-    // Scroll to custom section
-    setTimeout(function() { customSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+    // Add a new custom row (free-text food item) to foItems
+    addFoItem(true);
+    // Scroll to the new item
+    setTimeout(function() {
+      const list = document.getElementById('foFoodList');
+      if (list) list.lastElementChild && list.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+    // Reset button to menu mode visually after adding
+    foMode = 'menu';
+    document.getElementById('foModeMenu').classList.add('active');
+    document.getElementById('foModeCustom').classList.remove('active');
   }
-  // Menu section always visible — never hide it
   updateFoSubmitBar();
 }
 
@@ -4267,8 +4256,8 @@ function getFoMenu() {
   return (locMenu && locMenu.length > 0) ? locMenu : [];
 }
 
-function addFoItem() {
-  foItems.push({ item: '', price: 0, qty: 1, assignments: [''], expanded: false });
+function addFoItem(isCustom) {
+  foItems.push({ item: '', price: 0, qty: 1, assignments: [''], expanded: false, isCustom: !!isCustom });
   renderFoFoodList();
 }
 
@@ -4290,10 +4279,11 @@ function renderFoFoodList() {
   if (!listEl) return;
 
   listEl.innerHTML = foItems.map((item, i) => {
+    const menu = getFoMenu();
     const itemOpts = menu.map(m =>
       `<option value="${m.name}" data-price="${m.price}"${item.item===m.name?' selected':''}>${m.name}</option>`
     ).join('');
-    const sharePrice = item.price > 0 ? item.price : 0;  // price is per item
+    const sharePrice = item.price > 0 ? item.price : 0;
     const allAssigned = item.assignments.every(a => a !== '');
     const assignedCount = item.assignments.filter(a => a !== '').length;
 
@@ -4309,14 +4299,22 @@ function renderFoFoodList() {
         <div class="fo-assign-check">${name ? '✅' : '⬜'}</div>
       </div>`).join('');
 
+    // Food item field: free-text for custom, dropdown for menu
+    const itemField = item.isCustom
+      ? `<input class="fo-item-sel" type="text" placeholder="Food item (free text)"
+           value="${item.item||''}" onclick="event.stopPropagation()"
+           oninput="updateFoItemText(${i},this.value)"
+           onchange="updateFoItemText(${i},this.value)" />`
+      : `<select class="fo-item-sel" onclick="event.stopPropagation()" onchange="updateFoItem(${i},this)">
+           <option value="">— Food item —</option>
+           ${itemOpts}
+         </select>`;
+
     return `<div class="fo-food-block${item.expanded?' expanded':''}" id="fob_${i}" draggable="true"
         ondragstart="foDragStart(${i})" ondragover="foDragOver(event,${i})" ondrop="foDrop(event,${i})" ondragend="foDragEnd()">
       <div class="fo-food-row" onclick="setFoItemExpanded(${i},${!item.expanded})">
         <div class="fo-drag-handle">⠿</div>
-        <select class="fo-item-sel" onclick="event.stopPropagation()" onchange="updateFoItem(${i},this)">
-          <option value="">— Food item —</option>
-          ${itemOpts}
-        </select>
+        ${itemField}
         <div class="fo-qty-wrap" onclick="event.stopPropagation()">
           <button class="fo-qty-btn" onclick="changeFoQty(${i},-1)">−</button>
           <span class="fo-qty-num">${item.qty}</span>
@@ -4338,6 +4336,13 @@ function renderFoFoodList() {
       </div>
     </div>`;
   }).join('');
+}
+
+function updateFoItemText(i, value) {
+  if (!foItems[i]) return;
+  foItems[i].item = value.trim();
+  updateFoSummary();
+  updateFoSubmitBar();
 }
 
 function updateFoItem(i, sel) {
@@ -4518,7 +4523,7 @@ function submitFoodOrder() {
   const dayName = new Date().toLocaleDateString('en-US', {timeZone:'Asia/Kathmandu', weekday:'long'});
   const ts = new Date().toLocaleTimeString('en-US', {timeZone:'Asia/Kathmandu', hour:'2-digit', minute:'2-digit'});
 
-  // ── Build orders from MENU mode ──
+  // ── Build orders from foItems (both menu and custom) ──
   const grouped = {};
   foItems.forEach(foodItem => {
     if (!foodItem.item) return;
@@ -4540,31 +4545,6 @@ function submitFoodOrder() {
     grouped[name].items = Object.entries(counts).map(([base, cnt]) => base + ' x' + cnt);
   });
 
-  // ── Merge CUSTOM mode rows into grouped ──
-  const customReady = foCustomRows.filter(r => r.name && r.items && r.total);
-  customReady.forEach(row => {
-    const name = row.name;
-    const total = parseInt(row.total) || 0;
-    if (!grouped[name]) grouped[name] = { items: [], total: 0 };
-    // Parse custom item string and merge
-    row.items.split(',').forEach(part => {
-      part = part.trim();
-      if (part) grouped[name].items.push(part);
-    });
-    grouped[name].total += total;
-  });
-  // Merge duplicate items again after combining
-  Object.keys(grouped).forEach(name => {
-    const counts = {};
-    grouped[name].items.forEach(it => {
-      it = it.trim();
-      const m = it.match(/^(.+?)\s*x\s*(\d+)$/i);
-      if (m) { const k = m[1].trim(); counts[k] = (counts[k] || 0) + parseInt(m[2]); }
-      else if (it) { counts[it] = (counts[it] || 0) + 1; }
-    });
-    grouped[name].items = Object.entries(counts).map(([k, v]) => k + ' x' + v);
-  });
-
   const orders = Object.entries(grouped).map(([name, data]) => ({
     name,
     items: data.items.join(', '),
@@ -4579,7 +4559,7 @@ function submitFoodOrder() {
   }
 
   // ── Auto-update menu with new custom items ──
-  autoAddCustomItemsToMenu(customReady);
+  autoAddCustomItemsToMenu();
 
   // ── Send all orders as ONE batch request ──
   const rowsPayload = orders.map(o => ({
@@ -4615,9 +4595,7 @@ function submitFoodOrder() {
     // Reset both menu and custom items after success
     setTimeout(function() {
       foItems = [];
-      foCustomRows = [];
       renderFoFoodList();
-      renderFoCustomList();
       updateFoSummary();
       var foBtnReset = document.getElementById('foSubmitBtn');
       if (foBtnReset) { foBtnReset.textContent = 'Submit all →'; foBtnReset.style.background = ''; foBtnReset.disabled = false; }
@@ -4638,29 +4616,28 @@ function submitFoodOrder() {
   setTimeout(function() { try { document.head.removeChild(script); } catch(e) {} }, 25000);
 }
 
-// ── Auto-add new items from custom orders into the location menu ──
-function autoAddCustomItemsToMenu(customRows) {
-  if (!customRows || customRows.length === 0) return;
-  const currentMenu = state.locationMenus[foLocation] || (foLocation === 'Generic' ? state.menu : []);
+// ── Auto-add new items from custom foItems into the location menu ──
+function autoAddCustomItemsToMenu() {
+  const customItems = foItems.filter(f => f.isCustom && f.item && f.item.trim());
+  if (customItems.length === 0) return;
+
+  const currentMenu = foLocation === 'Generic'
+    ? state.menu
+    : (state.locationMenus[foLocation] || []);
   const existingNames = new Set(currentMenu.map(m => m.name.toLowerCase().trim()));
   const newItems = [];
 
-  customRows.forEach(row => {
-    if (!row.items) return;
-    row.items.split(',').forEach(part => {
-      part = part.trim();
-      const m = part.match(/^(.+?)\s*x\s*\d+$/i);
-      const itemName = m ? m[1].trim() : part;
-      if (itemName && !existingNames.has(itemName.toLowerCase())) {
-        existingNames.add(itemName.toLowerCase()); // prevent duplicates within this batch
-        newItems.push({ name: itemName, price: 0, cat: 'Other' });
-      }
-    });
+  customItems.forEach(f => {
+    const name = f.item.trim();
+    if (!existingNames.has(name.toLowerCase())) {
+      existingNames.add(name.toLowerCase());
+      // Save with actual price entered by user
+      newItems.push({ name: name, price: f.price || 0, cat: 'Other' });
+    }
   });
 
   if (newItems.length === 0) return;
 
-  // Add to local state
   const updatedMenu = [...currentMenu, ...newItems];
   if (foLocation === 'Generic') {
     state.menu = updatedMenu;
@@ -4669,10 +4646,9 @@ function autoAddCustomItemsToMenu(customRows) {
   }
   saveState();
 
-  // Push to sheet
   if (state.sheetUrl && state.sheetUrl.includes('script.google.com')) {
     pushLocationMenuToSheet(foLocation, updatedMenu);
-    toast('📋 ' + newItems.map(i => i.name).join(', ') + ' added to ' + foLocation + ' menu');
+    toast('📋 Added to ' + foLocation + ' menu: ' + newItems.map(i => i.name + ' (Rs ' + i.price + ')').join(', '));
   }
 }
 
