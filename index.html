@@ -2679,41 +2679,22 @@ function renderTodayOrders(orders, skipCacheReset) {
       </div>
       <div class="opc-items">${itemRows}</div>
       <div class="opc-actions">
-        <button class="opc-edit-btn"  data-fn="editOrderFromToday"  data-i="${cacheIdx}">✏️ Menu</button>
-        <button class="opc-edit-btn"  data-fn="editOrderInline"     data-i="${cacheIdx}" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom</button>
-        <button class="opc-split-btn" data-fn="toggleSplitPanel"    data-i="${cacheIdx}">💸 Split</button>
-        <button class="opc-del-btn"   data-fn="deleteOrderFromToday" data-i="${cacheIdx}">🗑 Del</button>
+        <button class="opc-edit-btn"  onclick="editOrderFromToday(${cacheIdx})">✏️ Menu</button>
+        <button class="opc-edit-btn"  onclick="editOrderInline(${cacheIdx})" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom</button>
+        <button class="opc-split-btn" onclick="toggleSplitPanel(${cacheIdx})">💸 Split</button>
+        <button class="opc-del-btn"   onclick="deleteOrderFromToday(${cacheIdx})">🗑 Del</button>
       </div>
       <div class="split-panel" id="splitPanel_${cacheIdx}">
         <div class="split-panel-title">Who's sharing this bill?</div>
         <div class="split-people" id="splitPeople_${cacheIdx}"></div>
         <div class="split-preview" id="splitPreview_${cacheIdx}"></div>
-        <button class="split-confirm-btn" data-fn="confirmSplit" data-i="${cacheIdx}" id="splitConfirm_${cacheIdx}" disabled>
+        <button class="split-confirm-btn" id="splitConfirm_${cacheIdx}" onclick="confirmSplit(${cacheIdx})" disabled>
           Record split
         </button>
       </div>
     </div>`;
   }).join('');
 
-  // Wire up buttons with addEventListener after innerHTML is set
-  // This is required for iOS PWA where onclick in innerHTML can be ignored
-  var fnMap = {
-    editOrderFromToday:  function(i){ editOrderFromToday(i); },
-    editOrderInline:     function(i){ editOrderInline(i); },
-    toggleSplitPanel:    function(i){ toggleSplitPanel(i); },
-    deleteOrderFromToday:function(i){ deleteOrderFromToday(i); },
-    confirmSplit:        function(i){ confirmSplit(i); }
-  };
-  listEl.querySelectorAll('[data-fn]').forEach(function(btn) {
-    var fn = btn.getAttribute('data-fn');
-    var i  = parseInt(btn.getAttribute('data-i'));
-    if (fnMap[fn]) {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        fnMap[fn](i);
-      });
-    }
-  });
 }
 
 function toggleOrderSelection(idx) {
@@ -3406,18 +3387,14 @@ function renderSplitPeople(idx) {
   if (!order) return;
   const container = document.getElementById('splitPeople_' + idx);
   if (!container) return;
+  // Show all team members except the payer
   const others = state.names.filter(n => n !== order.name);
   container.innerHTML = others.map(n =>
-    `<button class="split-person-chip ${splitSelections[idx]?.has(n) ? 'sel' : ''}" data-name="${n.replace(/"/g, '&quot;')}">
+    `<button class="split-person-chip ${splitSelections[idx]?.has(n) ? 'sel' : ''}"
+      onclick="toggleSplitPerson(${idx}, '${n.replace(/'/g, "\'")}')">
       ${getNameEmoji(n, state.names.indexOf(n))} ${n}
     </button>`
   ).join('');
-  // Wire up with addEventListener — inline onclick unreliable in iOS PWA
-  container.querySelectorAll('.split-person-chip').forEach(function(chip) {
-    chip.addEventListener('click', function() {
-      toggleSplitPerson(idx, chip.getAttribute('data-name'));
-    });
-  });
   updateSplitPreview(idx);
 }
 
