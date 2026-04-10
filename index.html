@@ -3681,9 +3681,10 @@ function fetchLocationMenu(loc, cb) {
 }
 
 function getGoMenu() {
-  if (!goLocation || goLocation === 'Generic') return state.menu;
-  const locMenu = state.locationMenus[goLocation];
-  return (locMenu && locMenu.length > 0) ? locMenu : [];
+  const m = (!goLocation || goLocation === 'Generic')
+    ? state.menu
+    : (state.locationMenus[goLocation] || []);
+  return [...m].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function setGoMode(mode) {
