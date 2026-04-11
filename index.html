@@ -4231,9 +4231,16 @@ function submitFoodOrder() {
 
   const timeout = setTimeout(function() {
     delete window[callbackName];
-    toast('⚠️ Submission timed out — check sheet');
+    // On timeout, the order MAY have gone through — warn user not to retry
+    // to prevent double submission (the Apps Script was slow, not necessarily failed)
+    toast('⚠️ Timed out — check Today\'s Orders before retrying!');
     var foBtn = document.getElementById('foSubmitBtn');
-    if (foBtn) { foBtn.textContent = 'Retry'; foBtn.disabled = false; }
+    if (foBtn) {
+      foBtn.textContent = '⚠️ Check sheet first';
+      foBtn.style.background = 'var(--gold)';
+      foBtn.disabled = false;
+    }
+    document.getElementById('foReadyCount').textContent = 'Timed out — may have saved';
   }, 15000);
 
   window[callbackName] = function(data) {
@@ -4261,9 +4268,10 @@ function submitFoodOrder() {
   script.onerror = function() {
     clearTimeout(timeout);
     delete window[callbackName];
-    toast('⚠️ Could not reach sheet — check connection');
+    // onerror = definite network failure (script never loaded) — safe to retry
+    toast('❌ Could not reach sheet — check connection, then retry');
     var foBtn = document.getElementById('foSubmitBtn');
-    if (foBtn) { foBtn.textContent = 'Retry'; foBtn.disabled = false; }
+    if (foBtn) { foBtn.textContent = 'Retry'; foBtn.style.background = ''; foBtn.disabled = false; }
   };
   document.head.appendChild(script);
   setTimeout(function() { try { document.head.removeChild(script); } catch(e) {} }, 25000);
