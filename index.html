@@ -1151,6 +1151,9 @@
         <button class="btn-secondary" id="startFoodBtn" onclick="goFoodOrder()" disabled style="background:linear-gradient(135deg,#00b0ff,#0088cc);border-color:#00b0ff;color:white;">
           🧾 Start ordering by food →
         </button>
+        <button onclick="openHowToUse()" style="background:none;border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--text2);font-family:'Poppins',sans-serif;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;">
+          ❓ How to use
+        </button>
       </div>
 
       <!-- Add name — clearly separated and labelled -->
@@ -4804,6 +4807,148 @@ document.addEventListener('DOMContentLoaded', function() {
 if (document.readyState !== 'loading') {
   initNotifBanner();
   setTimeout(showPwaHomeCard, 800);
+}
+</script>
+<!-- ═══════════ HOW TO USE MODAL ═══════════ -->
+<div id="howToUseModal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);overflow-y:auto;padding:20px 16px 40px;">
+  <div style="background:var(--surface);border-radius:24px;max-width:420px;margin:0 auto;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,var(--accent),#0066aa);padding:20px 20px 16px;position:relative;">
+      <button onclick="closeHowToUse()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.2);border:none;border-radius:50%;width:30px;height:30px;color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+      <div style="font-size:22px;margin-bottom:4px">🍱</div>
+      <div style="font-size:17px;font-weight:800;color:white;font-family:'Poppins',sans-serif;">How to use Bhok Lagyo!</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.8);font-family:'Poppins',sans-serif;margin-top:2px;">Alaya HLE Lunch Tracker</div>
+    </div>
+
+    <!-- Tutorial steps -->
+    <div style="padding:16px;display:flex;flex-direction:column;gap:14px;" id="howToUseContent"></div>
+
+    <!-- Footer -->
+    <div style="padding:0 16px 20px;">
+      <button onclick="closeHowToUse()" style="width:100%;background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);padding:12px;font-size:14px;font-weight:700;font-family:'Poppins',sans-serif;cursor:pointer;">Got it! Start ordering 🍽️</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const HOW_TO_USE_STEPS = [
+  {
+    icon: '👤',
+    title: 'Pick your name first',
+    color: '#42db66',
+    steps: [
+      'Tap your name from the list on the home screen',
+      'Your name lights up — this identifies who is ordering',
+      'No name yet? Add yourself under ➕ Add a team member',
+    ]
+  },
+  {
+    icon: '🍛',
+    title: 'Order for yourself',
+    color: 'var(--accent)',
+    steps: [
+      'Tap Start ordering individually →',
+      'Pick a location (Generic, Samjhana, XO Coffeepalace)',
+      'Browse the menu, tap items to add to cart',
+      'Adjust quantities with + and −',
+      'Tap Submit & save to sheet → when done',
+    ]
+  },
+  {
+    icon: '🧾',
+    title: 'Order by food (for a group)',
+    color: '#00b0ff',
+    steps: [
+      'Tap Start ordering by food →',
+      'Choose a location, then tap + Add food item',
+      'Select the food, set quantity, enter price',
+      'Tap ▼ to assign portions to people',
+      'Use 📝 Custom order for items not on the menu — type the name and price, it auto-saves to the menu',
+      'Tap Submit all → when everyone is assigned',
+    ]
+  },
+  {
+    icon: '📋',
+    title: 'View & manage today\'s orders',
+    color: '#ffc709',
+    steps: [
+      'Tap the clipboard 📋 icon at the top',
+      'See all orders placed today with totals',
+      'Tap Refresh to load the latest from the sheet',
+      '🔄 Change — replace someone\'s order via the menu',
+      '📝 Custom — edit order as free text',
+      '💸 Split — split a bill equally among selected people',
+      '🗑 Del — delete a single order',
+      'Check boxes + Delete selected — bulk delete',
+    ]
+  },
+  {
+    icon: '📊',
+    title: 'View order history',
+    color: '#ff0065',
+    steps: [
+      'Tap the history 🗂️ icon at the top',
+      'Set a date range and tap Load',
+      'See spending by person and date',
+      'Tap 🟢 Sheet to open the full Google Sheet',
+      'Tap 📤 Share to send the summary via WhatsApp, email, etc.',
+    ]
+  },
+  {
+    icon: '⚙️',
+    title: 'Settings',
+    color: 'var(--text3)',
+    steps: [
+      'Tap the gear ⚙️ icon at the top',
+      'Google Sheets connection — paste your Apps Script URL here',
+      'Team members — add or remove people',
+      'Menu & locations — manage food locations and menu items',
+      'Tap Save settings when done',
+    ]
+  },
+  {
+    icon: '💡',
+    title: 'Tips',
+    color: '#a855f7',
+    steps: [
+      'Orders for the same person on the same day are automatically combined',
+      'New food items added via Custom order are saved to the menu automatically',
+      'Install as a home screen app for the best experience (Settings → Add to home screen)',
+      'If Submit times out, check Today\'s Orders before retrying to avoid duplicates',
+    ]
+  },
+];
+
+function openHowToUse() {
+  const modal = document.getElementById('howToUseModal');
+  const content = document.getElementById('howToUseContent');
+
+  content.innerHTML = HOW_TO_USE_STEPS.map(section => `
+    <div style="background:var(--surface2);border-radius:14px;overflow:hidden;border:1.5px solid var(--border2)">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface3)">
+        <span style="font-size:20px">${section.icon}</span>
+        <span style="font-size:13px;font-weight:800;color:var(--text);font-family:'Poppins',sans-serif">${section.title}</span>
+        <span style="width:8px;height:8px;border-radius:50%;background:${section.color};flex-shrink:0;margin-left:auto"></span>
+      </div>
+      <div style="padding:10px 14px;display:flex;flex-direction:column;gap:7px;">
+        ${section.steps.map(step => `
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <span style="color:${section.color};font-size:11px;font-weight:800;margin-top:2px;flex-shrink:0">→</span>
+            <span style="font-size:12px;color:var(--text2);font-family:'Poppins',sans-serif;line-height:1.5">${step}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeHowToUse() {
+  document.getElementById('howToUseModal').style.display = 'none';
+  document.body.style.overflow = '';
 }
 </script>
 </body>
