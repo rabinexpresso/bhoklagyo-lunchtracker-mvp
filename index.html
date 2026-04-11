@@ -404,6 +404,18 @@
      SETTINGS
   ════════════════════════════════════ */
   .settings-section { margin-bottom: 10px; }
+  .settings-collapse-btn {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border: 1.5px solid var(--surface3);
+    border-radius: var(--radius-sm); padding: 12px 16px; cursor: pointer;
+    font-size: 14px; font-weight: 700; color: var(--text);
+    font-family: 'Poppins', sans-serif; text-align: left;
+    box-shadow: var(--shadow-sm); transition: background 0.15s;
+  }
+  .settings-collapse-btn:active { background: var(--surface2); }
+  .settings-collapse-btn .collapse-arrow { font-size: 11px; color: var(--text3); transition: transform 0.2s; }
+  .settings-collapse-btn.open .collapse-arrow { transform: rotate(180deg); }
+  .settings-collapse-body { padding: 12px 4px 4px; }
   .url-field-wrap { position: relative; }
   .url-clear { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text3); font-size: 18px; padding: 4px; }
   .url-clear:hover { color: var(--error); }
@@ -1322,106 +1334,111 @@
     </div>
     <div class="page">
 
-      <div class="settings-section">
-        <div class="label">Google Sheets connection</div>
-        <div class="info-banner">
-          Paste your <strong>Apps Script Web App URL</strong> below. Deploy with
-          <strong>Execute as: Me</strong> and <strong>Who has access: Anyone</strong>.
-          Orders will sync here from anywhere — Claude artifact, GitHub Pages, etc.
-        </div>
-        <div class="url-field-wrap">
-          <input type="url" id="sheetUrl" placeholder="https://script.google.com/macros/s/.../exec" />
-          <button class="url-clear" onclick="clearUrl()" title="Clear URL">×</button>
-        </div>
-        <div style="margin-top:8px">
-          <button class="btn-sm" onclick="testConnection()" id="testBtn">🔗 Test connection</button>
+      <!-- ── GOOGLE SHEETS CONNECTION (compact, always visible) ── -->
+      <div class="settings-section" style="margin-bottom:8px">
+        <div class="label" style="margin-bottom:6px">Google Sheets connection</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="url" id="sheetUrl" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;font-size:11px;padding:8px 10px" />
+          <button class="url-clear" onclick="clearUrl()" title="Clear URL" style="flex-shrink:0">×</button>
+          <button class="btn-sm" onclick="testConnection()" id="testBtn" style="flex-shrink:0;font-size:11px;padding:7px 10px;white-space:nowrap">🔗 Test</button>
         </div>
         <div class="status-msg" id="testStatus"></div>
       </div>
 
       <div class="divider"></div>
 
+      <!-- ── TEAM MEMBERS (collapsible) ── -->
       <div class="settings-section">
-        <div class="label">Team members</div>
-        <div class="team-list" id="teamList"></div>
-        <div class="add-row">
-          <input type="text" id="settingsNameInput" placeholder="Add team member..." />
-          <button class="btn-sm" onclick="addNameSettings()">Add</button>
+        <button class="settings-collapse-btn" onclick="toggleSettingsSection('teamSection', this)">
+          <span>👥 Team members</span>
+          <span class="collapse-arrow">▼</span>
+        </button>
+        <div id="teamSection" class="settings-collapse-body" style="display:none">
+          <div class="team-list" id="teamList"></div>
+          <div class="add-row" style="margin-top:8px">
+            <input type="text" id="settingsNameInput" placeholder="Add team member..." />
+            <button class="btn-sm" onclick="addNameSettings()">Add</button>
+          </div>
         </div>
       </div>
 
       <div class="divider"></div>
 
+      <!-- ── MENU LOCATIONS (collapsible) ── -->
       <div class="settings-section">
-        <div class="label">Menu locations</div>
-        <div class="info-banner">Google Sheet is the master. The app syncs from the sheet on load. Add locations here to create new sheet tabs, or delete them to remove the sheet tab.</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <span class="loc-sync-label" id="locSyncLabel">Loading from sheet...</span>
-          <button class="btn-sm" onclick="syncLocationsFromSheet(true)" style="font-size:11px;padding:7px 12px">↻ Sync from sheet</button>
-        </div>
-        <div class="loc-tab-row" id="settingsLocTabs"></div>
-        <div class="add-location-row">
-          <input type="text" id="newLocName" placeholder="New location name (e.g. Samjhana)" />
-          <button class="btn-sm" onclick="addLocation()">+ Add</button>
-        </div>
-      </div>
+        <button class="settings-collapse-btn" onclick="toggleSettingsSection('menuSection', this)">
+          <span>🍽️ Menu &amp; locations</span>
+          <span class="collapse-arrow">▼</span>
+        </button>
+        <div id="menuSection" class="settings-collapse-body" style="display:none">
+          <div class="info-banner" style="margin-bottom:8px;font-size:11px">Google Sheet is the master. Add locations here to create new sheet tabs.</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span class="loc-sync-label" id="locSyncLabel">Loading from sheet...</span>
+            <button class="btn-sm" onclick="syncLocationsFromSheet(true)" style="font-size:11px;padding:6px 10px">↻ Sync</button>
+          </div>
+          <div class="loc-tab-row" id="settingsLocTabs"></div>
+          <div class="add-location-row">
+            <input type="text" id="newLocName" placeholder="New location name (e.g. Samjhana)" />
+            <button class="btn-sm" onclick="addLocation()">+ Add</button>
+          </div>
 
-      <div class="settings-section">
-        <div class="label">Menu items — <span id="settingsLocLabel" style="color:var(--pr)">select a location above</span></div>
-        <div class="menu-list" id="menuEditList"></div>
-        <div class="add-item-row">
-          <input type="text" id="newItemName" placeholder="Item name" />
-          <input type="number" id="newItemPrice" placeholder="Rs" min="0" />
-          <select id="newItemCat">
-            <option>Rice</option><option>Noodles</option><option>Snacks</option>
-            <option>Drinks</option><option>Other</option>
-          </select>
-          <button class="btn-sm" onclick="addMenuItem()" style="width:100%">+ Add</button>
+          <div style="margin-top:12px">
+            <div class="label" style="font-size:11px;margin-bottom:6px">Menu items — <span id="settingsLocLabel" style="color:var(--pr)">select a location above</span></div>
+            <div class="menu-list" id="menuEditList"></div>
+            <div class="add-item-row">
+              <input type="text" id="newItemName" placeholder="Item name" />
+              <input type="number" id="newItemPrice" placeholder="Rs" min="0" />
+              <select id="newItemCat">
+                <option>Rice</option><option>Noodles</option><option>Snacks</option>
+                <option>Drinks</option><option>Other</option>
+              </select>
+              <button class="btn-sm" onclick="addMenuItem()" style="width:100%">+ Add</button>
+            </div>
+            <div class="sync-status" id="menuSyncStatus"></div>
+          </div>
         </div>
-        <div class="sync-status" id="menuSyncStatus"></div>
       </div>
 
       <div class="divider"></div>
 
-      <!-- ── NOTIFICATIONS & PWA ── -->
+      <!-- ── NOTIFICATIONS & PWA (collapsible) ── -->
       <div class="settings-section">
-        <div class="label">Notifications &amp; app install</div>
-        <div class="info-banner">
-          Enable alerts for <strong>menu changes</strong>, <strong>new orders</strong>, and <strong>app updates</strong>. Polls every 3–5 min automatically.
-        </div>
-
-        <!-- Notification permission row -->
-        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--radius-sm);padding:12px 14px;box-shadow:var(--shadow-sm);margin-bottom:8px;border:1.5px solid var(--surface3)">
-          <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'Poppins',sans-serif">🔔 Push notifications</div>
-            <div id="notifStatusText" style="font-size:11px;color:var(--text3);margin-top:2px;font-family:'Poppins',sans-serif">Checking…</div>
+        <button class="settings-collapse-btn" onclick="toggleSettingsSection('notifSection', this)">
+          <span>🔔 Notifications &amp; app install</span>
+          <span class="collapse-arrow">▼</span>
+        </button>
+        <div id="notifSection" class="settings-collapse-body" style="display:none">
+          <div class="info-banner" style="margin-bottom:8px;font-size:11px">
+            Alerts for menu changes, new orders, and app updates. Polls every 3–5 min.
           </div>
-          <button id="notifToggleBtn" onclick="toggleNotifFromSettings()" style="background:var(--accent);color:white;border:none;border-radius:20px;padding:7px 16px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Poppins',sans-serif;transition:all 0.15s;flex-shrink:0">Enable</button>
-        </div>
-
-        <!-- Poll interval info -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-          <div style="flex:1;min-width:120px;background:var(--blue-light);border-radius:var(--radius-sm);padding:10px 12px;border:1.5px solid rgba(0,176,255,0.2)">
-            <div style="font-size:10px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:0.8px;font-family:'Poppins',sans-serif;margin-bottom:2px">📋 New orders</div>
-            <div style="font-size:12px;font-weight:800;color:var(--text);font-family:'Poppins',sans-serif">Every 3 min</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--radius-sm);padding:10px 12px;box-shadow:var(--shadow-sm);margin-bottom:8px;border:1.5px solid var(--surface3)">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'Poppins',sans-serif">🔔 Push notifications</div>
+              <div id="notifStatusText" style="font-size:11px;color:var(--text3);margin-top:2px;font-family:'Poppins',sans-serif">Checking…</div>
+            </div>
+            <button id="notifToggleBtn" onclick="toggleNotifFromSettings()" style="background:var(--accent);color:white;border:none;border-radius:20px;padding:7px 16px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Poppins',sans-serif;transition:all 0.15s;flex-shrink:0">Enable</button>
           </div>
-          <div style="flex:1;min-width:120px;background:var(--gold-light);border-radius:var(--radius-sm);padding:10px 12px;border:1.5px solid rgba(255,199,9,0.2)">
-            <div style="font-size:10px;font-weight:700;color:var(--gold-dark);text-transform:uppercase;letter-spacing:0.8px;font-family:'Poppins',sans-serif;margin-bottom:2px">🍽️ Menu changes</div>
-            <div style="font-size:12px;font-weight:800;color:var(--text);font-family:'Poppins',sans-serif">Every 5 min</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+            <div style="flex:1;min-width:90px;background:var(--blue-light);border-radius:var(--radius-sm);padding:8px 10px;border:1.5px solid rgba(0,176,255,0.2)">
+              <div style="font-size:10px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:0.8px;font-family:'Poppins',sans-serif;margin-bottom:2px">📋 Orders</div>
+              <div style="font-size:11px;font-weight:800;color:var(--text);font-family:'Poppins',sans-serif">Every 3 min</div>
+            </div>
+            <div style="flex:1;min-width:90px;background:var(--gold-light);border-radius:var(--radius-sm);padding:8px 10px;border:1.5px solid rgba(255,199,9,0.2)">
+              <div style="font-size:10px;font-weight:700;color:var(--gold-dark);text-transform:uppercase;letter-spacing:0.8px;font-family:'Poppins',sans-serif;margin-bottom:2px">🍽️ Menu</div>
+              <div style="font-size:11px;font-weight:800;color:var(--text);font-family:'Poppins',sans-serif">Every 5 min</div>
+            </div>
+            <div style="flex:1;min-width:90px;background:var(--green-light);border-radius:var(--radius-sm);padding:8px 10px;border:1.5px solid rgba(66,219,102,0.2)">
+              <div style="font-size:10px;font-weight:700;color:var(--green-dark);text-transform:uppercase;letter-spacing:0.8px;font-family:'Poppins',sans-serif;margin-bottom:2px">🆕 Updates</div>
+              <div style="font-size:11px;font-weight:800;color:var(--text);font-family:'Poppins',sans-serif">Every 30 min</div>
+            </div>
           </div>
-          <div style="flex:1;min-width:120px;background:var(--green-light);border-radius:var(--radius-sm);padding:10px 12px;border:1.5px solid rgba(66,219,102,0.2)">
-            <div style="font-size:10px;font-weight:700;color:var(--green-dark);text-transform:uppercase;letter-spacing:0.8px;font-family:'Poppins',sans-serif;margin-bottom:2px">🆕 App updates</div>
-            <div style="font-size:12px;font-weight:800;color:var(--text);font-family:'Poppins',sans-serif">Every 30 min</div>
+          <div id="pwaSettingsRow" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--radius-sm);padding:10px 12px;box-shadow:var(--shadow-sm);border:1.5px solid var(--surface3)">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'Poppins',sans-serif">📲 Add to home screen</div>
+              <div id="pwaStatusText" style="font-size:11px;color:var(--text3);margin-top:2px;font-family:'Poppins',sans-serif">Install as a native app</div>
+            </div>
+            <button id="pwaSettingsInstallBtn" onclick="triggerPwaInstall()" style="background:#42db66;color:white;border:none;border-radius:20px;padding:7px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Poppins',sans-serif;transition:all 0.15s;flex-shrink:0">Install</button>
           </div>
-        </div>
-
-        <!-- PWA install row -->
-        <div id="pwaSettingsRow" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--radius-sm);padding:12px 14px;box-shadow:var(--shadow-sm);border:1.5px solid var(--surface3)">
-          <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'Poppins',sans-serif">📲 Add to home screen</div>
-            <div id="pwaStatusText" style="font-size:11px;color:var(--text3);margin-top:2px;font-family:'Poppins',sans-serif">Install as a native app for offline access</div>
-          </div>
-          <button id="pwaSettingsInstallBtn" onclick="triggerPwaInstall()" style="background:#42db66;color:white;border:none;border-radius:20px;padding:7px 16px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Poppins',sans-serif;transition:all 0.15s;flex-shrink:0">Install</button>
         </div>
       </div>
 
@@ -1988,6 +2005,14 @@ function addMoreItems() {
 function goSummary() {
   renderSummary();
   showScreen('screen-summary');
+}
+
+function toggleSettingsSection(sectionId, btn) {
+  const body = document.getElementById(sectionId);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  btn.classList.toggle('open', !isOpen);
 }
 
 function goSettings() {
