@@ -3694,39 +3694,83 @@ function shareHistory() {
 }
 
 function shareFoodOrder() {
-  var readyItems = foItems.filter(function(f){ return f.item && f.qty > 0; });
-  if (readyItems.length === 0) { toast('No food items added yet'); return; }
   var nl = String.fromCharCode(10);
   var d = getNPTDate();
-  var grandTotal = foItems.reduce(function(s,f){ return s+(f.price*f.qty); },0);
   var text = 'Bhok Lagyo! - ' + d.day + ', ' + d.date + nl;
   text += 'Alaya HLE' + nl + nl;
-  text += 'Order Summary (for restaurant):' + nl;
-  readyItems.forEach(function(f) {
-    var lineTotal = f.price * f.qty;
-    text += '  - ' + f.item + ' x' + f.qty + ' @ Rs ' + f.price + ' = Rs ' + lineTotal + nl;
-  });
-  text += nl + 'Grand Total: Rs ' + grandTotal;
-  var assigned = foItems.filter(function(f){ return f.assignments && f.assignments.some(function(a){ return a!==''; }); });
-  if (assigned.length > 0) {
-    var grouped = {};
-    foItems.forEach(function(fi) {
-      if (!fi.item) return;
-      fi.assignments.forEach(function(name) {
-        if (!name) return;
-        if (!grouped[name]) grouped[name] = { lines: [], total: 0 };
-        grouped[name].lines.push(fi.item + ' x1 @ Rs ' + fi.price);
-        grouped[name].total += fi.price;
+
+  // Use submitted orders if available, otherwise use current foItems
+  var hasSubmitted = Object.keys(foSubmittedOrders).length > 0;
+  var hasCurrentItems = foItems.some(function(f){ return f.item && f.qty > 0; });
+
+  if (!hasSubmitted && !hasCurrentItems) {
+    toast('No food items to share yet');
+    return;
+  }
+
+  // ── Restaurant summary (all items combined) ──
+  var restaurantItems = {};
+  if (hasSubmitted) {
+    // Build from submitted orders
+    Object.values(foSubmittedOrders).forEach(function(person) {
+      Object.entries(person.items).forEach(function(entry) {
+        var item = entry[0], qty = entry[1];
+        restaurantItems[item] = (restaurantItems[item] || 0) + qty;
       });
     });
-    text += nl + nl + 'Per person breakdown:' + nl;
-    Object.keys(grouped).forEach(function(name) {
-      var data = grouped[name];
-      text += name + nl;
-      data.lines.forEach(function(l){ text += '  - ' + l + nl; });
-      text += '  Total: Rs ' + data.total + nl;
+  }
+  // Also add any current unsubmitted items
+  foItems.forEach(function(f) {
+    if (!f.item || f.qty <= 0) return;
+    restaurantItems[f.item] = (restaurantItems[f.item] || 0) + f.qty;
+  });
+
+  if (Object.keys(restaurantItems).length > 0) {
+    var grandTotal = 0;
+    if (hasSubmitted) Object.values(foSubmittedOrders).forEach(function(p){ grandTotal += p.total; });
+    foItems.forEach(function(f){ grandTotal += f.price * f.qty; });
+
+    text += 'Order Summary (for restaurant):' + nl;
+    Object.entries(restaurantItems).sort(function(a,b){ return a[0].localeCompare(b[0]); }).forEach(function(entry) {
+      text += '  - ' + entry[0] + ' x' + entry[1] + nl;
+    });
+    text += nl + 'Grand Total: Rs ' + grandTotal + nl;
+  }
+
+  // ── Per person breakdown ──
+  var personData = {};
+
+  // From submitted orders
+  if (hasSubmitted) {
+    Object.entries(foSubmittedOrders).forEach(function(entry) {
+      var name = entry[0], data = entry[1];
+      if (!personData[name]) personData[name] = { lines: [], total: 0 };
+      Object.entries(data.items).forEach(function(ie) {
+        personData[name].lines.push(ie[0] + ' x' + ie[1]);
+      });
+      personData[name].total += data.total;
     });
   }
+
+  // From current unsubmitted items
+  foItems.forEach(function(fi) {
+    if (!fi.item) return;
+    fi.assignments.forEach(function(name) {
+      if (!name) return;
+      if (!personData[name]) personData[name] = { lines: [], total: 0 };
+      personData[name].lines.push(fi.item + ' x1');
+      personData[name].total += fi.price;
+    });
+  });
+
+  if (Object.keys(personData).length > 0) {
+    text += nl + 'Per person breakdown:' + nl;
+    Object.keys(personData).sort().forEach(function(name) {
+      var data = personData[name];
+      text += name + ': ' + data.lines.join(', ') + ' — Rs ' + data.total + nl;
+    });
+  }
+
   openShareSheet(text);
 }
 
