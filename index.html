@@ -1342,6 +1342,10 @@
           <button class="url-clear" onclick="clearUrl()" title="Clear URL" style="flex-shrink:0">×</button>
           <button class="btn-sm" onclick="testConnection()" id="testBtn" style="flex-shrink:0;font-size:11px;padding:7px 10px;white-space:nowrap">🔗 Test</button>
         </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
+          <input type="url" id="spreadsheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit" style="flex:1;font-size:11px;padding:8px 10px" />
+          <span style="font-size:10px;color:var(--text3);white-space:nowrap;font-family:'Poppins',sans-serif">Sheet link</span>
+        </div>
         <div class="status-msg" id="testStatus"></div>
       </div>
 
@@ -1525,6 +1529,7 @@
         </div>
         <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:1px">
           <button class="share-btn" onclick="shareHistory()">📤 Share</button>
+          <button class="share-btn" onclick="openGoogleSheet()" style="background:var(--surface);color:var(--text);border-color:var(--border2)">🟢 Sheet</button>
           <button class="refresh-btn" id="histRefreshBtn" onclick="loadHistory()">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8A6 6 0 1 1 8 2"/><path d="M14 2v4h-4"/></svg>
             Load
@@ -1639,10 +1644,11 @@ let state = {
   names: [...DEFAULT_NAMES],
   menu: JSON.parse(JSON.stringify(DEFAULT_MENU)),
   sheetUrl: SHEET_URL_DEFAULT,
+  spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1Yzi1tBDwMrFx5UyU7zq67oDp9oSehEzjHIPCyNIJtco/edit', // direct Google Sheet link
   locations: [...DEFAULT_LOCATIONS],
   activeLocation: 'Generic',
   settingsLocation: 'Generic',
-  locationMenus: {}, // cache: { locationName: [{ name, price, cat }] }
+  locationMenus: {},
   currentUser: null,
   cart: {},
   activeCategory: 'All',
@@ -1660,6 +1666,7 @@ function loadState() {
       if (cleanNames.length > 0) state.names = cleanNames;
       if (d.menu && d.menu.length > 0) state.menu = d.menu;
       if (d.sheetUrl) state.sheetUrl = d.sheetUrl;
+      if (d.spreadsheetUrl) state.spreadsheetUrl = d.spreadsheetUrl;
       if (d.locations && d.locations.length > 0) state.locations = d.locations;
       if (d.locationMenus) state.locationMenus = d.locationMenus;
     }
@@ -1671,6 +1678,7 @@ function saveState() {
   try {
     localStorage.setItem('bhok_lagyo_v8', JSON.stringify({
       names: state.names, menu: state.menu, sheetUrl: state.sheetUrl,
+      spreadsheetUrl: state.spreadsheetUrl,
       locations: state.locations, locationMenus: state.locationMenus
     }));
   } catch(e) {}
@@ -2017,6 +2025,7 @@ function toggleSettingsSection(sectionId, btn) {
 
 function goSettings() {
   document.getElementById('sheetUrl').value = state.sheetUrl || '';
+  document.getElementById('spreadsheetUrl').value = state.spreadsheetUrl || '';
   renderTeamList();
   renderSettingsLocTabs();
   renderMenuEditList();
@@ -2391,6 +2400,7 @@ function saveSettings() {
   }
 
   state.sheetUrl = document.getElementById('sheetUrl').value.trim();
+  state.spreadsheetUrl = document.getElementById('spreadsheetUrl').value.trim();
   saveState();
   renderNames();
   showScreen('screen-name');
@@ -3675,6 +3685,15 @@ function shareOrders() {
     text += nl + nl + '---' + nl + 'Price reference:' + nl + priceRef.join(nl);
   }
   openShareSheet(text);
+}
+
+function openGoogleSheet() {
+  const url = state.spreadsheetUrl;
+  if (!url || !url.includes('docs.google.com')) {
+    toast('Add your Google Sheet link in ⚙️ Settings → Google Sheets connection');
+    return;
+  }
+  window.open(url, '_blank');
 }
 
 function shareHistory() {
