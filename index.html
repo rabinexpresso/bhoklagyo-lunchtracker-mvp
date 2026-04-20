@@ -501,6 +501,14 @@
   .fo-del-btn { flex: 0 0 24px; min-width: 0; border: none; background: none; cursor: pointer; font-size: 13px; color: var(--text3); display: flex; align-items: center; justify-content: center; padding: 0; }
   .fo-del-btn:hover { color: var(--pr); }
   .fo-expand-indicator { flex: 0 0 46px; min-width: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--blue); background: #e6f8ff; border-left: 1px solid var(--border2); cursor: pointer; }
+  .fo-share-toggle { flex: 0 0 32px; min-width: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; background: none; border: none; border-left: 1px solid var(--border2); cursor: pointer; color: var(--text3); padding: 0; transition: background 0.15s; }
+  .fo-share-toggle.active { background: #fff3e0; color: #ff8c00; }
+  .fo-shared-panel { padding: 10px 12px; background: #fff8f0; border-top: 1px solid #ffe0b2; }
+  .fo-shared-title { font-size: 11px; font-weight: 700; color: #ff8c00; text-transform: uppercase; letter-spacing: 0.6px; font-family: 'Poppins', sans-serif; margin-bottom: 8px; }
+  .fo-shared-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .fo-shared-chip { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; font-family: 'Poppins', sans-serif; cursor: pointer; border: 1.5px solid var(--border2); background: var(--surface); color: var(--text2); transition: all 0.15s; }
+  .fo-shared-chip.sel { background: #ff8c00; color: white; border-color: #ff8c00; }
+  .fo-shared-result { font-size: 12px; font-weight: 700; color: var(--text); font-family: 'Poppins', sans-serif; }
   /* Assignment panel */
   .fo-assign-panel { border-top: 1px solid var(--border2); background: #f0f9ff; padding: 6px 8px; display: none; }
   .fo-food-block.expanded .fo-assign-panel { display: block; }
@@ -3957,7 +3965,7 @@ function getFoMenu() {
 }
 
 function addFoItem(isCustom) {
-  foItems.push({ item: '', price: 0, qty: 1, assignments: [''], expanded: false, isCustom: !!isCustom });
+  foItems.push({ item: '', price: 0, qty: 1, assignments: [''], expanded: false, isCustom: !!isCustom, isShared: false, sharedWith: [] });
   renderFoFoodList();
 }
 
@@ -3984,10 +3992,10 @@ function renderFoFoodList() {
       `<option value="${m.name}" data-price="${m.price}"${item.item===m.name?' selected':''}>${m.name}</option>`
     ).join('');
     const sharePrice = item.price > 0 ? item.price : 0;
+
+    // ── Normal assignment panel ──
     const allAssigned = item.assignments.every(a => a !== '');
     const assignedCount = item.assignments.filter(a => a !== '').length;
-
-    // Assignment rows
     const assignRows = item.assignments.map((name, j) => `
       <div class="fo-assign-row">
         <div class="fo-assign-idx">${j+1}</div>
@@ -3999,7 +4007,20 @@ function renderFoFoodList() {
         <div class="fo-assign-check">${name ? '✅' : '⬜'}</div>
       </div>`).join('');
 
-    // Food item field: free-text for custom, dropdown for menu
+    // ── Shared panel ──
+    const totalCost = item.price * item.qty;
+    const sharedWith = item.sharedWith || [];
+    const perPerson = sharedWith.length > 0 ? Math.ceil(totalCost / sharedWith.length) : totalCost;
+    const sharedChips = state.names.map(n =>
+      `<button class="fo-shared-chip${sharedWith.includes(n)?' sel':''}" onclick="toggleFoShared(${i},'${n.replace(/'/g,"\\'")}')">
+        ${n}
+      </button>`
+    ).join('');
+    const sharedResult = sharedWith.length > 0
+      ? `${sharedWith.length} people sharing ${item.qty} × Rs ${item.price} = <strong>Rs ${totalCost}</strong> → <strong style="color:#ff8c00">Rs ${perPerson} each</strong>`
+      : `<span style="color:var(--text3)">Select who's sharing the total cost</span>`;
+
+    // ── Food item field ──
     const itemField = item.isCustom
       ? `<input class="fo-item-sel" type="text" placeholder="Food item"
            value="${item.item||''}" onclick="event.stopPropagation()"
@@ -4022,20 +4043,50 @@ function renderFoFoodList() {
         </div>
         <input class="fo-price-input" type="number" placeholder="Rs" value="${item.price||''}"
           onclick="event.stopPropagation()" onchange="updateFoPrice(${i},parseInt(this.value)||0)" />
-        <div class="fo-expand-indicator">${item.expanded?'▲':'▼'}</div>
+        <button class="fo-share-toggle${item.isShared?' active':''}" title="Toggle shared cost"
+          onclick="event.stopPropagation();toggleFoSharedMode(${i})">🔀</button>
+        <div class="fo-expand-indicator" onclick="event.stopPropagation();setFoItemExpanded(${i},${!item.expanded})">${item.expanded?'▲':'▼'}</div>
         <button class="fo-del-btn" onclick="event.stopPropagation();removeFoItem(${i})">×</button>
       </div>
+      ${item.isShared ? `
+      <div class="fo-shared-panel">
+        <div class="fo-shared-title">🔀 Shared cost — who's splitting this?</div>
+        <div class="fo-shared-chips">${sharedChips}</div>
+        <div class="fo-shared-result">${sharedResult}</div>
+      </div>` : `
       <div class="fo-assign-panel">
         <div class="fo-assign-title">
-          Assign ${item.qty} portion${item.qty>1?'s':''} of ${item.item||'this item'} 
+          Assign ${item.qty} portion${item.qty>1?'s':''} of ${item.item||'this item'}
           <span style="color:${allAssigned?'#42db66':'var(--pr)'}">
             (${assignedCount}/${item.qty} assigned)
           </span>
         </div>
         ${assignRows}
-      </div>
+      </div>`}
     </div>`;
   }).join('');
+}
+
+function toggleFoSharedMode(i) {
+  if (!foItems[i]) return;
+  foItems[i].isShared = !foItems[i].isShared;
+  if (!foItems[i].sharedWith) foItems[i].sharedWith = [];
+  // Auto-expand when toggling shared mode
+  foItems[i].expanded = foItems[i].isShared;
+  renderFoFoodList();
+  updateFoSummary();
+  updateFoSubmitBar();
+}
+
+function toggleFoShared(i, name) {
+  if (!foItems[i]) return;
+  if (!foItems[i].sharedWith) foItems[i].sharedWith = [];
+  const idx = foItems[i].sharedWith.indexOf(name);
+  if (idx >= 0) foItems[i].sharedWith.splice(idx, 1);
+  else foItems[i].sharedWith.push(name);
+  renderFoFoodList();
+  updateFoSummary();
+  updateFoSubmitBar();
 }
 
 function updateFoItemText(i, value) {
@@ -4155,23 +4206,20 @@ function updateFoSummary() {
 }
 
 function updateFoSubmitBar() {
-  const menuSlots = foItems.reduce((s, f) => s + (f.qty || 0), 0);
-  const menuAssigned = foItems.reduce((s, f) => s + f.assignments.filter(a => a !== '').length, 0);
-  const customReady = foCustomRows.filter(r => r.name && r.items && r.total).length;
-  const hasMenuItems = foItems.some(f => f.item && f.price > 0);
-  const menuAllAssigned = menuSlots > 0 && menuAssigned === menuSlots;
-  const hasAny = (hasMenuItems && menuAllAssigned) || customReady > 0;
+  // Count normal items (non-shared)
+  const normalItems = foItems.filter(f => !f.isShared);
+  const menuSlots = normalItems.reduce((s, f) => s + (f.qty || 0), 0);
+  const menuAssigned = normalItems.reduce((s, f) => s + f.assignments.filter(a => a !== '').length, 0);
+  // Count shared items — ready if item+price+≥1 person selected
+  const sharedReady = foItems.filter(f => f.isShared && f.item && f.price > 0 && f.sharedWith && f.sharedWith.length > 0).length;
+  const hasNormalReady = foItems.some(f => !f.isShared && f.item && f.price > 0) && menuSlots > 0 && menuAssigned === menuSlots;
+  const hasAny = hasNormalReady || sharedReady > 0;
 
   let label = '';
-  if (menuSlots > 0 && customReady > 0) {
-    label = menuAssigned + '/' + menuSlots + ' assigned + ' + customReady + ' custom';
-  } else if (menuSlots > 0) {
-    label = menuAssigned + ' of ' + menuSlots + ' assigned';
-  } else if (customReady > 0) {
-    label = customReady + ' custom order' + (customReady !== 1 ? 's' : '') + ' ready';
-  } else {
-    label = '0 of 0 assigned';
-  }
+  const parts = [];
+  if (menuSlots > 0) parts.push(menuAssigned + '/' + menuSlots + ' assigned');
+  if (sharedReady > 0) parts.push(sharedReady + ' shared');
+  label = parts.length > 0 ? parts.join(' + ') : '0 of 0 assigned';
   document.getElementById('foReadyCount').textContent = label;
   document.getElementById('foSubmitBtn').disabled = !hasAny;
 }
@@ -4227,22 +4275,42 @@ function submitFoodOrder() {
   const grouped = {};
   foItems.forEach(foodItem => {
     if (!foodItem.item) return;
-    const sharePrice = foodItem.price > 0 ? foodItem.price : 0;
-    foodItem.assignments.forEach(name => {
-      if (!name) return;
-      if (!grouped[name]) grouped[name] = { items: [], total: 0 };
-      grouped[name].items.push(foodItem.item + ' x1');
-      grouped[name].total += sharePrice;
-    });
+
+    if (foodItem.isShared) {
+      // Shared item: split total cost equally among sharedWith people
+      const sharedWith = foodItem.sharedWith || [];
+      if (sharedWith.length === 0) return;
+      const totalCost = (foodItem.price || 0) * (foodItem.qty || 1);
+      const perPerson = Math.ceil(totalCost / sharedWith.length);
+      const itemLabel = `${foodItem.item} x${foodItem.qty} (shared ${sharedWith.length} ways)`;
+      sharedWith.forEach(name => {
+        if (!grouped[name]) grouped[name] = { items: [], total: 0 };
+        grouped[name].items.push(itemLabel);
+        grouped[name].total += perPerson;
+      });
+    } else {
+      // Normal item: 1 portion per assigned person
+      const sharePrice = foodItem.price > 0 ? foodItem.price : 0;
+      foodItem.assignments.forEach(name => {
+        if (!name) return;
+        if (!grouped[name]) grouped[name] = { items: [], total: 0 };
+        grouped[name].items.push(foodItem.item + ' x1');
+        grouped[name].total += sharePrice;
+      });
+    }
   });
-  // Merge duplicate items per person
+  // Merge duplicate normal items per person
   Object.keys(grouped).forEach(name => {
     const counts = {};
     grouped[name].items.forEach(it => {
+      // Don't merge shared items (they have unique labels)
+      if (it.includes('(shared')) { counts[it] = (counts[it] || 0) + 1; return; }
       const base = it.replace(/ x\d+$/, '');
       counts[base] = (counts[base] || 0) + 1;
     });
-    grouped[name].items = Object.entries(counts).map(([base, cnt]) => base + ' x' + cnt);
+    grouped[name].items = Object.entries(counts).map(([base, cnt]) =>
+      base.includes('(shared') ? base : base + ' x' + cnt
+    );
   });
 
   const orders = Object.entries(grouped).map(([name, data]) => ({
