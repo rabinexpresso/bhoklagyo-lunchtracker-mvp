@@ -3651,17 +3651,78 @@ function shareSummary() {
   openShareSheet(text);
 }
 
-function buildPriceReference(itemStrings, location) {
-  // Collect all unique item base names from order strings
-  var menu = location && location !== 'Generic' && state.locationMenus[location] && state.locationMenus[location].length > 0
+// ── Build the 3 share sections from a list of order objects + location ──
+function buildShareSections(orders, location) {
+  var nl = String.fromCharCode(10);
+  var menu = (location && location !== 'Generic' && state.locationMenus[location] && state.locationMenus[location].length > 0)
     ? state.locationMenus[location]
     : state.menu;
+
+  // Helper: get menu price for an item name
+  function menuPrice(name) {
+    var m = menu.find(function(m){ return m.name.toLowerCase() === name.toLowerCase(); });
+    return m ? m.price : null;
+  }
+
+  // Helper: parse item string into [{name, qty}]
+  function parseItems(itemsStr) {
+    return (itemsStr||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean).map(function(part) {
+      var m = part.match(/^(.+?)\s*x\s*(\d+)\s*$/i);
+      return m ? { name: m[1].trim(), qty: parseInt(m[2]) } : { name: part, qty: 1 };
+    });
+  }
+
+  // ── Section 1: totals by item (alphabetical) ──
+  var itemTotals = {};
+  orders.forEach(function(o) {
+    parseItems(o.items).forEach(function(p) {
+      var base = p.name.replace(/\s*\(shared.*?\)/i, '').trim();
+      if (!itemTotals[base]) itemTotals[base] = 0;
+      itemTotals[base] += p.qty;
+    });
+  });
+  var grandTotal = orders.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
+
+  var section1 = Object.keys(itemTotals).sort().map(function(name) {
+    var qty = itemTotals[name];
+    var price = menuPrice(name);
+    var lineTotal = price !== null ? ' — Rs ' + (price * qty) : '';
+    return name + ' x' + qty + lineTotal;
+  }).join(nl);
+  section1 += nl + 'Grand Total: Rs ' + grandTotal;
+
+  // ── Section 2: per person (alphabetical by name) ──
+  var byPerson = {};
+  orders.forEach(function(o) {
+    if (!byPerson[o.name]) byPerson[o.name] = { items: [], total: 0 };
+    parseItems(o.items).forEach(function(p) {
+      byPerson[o.name].items.push(p.name + ' x' + p.qty);
+    });
+    byPerson[o.name].total += parseInt(String(o.total).replace(/[^0-9]/g,''))||0;
+  });
+  var section2 = Object.keys(byPerson).sort().map(function(name) {
+    var d = byPerson[name];
+    return name + ': ' + d.items.join(', ') + ' — Rs ' + d.total;
+  }).join(nl);
+
+  // ── Section 3: price list (alphabetical, menu price only) ──
+  var priceLines = Object.keys(itemTotals).sort().map(function(name) {
+    var price = menuPrice(name);
+    return price !== null ? name + ' — Rs ' + price : null;
+  }).filter(Boolean);
+  var section3 = priceLines.join(nl);
+
+  return { section1: section1, section2: section2, section3: section3 };
+}
+
+function buildPriceReference(itemStrings, location) {
+  var menu = location && location !== 'Generic' && state.locationMenus[location] && state.locationMenus[location].length > 0
+    ? state.locationMenus[location] : state.menu;
   var seen = {};
   var lines = [];
   itemStrings.forEach(function(itemsStr) {
     var parts = (itemsStr||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
     parts.forEach(function(part) {
-      // Strip quantity suffix e.g. "Dal Bhat Set x2" -> "Dal Bhat Set"
       var baseName = part.replace(/\s*x\d+\s*$/i, '').trim();
       if (!baseName || seen[baseName]) return;
       seen[baseName] = true;
@@ -3679,21 +3740,20 @@ function shareOrders() {
   }
   var nl = String.fromCharCode(10);
   var d = getNPTDate();
-  var grandTotal = todayOrdersCache.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
-  var text = 'Bhok Lagyo! - ' + d.day + ', ' + d.date + nl;
+  var loc = state.activeLocation || 'Generic';
+  var s = buildShareSections(todayOrdersCache, loc);
+
+  var text = '🍱 Bhok Lagyo! — ' + d.day + ', ' + d.date + nl;
   text += 'Alaya HLE' + nl + nl;
-  var allItemStrings = [];
-  todayOrdersCache.forEach(function(o) {
-    text += o.name + nl;
-    var parts = (o.items||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
-    parts.forEach(function(item){ text += '  - ' + item + nl; });
-    text += '  Total: ' + o.total + nl + nl;
-    allItemStrings.push(o.items||'');
-  });
-  text += 'Grand Total: Rs ' + grandTotal;
-  var priceRef = buildPriceReference(allItemStrings, state.activeLocation);
-  if (priceRef.length > 0) {
-    text += nl + nl + '---' + nl + 'Price reference:' + nl + priceRef.join(nl);
+  text += '📋 ORDER SUMMARY' + nl;
+  text += s.section1 + nl + nl;
+  text += '---' + nl;
+  text += '👤 PER PERSON' + nl;
+  text += s.section2 + nl + nl;
+  if (s.section3) {
+    text += '---' + nl;
+    text += '💰 PRICE LIST' + nl;
+    text += s.section3;
   }
   openShareSheet(text);
 }
@@ -3719,32 +3779,53 @@ function shareHistory() {
     ? historyAllOrders
     : historyAllOrders.filter(function(o){ return o.name === historyActiveFilter; });
   if (filtered.length === 0) { toast('No orders to share'); return; }
+
+  var loc = state.activeLocation || 'Generic';
   var grandTotal = filtered.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
-  var label = historyActiveFilter === 'All' ? 'All team' : historyActiveFilter;
-  var text = 'Bhok Lagyo! Order History' + nl;
-  text += 'Alaya HLE - ' + label + nl;
-  if (fromDate && toDate) text += fromDate + ' to ' + toDate + nl;
-  text += nl;
+
+  // Build overall item totals for Section 1
+  var allSections = buildShareSections(filtered, loc);
+
+  // Group by date for daily breakdowns
   var byDate = {};
   filtered.forEach(function(o){ if(!byDate[o.date]) byDate[o.date]=[]; byDate[o.date].push(o); });
-  Object.keys(byDate).sort().reverse().forEach(function(date) {
-    var orders = byDate[date];
-    var dayTotal = orders.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
-    text += (orders[0].day||date) + ' - ' + date + ' - Rs ' + dayTotal + nl;
-    orders.forEach(function(o) {
-      text += '  ' + o.name + nl;
-      var parts = (o.items||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
-      parts.forEach(function(item){ text += '    - ' + item + nl; });
-      text += '    Total: ' + o.total + nl;
-    });
-    text += nl;
+  var dates = Object.keys(byDate).sort().reverse();
+
+  var label = historyActiveFilter === 'All' ? 'All team' : historyActiveFilter;
+  var rangeLabel = (fromDate && toDate) ? fromDate + ' to ' + toDate : '';
+
+  var text = '🍱 Bhok Lagyo! Order History' + nl;
+  text += 'Alaya HLE — ' + label + nl;
+  if (rangeLabel) text += rangeLabel + nl;
+  text += nl;
+
+  // ── Section 1: overall totals ──
+  text += '📊 TOTAL SUMMARY' + nl;
+  text += allSections.section1 + nl + nl;
+
+  text += '---' + nl + nl;
+
+  // ── Per day breakdown ──
+  dates.forEach(function(date) {
+    var dayOrders = byDate[date];
+    var daySections = buildShareSections(dayOrders, loc);
+    var dayTotal = dayOrders.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
+    var dayName = dayOrders[0].day || '';
+
+    text += '📅 ' + (dayName ? dayName + ', ' : '') + date + ' — Rs ' + dayTotal + nl;
+    // Items for this day
+    text += daySections.section1.split(nl).filter(function(l){ return !l.startsWith('Grand'); }).join(nl) + nl + nl;
+    // Per person for this day
+    text += daySections.section2 + nl + nl;
+    text += '---' + nl + nl;
   });
-  text += 'Grand Total: Rs ' + grandTotal;
-  var allItemStrings = filtered.map(function(o){ return o.items||''; });
-  var priceRef = buildPriceReference(allItemStrings, state.activeLocation);
-  if (priceRef.length > 0) {
-    text += nl + nl + '---' + nl + 'Price reference:' + nl + priceRef.join(nl);
+
+  // ── Price list ──
+  if (allSections.section3) {
+    text += '💰 PRICE LIST' + nl;
+    text += allSections.section3;
   }
+
   openShareSheet(text);
 }
 
