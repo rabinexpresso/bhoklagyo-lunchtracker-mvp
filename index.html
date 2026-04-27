@@ -3654,14 +3654,19 @@ function shareSummary() {
 // ── Build the 3 share sections from a list of order objects + location ──
 function buildShareSections(orders, location) {
   var nl = String.fromCharCode(10);
-  var menu = (location && location !== 'Generic' && state.locationMenus[location] && state.locationMenus[location].length > 0)
-    ? state.locationMenus[location]
-    : state.menu;
+  // Build a combined menu from ALL locations — search all of them for prices
+  var allMenuItems = [];
+  // Generic / default menu
+  (state.menu || []).forEach(function(m){ allMenuItems.push(m); });
+  // All location menus
+  Object.values(state.locationMenus || {}).forEach(function(locMenu) {
+    (locMenu || []).forEach(function(m){ allMenuItems.push(m); });
+  });
 
-  // Helper: get menu price for an item name
+  // Helper: get menu price for an item name (searches all menus)
   function menuPrice(name) {
-    var m = menu.find(function(m){ return m.name.toLowerCase() === name.toLowerCase(); });
-    return m ? m.price : null;
+    var found = allMenuItems.find(function(m){ return m.name.toLowerCase() === name.toLowerCase(); });
+    return found ? found.price : null;
   }
 
   // Helper: parse item string into [{name, qty}]
@@ -3703,7 +3708,7 @@ function buildShareSections(orders, location) {
   var section2 = Object.keys(byPerson).sort().map(function(name) {
     var d = byPerson[name];
     return name + ': ' + d.items.join(', ') + ' — Rs ' + d.total;
-  }).join(nl);
+  }).join(nl + nl);
 
   // ── Section 3: price list (alphabetical, menu price only) ──
   var priceLines = Object.keys(itemTotals).sort().map(function(name) {
@@ -3754,6 +3759,10 @@ function shareOrders() {
     text += '---' + nl;
     text += '💰 PRICE LIST' + nl;
     text += s.section3;
+  } else {
+    text += '---' + nl;
+    text += '💰 PRICE LIST' + nl;
+    text += '(prices not found in menu — check Settings)';
   }
   openShareSheet(text);
 }
@@ -3824,6 +3833,9 @@ function shareHistory() {
   if (allSections.section3) {
     text += '💰 PRICE LIST' + nl;
     text += allSections.section3;
+  } else {
+    text += '💰 PRICE LIST' + nl;
+    text += '(prices not found in menu — check Settings)';
   }
 
   openShareSheet(text);

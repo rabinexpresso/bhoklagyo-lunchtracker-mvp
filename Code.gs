@@ -179,7 +179,7 @@ function doGet(e) {
     rowList.forEach(row => {
       const rowTs = row.timestamp || timestamp || '';
       const rowTotal = String(row.total).startsWith('Rs') ? row.total : 'Rs ' + row.total;
-      sheet.appendRow([date, batchDay, rowTs, row.name, row.items, rowTotal]);
+      mergeOrAppend(sheet, date, batchDay, rowTs, row.name, row.items, rowTotal);
     });
     return jsonpResponse({ status: 'ok', count: rowList.length }, callback);
   }
@@ -203,9 +203,56 @@ function doGet(e) {
     return jsonpResponse({ status: 'ok' }, callback);
   }
 
-  // Default: add new row
-  sheet.appendRow([date, dayName, timestamp, name, items, total]);
+  // Default: merge into existing row for same person+date, or append new row
+  mergeOrAppend(sheet, date, dayName, timestamp, name, items, total);
   return jsonpResponse({ status: 'ok' }, callback);
+}
+
+// ── Merge new items into existing row for same person+date, or append ──
+
+function mergeOrAppend(sheet, date, day, timestamp, name, newItems, newTotal) {
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (normaliseDate(data[i][0]) === date && String(data[i][3]).trim() === name) {
+      // Found existing row — merge items and add totals
+      const existingItems = String(data[i][4]);
+      const existingTotal = parseInt(String(data[i][5]).replace(/[^0-9]/g, '')) || 0;
+      const addTotal = parseInt(String(newTotal).replace(/[^0-9]/g, '')) || 0;
+
+      // Combine item strings, merging duplicates
+      const merged = mergeItemStrings(existingItems, newItems);
+      const combinedTotal = 'Rs ' + (existingTotal + addTotal);
+
+      sheet.getRange(i + 1, 1, 1, 6).setValues([[
+        date, day, timestamp, name, merged, combinedTotal
+      ]]);
+      return;
+    }
+  }
+  // No existing row — append new
+  const cleanTotal = String(newTotal).startsWith('Rs') ? newTotal : 'Rs ' + newTotal;
+  sheet.appendRow([date, day, timestamp, name, newItems, cleanTotal]);
+}
+
+// Merge two item strings like "Black Tea x2, Momo x1" + "Black Tea x1" → "Black Tea x3, Momo x1"
+function mergeItemStrings(existing, incoming) {
+  const counts = {};
+  function parse(str) {
+    str.split(',').forEach(part => {
+      part = part.trim();
+      if (!part) return;
+      const m = part.match(/^(.+?)\s*x\s*(\d+)$/i);
+      if (m) {
+        const key = m[1].trim();
+        counts[key] = (counts[key] || 0) + parseInt(m[2]);
+      } else {
+        counts[part] = (counts[part] || 0) + 1;
+      }
+    });
+  }
+  parse(existing);
+  parse(incoming);
+  return Object.entries(counts).map(([item, qty]) => `${item} x${qty}`).join(', ');
 }
 
 function getDayName(dateStr) {
@@ -232,4 +279,11 @@ function jsonpResponse(obj, callback) {
   const output = callback ? `${callback}(${json})` : json;
   return ContentService.createTextOutput(output)
     .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+}
+
+// ── Keep script warm — set this as a time trigger every 5 minutes ──
+// In Apps Script: Triggers → Add trigger → keepWarm → Time-driven → Minutes → Every 5 minutes
+function keepWarm() {
+  // Just access the spreadsheet to prevent cold starts
+  SpreadsheetApp.getActiveSpreadsheet().getName();
 }
