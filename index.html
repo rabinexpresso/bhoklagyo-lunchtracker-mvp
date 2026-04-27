@@ -3951,7 +3951,7 @@ function shareFoodOrder() {
     if (fi.isShared) {
       (fi.sharedWith || []).forEach(function(name) {
         if (!grouped[name]) grouped[name] = { items: [], total: 0 };
-        grouped[name].items.push(fi.item + ' x' + fi.qty);
+        grouped[name].items.push(fi.item + ' x' + fi.qty + ' (shared ' + fi.sharedWith.length + ' ways)');
         grouped[name].total += Math.ceil((fi.price * fi.qty) / (fi.sharedWith.length || 1));
       });
     } else {
