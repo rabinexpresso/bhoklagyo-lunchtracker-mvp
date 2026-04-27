@@ -3689,33 +3689,34 @@ function buildShareSections(orders, location) {
     return found ? found.price : null;
   }
 
-  // Helper: parse item string into [{name, qty}]
+  // Helper: parse item string into [{name, qty, isShared}]
   function parseItems(itemsStr) {
     return (itemsStr||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean).map(function(part) {
+      // Handle shared format: "Aanda Paratha x1 (shared 2 ways)"
+      var sharedMatch = part.match(/^(.+?)\s+x(\d+)\s*\(shared.*?\)/i);
+      if (sharedMatch) return { name: sharedMatch[1].trim(), qty: parseInt(sharedMatch[2]), isShared: true };
+      // Handle normal format: "Black Tea x2"
       var m = part.match(/^(.+?)\s*x\s*(\d+)\s*$/i);
-      return m ? { name: m[1].trim(), qty: parseInt(m[2]) } : { name: part, qty: 1 };
+      if (m) return { name: m[1].trim(), qty: parseInt(m[2]), isShared: false };
+      return { name: part, qty: 1, isShared: false };
     });
   }
 
   // ── Section 1: totals by item (alphabetical) ──
   var itemTotals = {};
-  var seenSharedKeys = {}; // prevent counting shared items multiple times
+  var seenSharedKeys = {};
   orders.forEach(function(o) {
     parseItems(o.items).forEach(function(p) {
-      var isShared = /\(shared/i.test(p.name);
-      var base = p.name.replace(/\s*\(shared.*?\)/i, '').trim();
+      var base = p.name; // already clean from parseItems
       if (!base) return;
-      if (isShared) {
-        // For shared items, use "base|qty" as a unique key so we only count once
+      if (p.isShared) {
+        // Count shared items only once across all people
         var sharedKey = base.toLowerCase() + '|' + p.qty;
         if (seenSharedKeys[sharedKey]) return;
         seenSharedKeys[sharedKey] = true;
-        if (!itemTotals[base]) itemTotals[base] = 0;
-        itemTotals[base] += p.qty;
-      } else {
-        if (!itemTotals[base]) itemTotals[base] = 0;
-        itemTotals[base] += p.qty;
       }
+      if (!itemTotals[base]) itemTotals[base] = 0;
+      itemTotals[base] += p.qty;
     });
   });
   var grandTotal = orders.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
@@ -3733,7 +3734,11 @@ function buildShareSections(orders, location) {
   orders.forEach(function(o) {
     if (!byPerson[o.name]) byPerson[o.name] = { items: [], total: 0 };
     parseItems(o.items).forEach(function(p) {
-      byPerson[o.name].items.push(p.name + ' x' + p.qty);
+      if (p.isShared) {
+        byPerson[o.name].items.push(p.name + ' x1');
+      } else {
+        byPerson[o.name].items.push(p.name + ' x' + p.qty);
+      }
     });
     byPerson[o.name].total += parseInt(String(o.total).replace(/[^0-9]/g,''))||0;
   });
