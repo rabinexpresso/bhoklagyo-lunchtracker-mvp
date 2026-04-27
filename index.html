@@ -3699,11 +3699,23 @@ function buildShareSections(orders, location) {
 
   // ── Section 1: totals by item (alphabetical) ──
   var itemTotals = {};
+  var seenSharedKeys = {}; // prevent counting shared items multiple times
   orders.forEach(function(o) {
     parseItems(o.items).forEach(function(p) {
+      var isShared = /\(shared/i.test(p.name);
       var base = p.name.replace(/\s*\(shared.*?\)/i, '').trim();
-      if (!itemTotals[base]) itemTotals[base] = 0;
-      itemTotals[base] += p.qty;
+      if (!base) return;
+      if (isShared) {
+        // For shared items, use "base|qty" as a unique key so we only count once
+        var sharedKey = base.toLowerCase() + '|' + p.qty;
+        if (seenSharedKeys[sharedKey]) return;
+        seenSharedKeys[sharedKey] = true;
+        if (!itemTotals[base]) itemTotals[base] = 0;
+        itemTotals[base] += p.qty;
+      } else {
+        if (!itemTotals[base]) itemTotals[base] = 0;
+        itemTotals[base] += p.qty;
+      }
     });
   });
   var grandTotal = orders.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
