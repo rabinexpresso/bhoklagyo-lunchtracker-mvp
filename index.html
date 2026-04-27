@@ -3689,16 +3689,16 @@ function buildShareSections(orders, location) {
     return found ? found.price : null;
   }
 
-  // Helper: parse item string into [{name, qty, isShared}]
+  // Helper: parse item string into [{name, qty, isShared, rawName}]
   function parseItems(itemsStr) {
     return (itemsStr||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean).map(function(part) {
       // Handle shared format: "Aanda Paratha x1 (shared 2 ways)"
       var sharedMatch = part.match(/^(.+?)\s+x(\d+)\s*\(shared.*?\)/i);
-      if (sharedMatch) return { name: sharedMatch[1].trim(), qty: parseInt(sharedMatch[2]), isShared: true };
+      if (sharedMatch) return { name: sharedMatch[1].trim(), qty: parseInt(sharedMatch[2]), isShared: true, rawName: part };
       // Handle normal format: "Black Tea x2"
       var m = part.match(/^(.+?)\s*x\s*(\d+)\s*$/i);
-      if (m) return { name: m[1].trim(), qty: parseInt(m[2]), isShared: false };
-      return { name: part, qty: 1, isShared: false };
+      if (m) return { name: m[1].trim(), qty: parseInt(m[2]), isShared: false, rawName: part };
+      return { name: part, qty: 1, isShared: false, rawName: part };
     });
   }
 
@@ -3735,7 +3735,20 @@ function buildShareSections(orders, location) {
     if (!byPerson[o.name]) byPerson[o.name] = { items: [], total: 0 };
     parseItems(o.items).forEach(function(p) {
       if (p.isShared) {
-        byPerson[o.name].items.push(p.name + ' x1');
+        // Extract how many ways it's shared from the original string
+        var sharedMatch = (p.rawName || '').match(/shared\s+(\d+)\s+ways/i);
+        var sharedCount = sharedMatch ? parseInt(sharedMatch[1]) : 1;
+        var perPersonQty = sharedCount > 0 ? p.qty / sharedCount : p.qty;
+        var qtyLabel;
+        if (perPersonQty >= 1 && perPersonQty % 1 === 0) {
+          qtyLabel = 'x' + perPersonQty;
+        } else {
+          // Express as fraction — common cases
+          var fractions = { 0.5: '½', 0.333: '⅓', 0.25: '¼', 0.667: '⅔', 0.75: '¾' };
+          var rounded = Math.round(perPersonQty * 1000) / 1000;
+          qtyLabel = fractions[rounded] || ('x' + rounded);
+        }
+        byPerson[o.name].items.push(p.name + ' ' + qtyLabel);
       } else {
         byPerson[o.name].items.push(p.name + ' x' + p.qty);
       }
