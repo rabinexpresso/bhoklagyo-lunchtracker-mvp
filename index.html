@@ -3933,7 +3933,13 @@ function shareFoodOrder() {
   if (hasSubmitted) {
     Object.entries(foSubmittedOrders).forEach(function(entry) {
       var name = entry[0], data = entry[1];
-      var itemStr = Object.entries(data.items).map(function(ie){ return ie[0] + ' x' + ie[1]; }).join(', ');
+      var itemStr = Object.entries(data.items).map(function(ie){
+        var qty = ie[1];
+        var fractions = {0.5:'½', 0.333:'⅓', 0.25:'¼', 0.667:'⅔', 0.75:'¾'};
+        var rounded = Math.round(qty * 1000) / 1000;
+        var qtyLabel = (qty % 1 === 0) ? 'x' + qty : (fractions[rounded] || 'x' + rounded);
+        return ie[0] + ' ' + qtyLabel;
+      }).join(', ');
       orders.push({ name: name, items: itemStr, total: 'Rs ' + data.total });
     });
   }
@@ -4396,10 +4402,21 @@ function accumulateSubmittedOrders(orders) {
     const total = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
     if (!foSubmittedOrders[name]) foSubmittedOrders[name] = { items: {}, total: 0 };
     foSubmittedOrders[name].total += total;
-    // Parse item string "Black Tea x2, Momo x1" into {Black Tea: 2, Momo: 1}
+    // Parse item strings — handle both normal "Black Tea x2" and shared "Artic cigarettes x3 (shared 3 ways)"
     order.items.split(',').forEach(function(part) {
       part = part.trim();
       if (!part) return;
+      // Shared format: "ItemName xQTY (shared N ways)" — each person gets qty/N
+      const sharedMatch = part.match(/^(.+?)\s+x(\d+)\s*\(shared\s+(\d+)\s+ways\)/i);
+      if (sharedMatch) {
+        const item = sharedMatch[1].trim();
+        const totalQty = parseInt(sharedMatch[2]) || 1;
+        const sharedN = parseInt(sharedMatch[3]) || 1;
+        const perPerson = totalQty / sharedN; // e.g. 3/3=1, 1/2=0.5
+        foSubmittedOrders[name].items[item] = (foSubmittedOrders[name].items[item] || 0) + perPerson;
+        return;
+      }
+      // Normal format: "Black Tea x2"
       const m = part.match(/^(.+?)\s*x\s*(\d+)$/i);
       if (m) {
         const item = m[1].trim();
