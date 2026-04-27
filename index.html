@@ -3672,10 +3672,20 @@ function buildShareSections(orders, location) {
 
   // Helper: get menu price for an item name (searches all menus)
   function menuPrice(name) {
-    var key = (name || '').toLowerCase().trim();
+    var key = (name || '').toLowerCase().trim().replace(/\s+/g, ' ');
     // Strip shared suffix before lookup
     key = key.replace(/\s*\(shared.*?\)/i, '').trim();
-    var found = allMenuItems.find(function(m){ return m.name.toLowerCase().trim() === key; });
+    // Exact match first
+    var found = allMenuItems.find(function(m){
+      return m.name.toLowerCase().trim().replace(/\s+/g, ' ') === key;
+    });
+    // Partial match fallback (item name contains key or key contains item name)
+    if (!found) {
+      found = allMenuItems.find(function(m){
+        var mkey = m.name.toLowerCase().trim().replace(/\s+/g, ' ');
+        return mkey.includes(key) || key.includes(mkey);
+      });
+    }
     return found ? found.price : null;
   }
 
@@ -3753,10 +3763,39 @@ function shareOrders() {
     toast('No orders to share yet — tap Refresh first');
     return;
   }
+
+  // Ensure all location menus are loaded before building price list
+  var unloadedLocs = state.locations.filter(function(loc) {
+    return loc !== 'Generic' && (!state.locationMenus[loc] || state.locationMenus[loc].length === 0);
+  });
+
+  if (unloadedLocs.length > 0) {
+    toast('Loading menus for price list…');
+    var loaded = 0;
+    unloadedLocs.forEach(function(loc) {
+      loadLocationMenuFromSheet(loc);
+    });
+    // Wait up to 5s for menus to load, then share regardless
+    var waited = 0;
+    var waitInterval = setInterval(function() {
+      waited += 300;
+      var stillUnloaded = unloadedLocs.filter(function(loc) {
+        return !state.locationMenus[loc] || state.locationMenus[loc].length === 0;
+      });
+      if (stillUnloaded.length === 0 || waited >= 5000) {
+        clearInterval(waitInterval);
+        doShareOrders();
+      }
+    }, 300);
+  } else {
+    doShareOrders();
+  }
+}
+
+function doShareOrders() {
   var nl = String.fromCharCode(10);
   var d = getNPTDate();
-  var loc = state.activeLocation || 'Generic';
-  var s = buildShareSections(todayOrdersCache, loc);
+  var s = buildShareSections(todayOrdersCache, 'all');
 
   var text = '🍱 Bhok Lagyo! — ' + d.day + ', ' + d.date + nl;
   text += 'Alaya HLE' + nl + nl;
@@ -3765,15 +3804,9 @@ function shareOrders() {
   text += '---' + nl;
   text += '👤 PER PERSON' + nl;
   text += s.section2 + nl + nl;
-  if (s.section3) {
-    text += '---' + nl;
-    text += '💰 PRICE LIST' + nl;
-    text += s.section3;
-  } else {
-    text += '---' + nl;
-    text += '💰 PRICE LIST' + nl;
-    text += '(prices not found in menu — check Settings)';
-  }
+  text += '---' + nl;
+  text += '💰 PRICE LIST' + nl;
+  text += s.section3 || '(prices not found in menu — check Settings)';
   openShareSheet(text);
 }
 
