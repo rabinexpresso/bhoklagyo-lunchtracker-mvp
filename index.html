@@ -3654,18 +3654,28 @@ function shareSummary() {
 // ── Build the 3 share sections from a list of order objects + location ──
 function buildShareSections(orders, location) {
   var nl = String.fromCharCode(10);
-  // Build a combined menu from ALL locations — search all of them for prices
+  // Build a combined menu from ALL menus in state — Generic + all locations
+  // This ensures prices are found regardless of which screen the user is on
   var allMenuItems = [];
-  // Generic / default menu
-  (state.menu || []).forEach(function(m){ allMenuItems.push(m); });
-  // All location menus
-  Object.values(state.locationMenus || {}).forEach(function(locMenu) {
-    (locMenu || []).forEach(function(m){ allMenuItems.push(m); });
-  });
+  var seenNames = {};
+  function addToAllMenus(items) {
+    (items || []).forEach(function(m) {
+      var key = (m.name || '').toLowerCase().trim();
+      if (key && !seenNames[key] && m.price > 0) {
+        seenNames[key] = true;
+        allMenuItems.push(m);
+      }
+    });
+  }
+  addToAllMenus(state.menu);
+  Object.values(state.locationMenus || {}).forEach(function(locMenu) { addToAllMenus(locMenu); });
 
   // Helper: get menu price for an item name (searches all menus)
   function menuPrice(name) {
-    var found = allMenuItems.find(function(m){ return m.name.toLowerCase() === name.toLowerCase(); });
+    var key = (name || '').toLowerCase().trim();
+    // Strip shared suffix before lookup
+    key = key.replace(/\s*\(shared.*?\)/i, '').trim();
+    var found = allMenuItems.find(function(m){ return m.name.toLowerCase().trim() === key; });
     return found ? found.price : null;
   }
 
@@ -3844,10 +3854,7 @@ function shareHistory() {
 function shareFoodOrder() {
   var nl = String.fromCharCode(10);
   var d = getNPTDate();
-  var text = 'Bhok Lagyo! - ' + d.day + ', ' + d.date + nl;
-  text += 'Alaya HLE' + nl + nl;
 
-  // Use submitted orders if available, otherwise use current foItems
   var hasSubmitted = Object.keys(foSubmittedOrders).length > 0;
   var hasCurrentItems = foItems.some(function(f){ return f.item && f.qty > 0; });
 
@@ -3856,68 +3863,56 @@ function shareFoodOrder() {
     return;
   }
 
-  // ── Restaurant summary (all items combined) ──
-  var restaurantItems = {};
-  if (hasSubmitted) {
-    // Build from submitted orders
-    Object.values(foSubmittedOrders).forEach(function(person) {
-      Object.entries(person.items).forEach(function(entry) {
-        var item = entry[0], qty = entry[1];
-        restaurantItems[item] = (restaurantItems[item] || 0) + qty;
-      });
-    });
-  }
-  // Also add any current unsubmitted items
-  foItems.forEach(function(f) {
-    if (!f.item || f.qty <= 0) return;
-    restaurantItems[f.item] = (restaurantItems[f.item] || 0) + f.qty;
-  });
+  // Build a flat order list from foSubmittedOrders + current foItems
+  // so we can pass it to buildShareSections
+  var orders = [];
 
-  if (Object.keys(restaurantItems).length > 0) {
-    var grandTotal = 0;
-    if (hasSubmitted) Object.values(foSubmittedOrders).forEach(function(p){ grandTotal += p.total; });
-    foItems.forEach(function(f){ grandTotal += f.price * f.qty; });
-
-    text += 'Order Summary (for restaurant):' + nl;
-    Object.entries(restaurantItems).sort(function(a,b){ return a[0].localeCompare(b[0]); }).forEach(function(entry) {
-      text += '  - ' + entry[0] + ' x' + entry[1] + nl;
-    });
-    text += nl + 'Grand Total: Rs ' + grandTotal + nl;
-  }
-
-  // ── Per person breakdown ──
-  var personData = {};
-
-  // From submitted orders
   if (hasSubmitted) {
     Object.entries(foSubmittedOrders).forEach(function(entry) {
       var name = entry[0], data = entry[1];
-      if (!personData[name]) personData[name] = { lines: [], total: 0 };
-      Object.entries(data.items).forEach(function(ie) {
-        personData[name].lines.push(ie[0] + ' x' + ie[1]);
-      });
-      personData[name].total += data.total;
+      var itemStr = Object.entries(data.items).map(function(ie){ return ie[0] + ' x' + ie[1]; }).join(', ');
+      orders.push({ name: name, items: itemStr, total: 'Rs ' + data.total });
     });
   }
 
-  // From current unsubmitted items
+  // Add any current unsubmitted assigned items
+  var grouped = {};
   foItems.forEach(function(fi) {
     if (!fi.item) return;
-    fi.assignments.forEach(function(name) {
-      if (!name) return;
-      if (!personData[name]) personData[name] = { lines: [], total: 0 };
-      personData[name].lines.push(fi.item + ' x1');
-      personData[name].total += fi.price;
-    });
+    if (fi.isShared) {
+      (fi.sharedWith || []).forEach(function(name) {
+        if (!grouped[name]) grouped[name] = { items: [], total: 0 };
+        grouped[name].items.push(fi.item + ' x' + fi.qty);
+        grouped[name].total += Math.ceil((fi.price * fi.qty) / (fi.sharedWith.length || 1));
+      });
+    } else {
+      fi.assignments.forEach(function(name) {
+        if (!name) return;
+        if (!grouped[name]) grouped[name] = { items: [], total: 0 };
+        grouped[name].items.push(fi.item + ' x1');
+        grouped[name].total += fi.price;
+      });
+    }
+  });
+  Object.entries(grouped).forEach(function(entry) {
+    orders.push({ name: entry[0], items: entry[1].items.join(', '), total: 'Rs ' + entry[1].total });
   });
 
-  if (Object.keys(personData).length > 0) {
-    text += nl + 'Per person breakdown:' + nl;
-    Object.keys(personData).sort().forEach(function(name) {
-      var data = personData[name];
-      text += name + ': ' + data.lines.join(', ') + ' — Rs ' + data.total + nl;
-    });
-  }
+  if (orders.length === 0) { toast('No assigned orders to share'); return; }
+
+  var loc = foLocation || state.activeLocation || 'Generic';
+  var s = buildShareSections(orders, loc);
+
+  var text = '🍱 Bhok Lagyo! — ' + d.day + ', ' + d.date + nl;
+  text += 'Alaya HLE' + nl + nl;
+  text += '📋 ORDER SUMMARY' + nl;
+  text += s.section1 + nl + nl;
+  text += '---' + nl;
+  text += '👤 PER PERSON' + nl;
+  text += s.section2 + nl + nl;
+  text += '---' + nl;
+  text += '💰 PRICE LIST' + nl;
+  text += s.section3 || '(prices not found in menu — check Settings)';
 
   openShareSheet(text);
 }
