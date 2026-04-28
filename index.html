@@ -2934,10 +2934,13 @@ function confirmRemoveItems() {
   const removedSharedItems = parsed.filter(p => (qtysToRemove[p.name] || 0) > 0 && p.isShared);
   const removedItemNames = removedSharedItems.map(p => p.name.toLowerCase());
 
+  toast('DEBUG: removedSharedItems=' + JSON.stringify(removedSharedItems.map(p=>p.name)) + ' names=' + JSON.stringify(removedItemNames));
+
   if (removedItemNames.length > 0) {
     todayOrdersCache.forEach((o, i) => {
       if (i === idx) return;
       const oParsed = parseOrderItems(o.items);
+      toast('DEBUG sharer ' + o.name + ': ' + JSON.stringify(oParsed.map(p=>p.name+'(shared='+p.isShared+')')));
       const hasSharedRemoved = oParsed.some(p => p.isShared && removedItemNames.includes(p.name.toLowerCase()));
       if (!hasSharedRemoved) return;
 
