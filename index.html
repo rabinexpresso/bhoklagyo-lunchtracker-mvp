@@ -2808,26 +2808,35 @@ function renderRemoveItemsList(order, parsed) {
   const list = document.getElementById('removeItemsList');
   const orderTotal = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
 
+  // Derive per-item price from stored total (proportional to menu prices)
+  // This ensures fractional/split prices are respected
+  const totalMenuValue = parsed.reduce((s, p) => s + getMenuPriceFor(p.name) * p.qty, 0);
+
   list.innerHTML = parsed.map(p => {
-    const price = getMenuPriceFor(p.name);
+    // Stored price per unit: scale menu price by ratio of stored total to menu total
+    // If we can't derive (menu price 0), fall back to stored total / total qty
+    const menuP = getMenuPriceFor(p.name);
+    const storedPricePerUnit = totalMenuValue > 0
+      ? Math.round((menuP / totalMenuValue) * orderTotal)
+      : (parsed.length === 1 ? orderTotal : menuP);
     const removing = removeItemsQtys[p.name] || 0;
-    return `<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;border:1.5px solid var(--border2)">
+    return `<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;border:1.5px solid var(--border2)" data-item-price="${storedPricePerUnit}">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'Poppins',sans-serif">${p.name}</div>
           <div style="font-size:11px;color:var(--text3);font-family:'Poppins',sans-serif">
-            Have: x${p.qty} · Rs ${price}/item
+            Have: x${p.qty} · Rs ${storedPricePerUnit}/item
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
-          <button onclick="changeRemoveQty('${p.name.replace(/'/g,"\\'")}',${p.qty},-1)"
+          <button onclick="changeRemoveQty('${p.name.replace(/'/g,"\\'")}',${p.qty},${storedPricePerUnit},-1)"
             style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border2);background:var(--surface);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--pr)">−</button>
           <span style="font-size:14px;font-weight:700;color:${removing>0?'var(--pr)':'var(--text3)'};min-width:18px;text-align:center;font-family:'Poppins',sans-serif">${removing}</span>
-          <button onclick="changeRemoveQty('${p.name.replace(/'/g,"\\'")}',${p.qty},1)"
+          <button onclick="changeRemoveQty('${p.name.replace(/'/g,"\\'")}',${p.qty},${storedPricePerUnit},1)"
             style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border2);background:var(--surface);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--accent)">+</button>
         </div>
         <div style="font-size:12px;font-weight:700;color:var(--pr);min-width:52px;text-align:right;font-family:'Poppins',sans-serif">
-          −Rs ${price * removing}
+          −Rs ${storedPricePerUnit * removing}
         </div>
       </div>
     </div>`;
@@ -2836,9 +2845,13 @@ function renderRemoveItemsList(order, parsed) {
   updateRemoveTotals(order, parsed);
 }
 
-function changeRemoveQty(itemName, maxQty, delta) {
+// Store per-item prices derived from stored order totals
+var removeItemsPrices = {};
+
+function changeRemoveQty(itemName, maxQty, pricePerUnit, delta) {
   const current = removeItemsQtys[itemName] || 0;
   removeItemsQtys[itemName] = Math.max(0, Math.min(maxQty, current + delta));
+  removeItemsPrices[itemName] = pricePerUnit;
   const idx = removeItemsIdx;
   const order = todayOrdersCache[idx];
   if (!order) return;
@@ -2849,7 +2862,9 @@ function changeRemoveQty(itemName, maxQty, delta) {
 function updateRemoveTotals(order, parsed) {
   let removingTotal = 0;
   parsed.forEach(p => {
-    const price = getMenuPriceFor(p.name);
+    const price = removeItemsPrices[p.name] !== undefined
+      ? removeItemsPrices[p.name]
+      : getMenuPriceFor(p.name);
     removingTotal += price * (removeItemsQtys[p.name] || 0);
   });
   const orderTotal = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
@@ -2864,6 +2879,7 @@ function closeRemoveItemsModal() {
   document.getElementById('removeItemsModal').classList.remove('open');
   removeItemsIdx = null;
   removeItemsQtys = {};
+  removeItemsPrices = {};
 }
 
 function handleRemoveModalOverlayClick(e) {
@@ -2875,8 +2891,9 @@ function confirmRemoveItems() {
   const order = todayOrdersCache[idx];
   if (!order) return;
 
-  // Save qtys BEFORE closing modal (closeRemoveItemsModal clears removeItemsQtys)
+  // Save qtys AND prices BEFORE closing modal
   const qtysToRemove = { ...removeItemsQtys };
+  const pricesToRemove = { ...removeItemsPrices };
   closeRemoveItemsModal();
 
   const { date: todayDate } = getNPTDate();
@@ -2890,11 +2907,11 @@ function confirmRemoveItems() {
     return { name: p.name, qty: newQty };
   }).filter(Boolean);
 
-  // Calculate new total using menu prices
+  // Calculate new total using STORED prices (not menu price)
   const orderTotal = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
   let removingTotal = 0;
   parsed.forEach(p => {
-    const price = getMenuPriceFor(p.name);
+    const price = pricesToRemove[p.name] !== undefined ? pricesToRemove[p.name] : getMenuPriceFor(p.name);
     removingTotal += price * (qtysToRemove[p.name] || 0);
   });
   const newTotal = Math.max(0, orderTotal - removingTotal);
@@ -2909,9 +2926,9 @@ function confirmRemoveItems() {
   }
 
   // ── Strip shared labels from other people who shared removed items ──
-  const removedItemNames = parsed
-    .filter(p => (qtysToRemove[p.name] || 0) > 0 && p.isShared)
-    .map(p => p.name.toLowerCase());
+  // Also update their price to menu price since they now have it all to themselves
+  const removedSharedItems = parsed.filter(p => (qtysToRemove[p.name] || 0) > 0 && p.isShared);
+  const removedItemNames = removedSharedItems.map(p => p.name.toLowerCase());
 
   if (removedItemNames.length > 0) {
     todayOrdersCache.forEach((o, i) => {
@@ -2919,10 +2936,26 @@ function confirmRemoveItems() {
       const oParsed = parseOrderItems(o.items);
       const hasSharedRemoved = oParsed.some(p => p.isShared && removedItemNames.includes(p.name.toLowerCase()));
       if (!hasSharedRemoved) return;
-      // Strip (shared N ways) from all items in this person's order
-      const cleaned = oParsed.map(p => p.name + ' x' + p.qty).join(', ');
-      todayOrdersCache[i] = { ...o, items: cleaned };
-      // Update their row in sheet
+
+      // Rebuild this person's items — strip shared label, update price for affected items
+      let newPersonTotal = 0;
+      const newItems = oParsed.map(p => {
+        const isAffected = p.isShared && removedItemNames.includes(p.name.toLowerCase());
+        const newQtyLabel = p.name + ' x' + p.qty;
+        if (isAffected) {
+          // Now has full menu price since no longer sharing
+          newPersonTotal += getMenuPriceFor(p.name) * p.qty;
+        } else {
+          // Keep existing price proportionally
+          const menuP = getMenuPriceFor(p.name);
+          newPersonTotal += menuP * p.qty;
+        }
+        return newQtyLabel;
+      });
+
+      // Recalculate total: use menu prices for all items
+      const recalcTotal = oParsed.reduce((s, p) => s + getMenuPriceFor(p.name) * p.qty, 0);
+      todayOrdersCache[i] = { ...o, items: newItems.join(', '), total: 'Rs ' + recalcTotal };
       syncOrderToSheet(todayOrdersCache[i], todayDate);
     });
   }
