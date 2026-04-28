@@ -2896,8 +2896,12 @@ function confirmRemoveItems() {
   const pricesToRemove = { ...removeItemsPrices };
   closeRemoveItemsModal();
 
+  toast('DEBUG: idx=' + idx + ' order=' + order.name + ' items=' + order.items);
+  toast('DEBUG: qtys=' + JSON.stringify(qtysToRemove) + ' prices=' + JSON.stringify(pricesToRemove));
+
   const { date: todayDate } = getNPTDate();
   const parsed = parseOrderItems(order.items);
+  toast('DEBUG: parsed=' + JSON.stringify(parsed.map(p => p.name + '×' + p.qty + '(shared=' + p.isShared + ')')));
 
   // Build remaining items
   const remaining = parsed.map(p => {
@@ -2916,7 +2920,7 @@ function confirmRemoveItems() {
   });
   const newTotal = Math.max(0, orderTotal - removingTotal);
 
-  // ── Update/delete this person's order optimistically ──
+  toast('DEBUG: remaining=' + JSON.stringify(remaining) + ' removingTotal=' + removingTotal + ' newTotal=' + newTotal);
   if (remaining.length === 0) {
     // Delete entire row
     todayOrdersCache.splice(idx, 1);
