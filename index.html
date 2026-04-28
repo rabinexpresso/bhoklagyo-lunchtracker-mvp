@@ -2781,9 +2781,16 @@ function openRemoveItemsModal(idx) {
 
 function parseOrderItems(itemsStr) {
   return (itemsStr || '').split(',').map(s => s.trim()).filter(Boolean).map(part => {
-    // Strip shared suffix: "Black tea x3 (shared 6 ways)" → name=Black tea, qty=3
-    const sharedMatch = part.match(/^(.+?)\s+x(\d+)\s*\(shared.*?\)/i);
-    if (sharedMatch) return { name: sharedMatch[1].trim(), qty: parseInt(sharedMatch[2]), isShared: true, raw: part };
+    // Shared format: "Lemonade x5 (shared 5 ways)" — person only has qty/sharedN
+    const sharedMatch = part.match(/^(.+?)\s+x(\d+)\s*\(shared\s+(\d+)\s+ways\)/i);
+    if (sharedMatch) {
+      const totalQty = parseInt(sharedMatch[2]);
+      const sharedN = parseInt(sharedMatch[3]);
+      const perPersonQty = totalQty / sharedN;
+      // If each person gets a whole portion, use that; if fractional, keep as-is
+      const displayQty = perPersonQty >= 1 ? Math.round(perPersonQty) : totalQty;
+      return { name: sharedMatch[1].trim(), qty: displayQty, isShared: perPersonQty < 1, raw: part };
+    }
     const m = part.match(/^(.+?)\s*x\s*(\d+)\s*$/i);
     if (m) return { name: m[1].trim(), qty: parseInt(m[2]), isShared: false, raw: part };
     return { name: part, qty: 1, isShared: false, raw: part };
