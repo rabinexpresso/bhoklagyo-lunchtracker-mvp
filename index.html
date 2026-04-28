@@ -1602,20 +1602,21 @@
   </div>
 
   <!-- INLINE EDIT MODAL -->
-  <div class="modal-overlay" id="editOrderModal">
-    <div class="modal-box" style="width:92%;max-width:400px">
+  <!-- ═══════════ REMOVE ITEMS MODAL ═══════════ -->
+  <div class="modal-overlay" id="removeItemsModal" onclick="handleRemoveModalOverlayClick(event)">
+    <div class="modal-box" style="width:92%;max-width:420px">
       <div class="modal-body" style="text-align:left;padding:20px 20px 12px">
-        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:'Poppins',sans-serif">📝 Custom</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:14px" id="editOrderName"></div>
-        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;font-family:'Poppins',sans-serif">Items</div>
-        <textarea id="editOrderItems" rows="4" style="width:100%;border:1.5px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:13px;font-family:'Poppins',sans-serif;color:var(--text);resize:vertical;outline:none;background:var(--surface);box-sizing:border-box" placeholder="e.g. Dal Bhat Set x2, Milk Tea x1"></textarea>
-        <div style="font-size:11px;color:var(--text3);margin:4px 0 12px">Separate items with commas. Format: Item Name xQty</div>
-        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;font-family:'Poppins',sans-serif">Total (Rs)</div>
-        <input type="number" id="editOrderTotal" style="width:100%;border:1.5px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;font-family:'Poppins',sans-serif;color:var(--pr);outline:none;background:var(--surface);box-sizing:border-box" placeholder="e.g. 360" />
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:'Poppins',sans-serif">🗑️ Remove items</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:'Poppins',sans-serif" id="removeItemsName"></div>
+        <div id="removeItemsList" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text3);font-family:'Poppins',sans-serif">Removing: <span id="removeItemsTotal" style="font-weight:700;color:var(--pr)">Rs 0</span></span>
+          <span style="font-size:12px;color:var(--text2);font-family:'Poppins',sans-serif">Remaining: <span id="removeItemsRemaining" style="font-weight:700;color:#42db66">Rs 0</span></span>
+        </div>
       </div>
       <div class="modal-actions">
-        <button class="modal-btn cancel" onclick="closeEditOrderModal()">Cancel</button>
-        <button class="modal-btn confirm" onclick="saveEditedOrder()" style="color:#00b0ff">Save</button>
+        <button class="modal-btn cancel" onclick="closeRemoveItemsModal()">Cancel</button>
+        <button class="modal-btn confirm" id="removeItemsConfirmBtn" onclick="confirmRemoveItems()" style="color:var(--pr)" disabled>Remove</button>
       </div>
     </div>
   </div>
@@ -2631,7 +2632,7 @@ function renderTodayOrders(orders, skipCacheReset) {
       </div>
       <div class="opc-items">${itemRows}</div>
       <div class="opc-actions">
-        <button class="opc-edit-btn"  onclick="editOrderFromToday(${cacheIdx})">🔄 Change</button>
+        <button class="opc-edit-btn"  onclick="openRemoveItemsModal(${cacheIdx})">🗑️ Remove</button>
         <button class="opc-edit-btn"  onclick="editOrderInline(${cacheIdx})" style="background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold)">📝 Custom</button>
         <button class="opc-split-btn" onclick="toggleSplitPanel(${cacheIdx})">💸 Split</button>
         <button class="opc-del-btn"   onclick="deleteOrderFromToday(${cacheIdx})">🗑 Del</button>
@@ -2757,28 +2758,204 @@ function bulkDeleteSelected() {
 
 let editOrderIdx = null;
 
-function editOrderFromToday(idx) {
+// ── Remove Items state ──
+var removeItemsIdx = null;
+var removeItemsQtys = {}; // {itemName: qtyToRemove}
+
+function openRemoveItemsModal(idx) {
   const order = todayOrdersCache[idx];
   if (!order) return;
-  // Go back to menu screen to re-select items
-  state.currentUser = order.name;
-  state.isEditing = true;
-  state.cart = {};
-  const parts = order.items.split(',').map(s => s.trim()).filter(Boolean);
-  parts.forEach(part => {
-    const match = part.match(/^(.+?)\s*x(\d+)$/i);
-    if (match) {
-      const itemName = match[1].trim();
-      const qty = parseInt(match[2]) || 1;
-      const menuIdx = state.menu.findIndex(m => m.name === itemName);
-      if (menuIdx >= 0) state.cart[menuIdx] = qty;
-    }
+  removeItemsIdx = idx;
+  removeItemsQtys = {};
+
+  document.getElementById('removeItemsName').textContent = order.name + ' · ' + (order.time ? cleanTime(order.time) : '');
+
+  // Parse current items
+  const parsed = parseOrderItems(order.items);
+  removeItemsQtys = {};
+  parsed.forEach(p => { removeItemsQtys[p.name] = 0; });
+
+  renderRemoveItemsList(order, parsed);
+  document.getElementById('removeItemsModal').classList.add('open');
+}
+
+function parseOrderItems(itemsStr) {
+  return (itemsStr || '').split(',').map(s => s.trim()).filter(Boolean).map(part => {
+    // Strip shared suffix: "Black tea x3 (shared 6 ways)" → name=Black tea, qty=3
+    const sharedMatch = part.match(/^(.+?)\s+x(\d+)\s*\(shared.*?\)/i);
+    if (sharedMatch) return { name: sharedMatch[1].trim(), qty: parseInt(sharedMatch[2]), isShared: true, raw: part };
+    const m = part.match(/^(.+?)\s*x\s*(\d+)\s*$/i);
+    if (m) return { name: m[1].trim(), qty: parseInt(m[2]), isShared: false, raw: part };
+    return { name: part, qty: 1, isShared: false, raw: part };
   });
-  updateUserPill();
-  renderCategoryTabs();
-  renderMenuGrid();
-  updateCartBar();
-  showScreen('screen-menu');
+}
+
+function getMenuPriceFor(name) {
+  const allMenus = [...(state.menu || [])];
+  Object.values(state.locationMenus || {}).forEach(m => allMenus.push(...m));
+  const found = allMenus.find(m => m.name.toLowerCase().trim() === name.toLowerCase().trim());
+  return found ? found.price : 0;
+}
+
+function renderRemoveItemsList(order, parsed) {
+  const list = document.getElementById('removeItemsList');
+  const orderTotal = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
+
+  list.innerHTML = parsed.map(p => {
+    const price = getMenuPriceFor(p.name);
+    const removing = removeItemsQtys[p.name] || 0;
+    return `<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;border:1.5px solid var(--border2)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'Poppins',sans-serif">${p.name}</div>
+          <div style="font-size:11px;color:var(--text3);font-family:'Poppins',sans-serif">
+            Have: x${p.qty} · Rs ${price}/item
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button onclick="changeRemoveQty('${p.name.replace(/'/g,"\\'")}',${p.qty},-1)"
+            style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border2);background:var(--surface);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--pr)">−</button>
+          <span style="font-size:14px;font-weight:700;color:${removing>0?'var(--pr)':'var(--text3)'};min-width:18px;text-align:center;font-family:'Poppins',sans-serif">${removing}</span>
+          <button onclick="changeRemoveQty('${p.name.replace(/'/g,"\\'")}',${p.qty},1)"
+            style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border2);background:var(--surface);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--accent)">+</button>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:var(--pr);min-width:52px;text-align:right;font-family:'Poppins',sans-serif">
+          −Rs ${price * removing}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateRemoveTotals(order, parsed);
+}
+
+function changeRemoveQty(itemName, maxQty, delta) {
+  const current = removeItemsQtys[itemName] || 0;
+  removeItemsQtys[itemName] = Math.max(0, Math.min(maxQty, current + delta));
+  const idx = removeItemsIdx;
+  const order = todayOrdersCache[idx];
+  if (!order) return;
+  const parsed = parseOrderItems(order.items);
+  renderRemoveItemsList(order, parsed);
+}
+
+function updateRemoveTotals(order, parsed) {
+  let removingTotal = 0;
+  parsed.forEach(p => {
+    const price = getMenuPriceFor(p.name);
+    removingTotal += price * (removeItemsQtys[p.name] || 0);
+  });
+  const orderTotal = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
+  const remaining = Math.max(0, orderTotal - removingTotal);
+  document.getElementById('removeItemsTotal').textContent = 'Rs ' + removingTotal;
+  document.getElementById('removeItemsRemaining').textContent = 'Rs ' + remaining;
+  const anyRemoving = Object.values(removeItemsQtys).some(q => q > 0);
+  document.getElementById('removeItemsConfirmBtn').disabled = !anyRemoving;
+}
+
+function closeRemoveItemsModal() {
+  document.getElementById('removeItemsModal').classList.remove('open');
+  removeItemsIdx = null;
+  removeItemsQtys = {};
+}
+
+function handleRemoveModalOverlayClick(e) {
+  if (e.target === document.getElementById('removeItemsModal')) closeRemoveItemsModal();
+}
+
+function confirmRemoveItems() {
+  const idx = removeItemsIdx;
+  const order = todayOrdersCache[idx];
+  if (!order) return;
+  closeRemoveItemsModal();
+
+  const { date: todayDate } = getNPTDate();
+  const parsed = parseOrderItems(order.items);
+
+  // Build remaining items
+  const remaining = parsed.map(p => {
+    const qtyRemoved = removeItemsQtys[p.name] || 0;
+    const newQty = p.qty - qtyRemoved;
+    if (newQty <= 0) return null;
+    return { name: p.name, qty: newQty };
+  }).filter(Boolean);
+
+  // Calculate new total using menu prices
+  let newTotal = 0;
+  const orderTotal = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
+  let removingTotal = 0;
+  parsed.forEach(p => {
+    const price = getMenuPriceFor(p.name);
+    removingTotal += price * (removeItemsQtys[p.name] || 0);
+  });
+  newTotal = Math.max(0, orderTotal - removingTotal);
+
+  // ── Update/delete this person's order optimistically ──
+  if (remaining.length === 0) {
+    // Delete entire row
+    todayOrdersCache.splice(idx, 1);
+  } else {
+    const newItemsStr = remaining.map(p => p.name + ' x' + p.qty).join(', ');
+    todayOrdersCache[idx] = { ...order, items: newItemsStr, total: 'Rs ' + newTotal };
+  }
+
+  // ── Strip shared labels from other people who shared removed items ──
+  const removedItemNames = parsed
+    .filter(p => (removeItemsQtys[p.name] || 0) > 0 && p.isShared)
+    .map(p => p.name.toLowerCase());
+
+  if (removedItemNames.length > 0) {
+    todayOrdersCache.forEach((o, i) => {
+      if (i === idx) return;
+      const oParsed = parseOrderItems(o.items);
+      const hasSharedRemoved = oParsed.some(p => p.isShared && removedItemNames.includes(p.name.toLowerCase()));
+      if (!hasSharedRemoved) return;
+      // Strip (shared N ways) from all items in this person's order
+      const cleaned = oParsed.map(p => p.name + ' x' + p.qty).join(', ');
+      todayOrdersCache[i] = { ...o, items: cleaned };
+      // Update their row in sheet
+      syncOrderToSheet(todayOrdersCache[i], todayDate);
+    });
+  }
+
+  // Re-render immediately
+  selectedOrderIndices = new Set();
+  renderTodayNameChips();
+  applyTodayFilter();
+  toast(remaining.length === 0 ? '🗑 ' + order.name + '\'s order removed' : '✅ ' + order.name + '\'s order updated');
+
+  // Sync to sheet in background
+  if (remaining.length === 0) {
+    // Delete from sheet
+    const cbDel = 'delCb_' + Date.now();
+    const url = state.sheetUrl + '?action=delete&name=' + encodeURIComponent(order.name) +
+      '&date=' + encodeURIComponent(todayDate) + '&callback=' + cbDel;
+    window[cbDel] = function() { delete window[cbDel]; };
+    const s = document.createElement('script');
+    s.src = url;
+    s.onerror = function() { delete window[cbDel]; toast('⚠️ Could not sync to sheet'); };
+    document.head.appendChild(s);
+    setTimeout(function() { try { document.head.removeChild(s); } catch(e) {} }, 25000);
+  } else {
+    syncOrderToSheet(todayOrdersCache[idx], todayDate);
+  }
+}
+
+function syncOrderToSheet(order, date) {
+  const cb = 'syncCb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  const url = state.sheetUrl + '?action=update' +
+    '&name=' + encodeURIComponent(order.name) +
+    '&date=' + encodeURIComponent(date) +
+    '&items=' + encodeURIComponent(order.items) +
+    '&total=' + encodeURIComponent(order.total) +
+    '&timestamp=' + encodeURIComponent(order.time || '') +
+    '&callback=' + cb;
+  window[cb] = function() { delete window[cb]; };
+  const s = document.createElement('script');
+  s.src = url;
+  s.onerror = function() { delete window[cb]; };
+  document.head.appendChild(s);
+  setTimeout(function() { try { document.head.removeChild(s); } catch(e) {} }, 25000);
 }
 
 function editOrderInline(idx) {
