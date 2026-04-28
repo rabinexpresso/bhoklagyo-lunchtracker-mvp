@@ -2781,19 +2781,17 @@ function openRemoveItemsModal(idx) {
 
 function parseOrderItems(itemsStr) {
   return (itemsStr || '').split(',').map(s => s.trim()).filter(Boolean).map(part => {
-    // Shared format: "Lemonade x5 (shared 5 ways)" — person only has qty/sharedN
     const sharedMatch = part.match(/^(.+?)\s+x(\d+)\s*\(shared\s+(\d+)\s+ways\)/i);
     if (sharedMatch) {
       const totalQty = parseInt(sharedMatch[2]);
       const sharedN = parseInt(sharedMatch[3]);
       const perPersonQty = totalQty / sharedN;
-      // If each person gets a whole portion, use that; if fractional, keep as-is
       const displayQty = perPersonQty >= 1 ? Math.round(perPersonQty) : totalQty;
-      return { name: sharedMatch[1].trim(), qty: displayQty, isShared: perPersonQty < 1, raw: part };
+      return { name: sharedMatch[1].trim(), qty: displayQty, isShared: perPersonQty < 1, sharedN: sharedN, raw: part };
     }
     const m = part.match(/^(.+?)\s*x\s*(\d+)\s*$/i);
-    if (m) return { name: m[1].trim(), qty: parseInt(m[2]), isShared: false, raw: part };
-    return { name: part, qty: 1, isShared: false, raw: part };
+    if (m) return { name: m[1].trim(), qty: parseInt(m[2]), isShared: false, sharedN: 1, raw: part };
+    return { name: part, qty: 1, isShared: false, sharedN: 1, raw: part };
   });
 }
 
@@ -2930,32 +2928,45 @@ function confirmRemoveItems() {
   const removedItemNames = removedSharedItems.map(p => p.name.toLowerCase());
 
   // ── Strip shared labels and update price for other people sharing removed items ──
-  // Get all shared item names from the original order (regardless of qty tracking)
   const allSharedItemNames = parsed
     .filter(p => p.isShared || (p.raw && p.raw.toLowerCase().includes('shared')))
     .map(p => p.name.toLowerCase());
 
-  toast('DEBUG: allShared=' + JSON.stringify(allSharedItemNames));
-
   if (allSharedItemNames.length > 0) {
+    // Build full-price map: stored_per_person_price × sharedN
+    // pricesToRemove[name] = what this person paid per unit
+    const fullPriceMap = {};
+    parsed.filter(p => p.isShared || (p.raw||'').includes('shared')).forEach(p => {
+      const storedPerPerson = pricesToRemove[p.name] !== undefined
+        ? pricesToRemove[p.name]
+        : Math.round((parseInt(String(order.total).replace(/[^0-9]/g,''))||0) / parsed.length);
+      fullPriceMap[p.name.toLowerCase()] = storedPerPerson * (p.sharedN || 2);
+    });
+
     todayOrdersCache.forEach((o, i) => {
       if (i === idx) return;
       const oParsed = parseOrderItems(o.items);
-      const hasSharedItem = oParsed.some(p => {
-        const nameMatch = allSharedItemNames.includes(p.name.toLowerCase());
-        const hasSharedSuffix = (p.raw || '').toLowerCase().includes('shared');
-        return nameMatch && hasSharedSuffix;
-      });
+      const hasSharedItem = oParsed.some(p =>
+        allSharedItemNames.includes(p.name.toLowerCase()) &&
+        (p.raw || '').toLowerCase().includes('shared')
+      );
       if (!hasSharedItem) return;
-      toast('DEBUG: updating ' + o.name);
 
-      // Strip shared suffix from all items, recalc total using menu prices
+      // Strip shared suffix, use full price for shared items
       const newItems = oParsed.map(p => p.name + ' x' + p.qty).join(', ');
-      const newPersonTotal = oParsed.reduce((s, p) => s + (getMenuPriceFor(p.name) || 0) * p.qty, 0);
-      const finalTotal = newPersonTotal > 0 ? newPersonTotal : (parseInt(String(o.total).replace(/[^0-9]/g,''))||0);
+      const newPersonTotal = oParsed.reduce((s, p) => {
+        const key = p.name.toLowerCase();
+        const isAffected = allSharedItemNames.includes(key) && (p.raw||'').includes('shared');
+        if (isAffected) {
+          return s + (fullPriceMap[key] || getMenuPriceFor(p.name) || 0) * p.qty;
+        }
+        return s + (getMenuPriceFor(p.name) || 0) * p.qty;
+      }, 0);
+
+      const finalTotal = newPersonTotal > 0 ? newPersonTotal
+        : (parseInt(String(o.total).replace(/[^0-9]/g,''))||0);
       todayOrdersCache[i] = { ...o, items: newItems, total: 'Rs ' + finalTotal };
       syncOrderToSheet(todayOrdersCache[i], todayDate);
-      toast('DEBUG: ' + o.name + ' → Rs ' + finalTotal);
     });
   }
 
