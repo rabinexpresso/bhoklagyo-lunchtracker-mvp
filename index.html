@@ -550,8 +550,9 @@
   .fo-custom-total { flex: 0 0 90px; min-width: 0; border: none; border-right: 1px solid var(--border2); background: transparent; font-size: 11px; font-family: 'Poppins', sans-serif; color: var(--pr); font-weight: 700; outline: none; padding: 0 8px; height: 34px; text-align: right; box-sizing: border-box; }
   .go-del-btn { flex: 0 0 28px; min-width: 0; border: none; border-left: 1px solid var(--border2); background: none; cursor: pointer; font-size: 14px; color: var(--text3); display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0; box-sizing: border-box; }
   .go-del-btn:hover { background: var(--error-bg); color: var(--error); }
-  .go-add-btn { width: 100%; padding: 7px; border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); background: none; font-size: 12px; color: var(--text3); cursor: pointer; font-family: 'Poppins', sans-serif; transition: all 0.15s; margin-top: 2px; }
-  .go-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .go-add-btn { width: 100%; padding: 10px; border: 2px dashed var(--accent); border-radius: var(--radius-sm); background: var(--blue-light); font-size: 13px; font-weight: 700; color: var(--accent); cursor: pointer; font-family: 'Poppins', sans-serif; transition: all 0.15s; margin-top: 8px; letter-spacing: 0.2px; }
+  .go-add-btn:hover { background: var(--accent); color: white; border-style: solid; }
+  .go-add-btn:active { background: var(--accent); color: white; }
   .go-total-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-top: 10px; }
   .go-grand-total { font-size: 16px; font-weight: 800; color: var(--pr); font-family: 'Poppins', sans-serif; }
   .group-submit-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 680px; background: #000079; border-top: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; padding-bottom: max(10px, env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 40; }
@@ -1311,7 +1312,7 @@
           <span class="fo-th-del"></span>
         </div>
         <div id="foFoodList"></div>
-        <button class="go-add-btn" onclick="addFoItem()" style="margin-top:4px">+ Add food item</button>
+        <button class="go-add-btn" onclick="addFoItem()" style="margin-top:8px">＋ Add food item</button>
       </div>
 
 
