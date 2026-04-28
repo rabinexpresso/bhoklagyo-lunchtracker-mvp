@@ -2896,12 +2896,8 @@ function confirmRemoveItems() {
   const pricesToRemove = { ...removeItemsPrices };
   closeRemoveItemsModal();
 
-  toast('DEBUG: idx=' + idx + ' order=' + order.name + ' items=' + order.items);
-  toast('DEBUG: qtys=' + JSON.stringify(qtysToRemove) + ' prices=' + JSON.stringify(pricesToRemove));
-
   const { date: todayDate } = getNPTDate();
   const parsed = parseOrderItems(order.items);
-  toast('DEBUG: parsed=' + JSON.stringify(parsed.map(p => p.name + '×' + p.qty + '(shared=' + p.isShared + ')')));
 
   // Build remaining items
   const remaining = parsed.map(p => {
@@ -2920,7 +2916,6 @@ function confirmRemoveItems() {
   });
   const newTotal = Math.max(0, orderTotal - removingTotal);
 
-  toast('DEBUG: remaining=' + JSON.stringify(remaining) + ' removingTotal=' + removingTotal + ' newTotal=' + newTotal);
   if (remaining.length === 0) {
     // Delete entire row
     todayOrdersCache.splice(idx, 1);
@@ -2934,36 +2929,34 @@ function confirmRemoveItems() {
   const removedSharedItems = parsed.filter(p => (qtysToRemove[p.name] || 0) > 0 && p.isShared);
   const removedItemNames = removedSharedItems.map(p => p.name.toLowerCase());
 
-  toast('DEBUG: removedSharedItems=' + JSON.stringify(removedSharedItems.map(p=>p.name)) + ' names=' + JSON.stringify(removedItemNames));
+  toast('DEBUG: removedShared=' + JSON.stringify(removedSharedItems.map(p=>p.name)));
 
   if (removedItemNames.length > 0) {
     todayOrdersCache.forEach((o, i) => {
       if (i === idx) return;
       const oParsed = parseOrderItems(o.items);
-      toast('DEBUG sharer ' + o.name + ': ' + JSON.stringify(oParsed.map(p=>p.name+'(shared='+p.isShared+')')));
-      const hasSharedRemoved = oParsed.some(p => p.isShared && removedItemNames.includes(p.name.toLowerCase()));
-      if (!hasSharedRemoved) return;
-
-      // Rebuild this person's items — strip shared label, update price for affected items
-      let newPersonTotal = 0;
-      const newItems = oParsed.map(p => {
-        const isAffected = p.isShared && removedItemNames.includes(p.name.toLowerCase());
-        const newQtyLabel = p.name + ' x' + p.qty;
-        if (isAffected) {
-          // Now has full menu price since no longer sharing
-          newPersonTotal += getMenuPriceFor(p.name) * p.qty;
-        } else {
-          // Keep existing price proportionally
-          const menuP = getMenuPriceFor(p.name);
-          newPersonTotal += menuP * p.qty;
-        }
-        return newQtyLabel;
+      // Check both isShared items AND items stored with (shared N ways) suffix still in raw string
+      const hasSharedRemoved = oParsed.some(p => {
+        const baseName = p.name.toLowerCase();
+        const inRemoved = removedItemNames.includes(baseName);
+        // Also check raw string for old-format shared items
+        const rawHasShared = (p.raw || '').toLowerCase().includes('shared');
+        return inRemoved && (p.isShared || rawHasShared);
       });
+      if (!hasSharedRemoved) return;
+      toast('DEBUG: updating sharer ' + o.name);
 
-      // Recalculate total: use menu prices for all items
-      const recalcTotal = oParsed.reduce((s, p) => s + getMenuPriceFor(p.name) * p.qty, 0);
-      todayOrdersCache[i] = { ...o, items: newItems.join(', '), total: 'Rs ' + recalcTotal };
+      // Rebuild items stripping shared suffix, recalc total using menu prices
+      const newItems = oParsed.map(p => p.name + ' x' + p.qty).join(', ');
+      // New total: for each item use menu price × qty
+      let newPersonTotal = oParsed.reduce((s, p) => {
+        return s + (getMenuPriceFor(p.name) || 0) * p.qty;
+      }, 0);
+      // If menu price not found for some items, fall back to stored total
+      if (newPersonTotal === 0) newPersonTotal = parseInt(String(o.total).replace(/[^0-9]/g,''))||0;
+      todayOrdersCache[i] = { ...o, items: newItems, total: 'Rs ' + newPersonTotal };
       syncOrderToSheet(todayOrdersCache[i], todayDate);
+      toast('DEBUG: ' + o.name + ' new total Rs ' + newPersonTotal);
     });
   }
 
