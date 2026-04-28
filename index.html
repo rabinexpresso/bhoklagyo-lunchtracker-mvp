@@ -2874,6 +2874,9 @@ function confirmRemoveItems() {
   const idx = removeItemsIdx;
   const order = todayOrdersCache[idx];
   if (!order) return;
+
+  // Save qtys BEFORE closing modal (closeRemoveItemsModal clears removeItemsQtys)
+  const qtysToRemove = { ...removeItemsQtys };
   closeRemoveItemsModal();
 
   const { date: todayDate } = getNPTDate();
@@ -2881,21 +2884,20 @@ function confirmRemoveItems() {
 
   // Build remaining items
   const remaining = parsed.map(p => {
-    const qtyRemoved = removeItemsQtys[p.name] || 0;
+    const qtyRemoved = qtysToRemove[p.name] || 0;
     const newQty = p.qty - qtyRemoved;
     if (newQty <= 0) return null;
     return { name: p.name, qty: newQty };
   }).filter(Boolean);
 
   // Calculate new total using menu prices
-  let newTotal = 0;
   const orderTotal = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
   let removingTotal = 0;
   parsed.forEach(p => {
     const price = getMenuPriceFor(p.name);
-    removingTotal += price * (removeItemsQtys[p.name] || 0);
+    removingTotal += price * (qtysToRemove[p.name] || 0);
   });
-  newTotal = Math.max(0, orderTotal - removingTotal);
+  const newTotal = Math.max(0, orderTotal - removingTotal);
 
   // ── Update/delete this person's order optimistically ──
   if (remaining.length === 0) {
@@ -2908,7 +2910,7 @@ function confirmRemoveItems() {
 
   // ── Strip shared labels from other people who shared removed items ──
   const removedItemNames = parsed
-    .filter(p => (removeItemsQtys[p.name] || 0) > 0 && p.isShared)
+    .filter(p => (qtysToRemove[p.name] || 0) > 0 && p.isShared)
     .map(p => p.name.toLowerCase());
 
   if (removedItemNames.length > 0) {
