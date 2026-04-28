@@ -4346,14 +4346,22 @@ function renderFoFoodList() {
     const totalCost = item.price * item.qty;
     const sharedWith = item.sharedWith || [];
     const perPerson = sharedWith.length > 0 ? Math.ceil(totalCost / sharedWith.length) : totalCost;
+    const perPersonQty = sharedWith.length > 0 ? item.qty / sharedWith.length : item.qty;
+    const isTrulyShared = perPersonQty < 1;
     const sharedChips = state.names.map(n =>
       `<button class="fo-shared-chip${sharedWith.includes(n)?' sel':''}" onclick="toggleFoShared(${i},'${n.replace(/'/g,"\\'")}')">
         ${n}
       </button>`
     ).join('');
-    const sharedResult = sharedWith.length > 0
-      ? `${sharedWith.length} people sharing ${item.qty} × Rs ${item.price} = <strong>Rs ${totalCost}</strong> → <strong style="color:#ff8c00">Rs ${perPerson} each</strong>`
-      : `<span style="color:var(--text3)">Select who's sharing the total cost</span>`;
+    let sharedResult;
+    if (sharedWith.length === 0) {
+      sharedResult = `<span style="color:var(--text3)">Select who's getting this</span>`;
+    } else if (isTrulyShared) {
+      sharedResult = `${sharedWith.length} people sharing ${item.qty} × Rs ${item.price} = <strong>Rs ${totalCost}</strong> → <strong style="color:#ff8c00">Rs ${perPerson} each</strong>`;
+    } else {
+      const qtyEach = Math.round(perPersonQty);
+      sharedResult = `${sharedWith.length} people × ${qtyEach === 1 ? '1 portion' : qtyEach + ' portions'} @ Rs ${item.price} = <strong style="color:#ff8c00">Rs ${perPerson} each</strong>`;
+    }
 
     // ── Food item field ──
     const itemField = item.isCustom
@@ -4623,15 +4631,27 @@ function submitFoodOrder() {
     if (!foodItem.item) return;
 
     if (foodItem.isShared) {
-      // Shared item: split total cost equally among sharedWith people
       const sharedWith = foodItem.sharedWith || [];
       if (sharedWith.length === 0) return;
       const totalCost = (foodItem.price || 0) * (foodItem.qty || 1);
       const perPerson = Math.ceil(totalCost / sharedWith.length);
-      const itemLabel = `${foodItem.item} x${foodItem.qty} (shared ${sharedWith.length} ways)`;
+      const perPersonQty = foodItem.qty / sharedWith.length;
+
+      // Only use (shared N ways) label when each person gets less than 1 whole item
+      // e.g. 1 Paratha shared by 2 people = truly sharing → use shared label
+      // e.g. 5 Lemonades assigned to 5 people = each gets 1 → no shared label
+      const isTrulyShared = perPersonQty < 1;
+
       sharedWith.forEach(name => {
         if (!grouped[name]) grouped[name] = { items: [], total: 0 };
-        grouped[name].items.push(itemLabel);
+        if (isTrulyShared) {
+          // Fractional share — keep shared label so Remove modal knows
+          grouped[name].items.push(`${foodItem.item} x${foodItem.qty} (shared ${sharedWith.length} ways)`);
+        } else {
+          // Each person gets whole portions — store cleanly per person
+          const qtyEach = Math.round(perPersonQty);
+          grouped[name].items.push(`${foodItem.item} x${qtyEach}`);
+        }
         grouped[name].total += perPerson;
       });
     } else {
