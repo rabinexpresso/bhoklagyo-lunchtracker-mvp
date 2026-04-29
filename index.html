@@ -2767,6 +2767,14 @@ function openRemoveItemsModal(idx) {
   if (!order) return;
   removeItemsIdx = idx;
   removeItemsQtys = {};
+  removeItemsPrices = {};
+
+  // Ensure location menus are loaded for price lookup
+  state.locations.filter(l => l !== 'Generic').forEach(loc => {
+    if (!state.locationMenus[loc] || state.locationMenus[loc].length === 0) {
+      loadLocationMenuFromSheet(loc);
+    }
+  });
 
   document.getElementById('removeItemsName').textContent = order.name + ' · ' + (order.time ? cleanTime(order.time) : '');
 
@@ -2797,44 +2805,71 @@ function parseOrderItems(itemsStr) {
 
 function getMenuPriceFor(name) {
   const allMenus = [...(state.menu || [])];
-  Object.values(state.locationMenus || {}).forEach(m => allMenus.push(...m));
-  const found = allMenus.find(m => m.name.toLowerCase().trim() === name.toLowerCase().trim());
-  return found ? found.price : 0;
+  Object.values(state.locationMenus || {}).forEach(m => allMenus.push(...(m || [])));
+  const key = (name || '').toLowerCase().trim().replace(/\s+/g, ' ');
+  // Exact match first
+  const found = allMenus.find(m => m.name.toLowerCase().trim().replace(/\s+/g, ' ') === key);
+  if (found && found.price > 0) return found.price;
+  // Partial match fallback
+  const partial = allMenus.find(m => {
+    const mk = m.name.toLowerCase().trim().replace(/\s+/g, ' ');
+    return (mk.includes(key) || key.includes(mk)) && m.price > 0;
+  });
+  return partial ? partial.price : 0;
 }
 
 function renderRemoveItemsList(order, parsed) {
   const list = document.getElementById('removeItemsList');
   const orderTotal = parseInt(String(order.total).replace(/[^0-9]/g, '')) || 0;
 
-  // Derive per-item price from stored total (proportional to menu prices)
-  // This ensures fractional/split prices are respected
-  const totalMenuValue = parsed.reduce((s, p) => s + getMenuPriceFor(p.name) * p.qty, 0);
-
-  list.innerHTML = parsed.map(p => {
-    // Stored price per unit: scale menu price by ratio of stored total to menu total
-    // If we can't derive (menu price 0), fall back to stored total / total qty
+  // Calculate per-item price: use menu price directly, with smart fallback
+  // Step 1: get menu prices for all items
+  const itemPrices = parsed.map(p => {
     const menuP = getMenuPriceFor(p.name);
-    const storedPricePerUnit = totalMenuValue > 0
-      ? Math.round((menuP / totalMenuValue) * orderTotal)
-      : (parsed.length === 1 ? orderTotal : menuP);
+    return { name: p.name, qty: p.qty, menuPrice: menuP, isShared: p.isShared, sharedN: p.sharedN || 1 };
+  });
+
+  // Step 2: for items with menu price 0, derive from order total minus known items
+  const knownTotal = itemPrices.reduce((s, ip) => {
+    if (ip.isShared && ip.menuPrice > 0) return s + Math.ceil(ip.menuPrice / ip.sharedN) * ip.qty;
+    if (!ip.isShared && ip.menuPrice > 0) return s + ip.menuPrice * ip.qty;
+    return s;
+  }, 0);
+  const unknownItems = itemPrices.filter(ip => ip.menuPrice === 0);
+  const unknownTotal = orderTotal - knownTotal;
+  const unknownCount = unknownItems.reduce((s, ip) => s + ip.qty, 0);
+
+  list.innerHTML = parsed.map((p, pi) => {
+    const ip = itemPrices[pi];
+    let pricePerUnit;
+    if (ip.isShared && ip.menuPrice > 0) {
+      pricePerUnit = Math.ceil(ip.menuPrice / ip.sharedN);
+    } else if (ip.menuPrice > 0) {
+      pricePerUnit = ip.menuPrice;
+    } else if (unknownCount > 0) {
+      // Derive from remaining total
+      pricePerUnit = Math.round(unknownTotal / unknownCount);
+    } else {
+      pricePerUnit = Math.round(orderTotal / parsed.reduce((s, pp) => s + pp.qty, 0));
+    }
     const removing = removeItemsQtys[p.name] || 0;
-    return `<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;border:1.5px solid var(--border2)" data-item-price="${storedPricePerUnit}">
+    return `<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;border:1.5px solid var(--border2)" data-item-price="${pricePerUnit}">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'Poppins',sans-serif">${p.name}</div>
           <div style="font-size:11px;color:var(--text3);font-family:'Poppins',sans-serif">
-            Have: x${p.qty} · Rs ${storedPricePerUnit}/item
+            Have: x${p.qty} · Rs ${pricePerUnit}/item
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
-          <button onclick="changeRemoveQty('${p.name.replace(/'/g,"\\'")}',${p.qty},${storedPricePerUnit},-1)"
+          <button onclick="changeRemoveQty('${p.name.replace(/'/g,"\\'")}',${p.qty},${pricePerUnit},-1)"
             style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border2);background:var(--surface);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--pr)">−</button>
           <span style="font-size:14px;font-weight:700;color:${removing>0?'var(--pr)':'var(--text3)'};min-width:18px;text-align:center;font-family:'Poppins',sans-serif">${removing}</span>
-          <button onclick="changeRemoveQty('${p.name.replace(/'/g,"\\'")}',${p.qty},${storedPricePerUnit},1)"
+          <button onclick="changeRemoveQty('${p.name.replace(/'/g,"\\'")}',${p.qty},${pricePerUnit},1)"
             style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border2);background:var(--surface);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--accent)">+</button>
         </div>
         <div style="font-size:12px;font-weight:700;color:var(--pr);min-width:52px;text-align:right;font-family:'Poppins',sans-serif">
-          −Rs ${storedPricePerUnit * removing}
+          −Rs ${pricePerUnit * removing}
         </div>
       </div>
     </div>`;
