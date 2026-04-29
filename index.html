@@ -2927,46 +2927,75 @@ function confirmRemoveItems() {
   const removedSharedItems = parsed.filter(p => (qtysToRemove[p.name] || 0) > 0 && p.isShared);
   const removedItemNames = removedSharedItems.map(p => p.name.toLowerCase());
 
-  // ── Strip shared labels and update price for other people sharing removed items ──
+  // ── Update price for other people still sharing removed items ──
   const allSharedItemNames = parsed
     .filter(p => p.isShared || (p.raw && p.raw.toLowerCase().includes('shared')))
     .map(p => p.name.toLowerCase());
 
   if (allSharedItemNames.length > 0) {
-    // Build full-price map: stored_per_person_price × sharedN
-    // pricesToRemove[name] = what this person paid per unit
-    const fullPriceMap = {};
+    // Derive menu price (full price) for each shared item:
+    // menu_price = stored_per_person_price × original_sharedN
+    const menuPriceMap = {};
     parsed.filter(p => p.isShared || (p.raw||'').includes('shared')).forEach(p => {
       const storedPerPerson = pricesToRemove[p.name] !== undefined
         ? pricesToRemove[p.name]
         : Math.round((parseInt(String(order.total).replace(/[^0-9]/g,''))||0) / parsed.length);
-      fullPriceMap[p.name.toLowerCase()] = storedPerPerson * (p.sharedN || 2);
+      menuPriceMap[p.name.toLowerCase()] = storedPerPerson * (p.sharedN || 2);
     });
 
-    todayOrdersCache.forEach((o, i) => {
-      if (i === idx) return;
-      const oParsed = parseOrderItems(o.items);
-      const hasSharedItem = oParsed.some(p =>
-        allSharedItemNames.includes(p.name.toLowerCase()) &&
-        (p.raw || '').toLowerCase().includes('shared')
-      );
-      if (!hasSharedItem) return;
-
-      // Strip shared suffix, use full price for shared items
-      const newItems = oParsed.map(p => p.name + ' x' + p.qty).join(', ');
-      const newPersonTotal = oParsed.reduce((s, p) => {
-        const key = p.name.toLowerCase();
-        const isAffected = allSharedItemNames.includes(key) && (p.raw||'').includes('shared');
-        if (isAffected) {
-          return s + (fullPriceMap[key] || getMenuPriceFor(p.name) || 0) * p.qty;
+    // Count how many people still have each shared item after this removal
+    allSharedItemNames.forEach(itemKey => {
+      let remainingPeople = [];
+      todayOrdersCache.forEach((o, i) => {
+        if (i === idx) return; // skip the person being removed (already deleted/updated)
+        const oParsed = parseOrderItems(o.items);
+        if (oParsed.some(p => p.name.toLowerCase() === itemKey && (p.raw||'').includes('shared'))) {
+          remainingPeople.push(i);
         }
-        return s + (getMenuPriceFor(p.name) || 0) * p.qty;
-      }, 0);
+      });
 
-      const finalTotal = newPersonTotal > 0 ? newPersonTotal
-        : (parseInt(String(o.total).replace(/[^0-9]/g,''))||0);
-      todayOrdersCache[i] = { ...o, items: newItems, total: 'Rs ' + finalTotal };
-      syncOrderToSheet(todayOrdersCache[i], todayDate);
+      const menuPrice = menuPriceMap[itemKey] || 0;
+      const remainingCount = remainingPeople.length;
+      if (remainingCount === 0 || menuPrice === 0) return;
+
+      const newPriceEach = Math.ceil(menuPrice / remainingCount);
+
+      remainingPeople.forEach(i => {
+        const o = todayOrdersCache[i];
+        const oParsed = parseOrderItems(o.items);
+
+        // Rebuild items — update shared label or strip it
+        const newItems = oParsed.map(p => {
+          if (p.name.toLowerCase() !== itemKey) return p.name + ' x' + p.qty + (p.raw && p.raw.includes('shared') ? ' (' + p.raw.match(/shared.*?\)/i)[0] : '');
+          // This is the affected shared item
+          if (remainingCount === 1) {
+            // Only 1 person left — no longer shared
+            return p.name + ' x' + p.qty;
+          } else {
+            // Still shared but with fewer people
+            return p.name + ' x' + p.qty + ' (shared ' + remainingCount + ' ways)';
+          }
+        }).join(', ');
+
+        // Recalculate total: sum of all items with correct prices
+        const newTotal = oParsed.reduce((s, p) => {
+          if (p.name.toLowerCase() === itemKey) {
+            return s + newPriceEach * p.qty;
+          }
+          // For non-affected items, keep their existing contribution
+          // (stored total minus old shared item price)
+          return s; // handled below
+        }, 0);
+
+        // Better approach: old total - old shared price + new shared price
+        const oldTotal = parseInt(String(o.total).replace(/[^0-9]/g,'')) || 0;
+        const oldSharedItem = oParsed.find(p => p.name.toLowerCase() === itemKey);
+        const oldSharedPrice = oldSharedItem ? Math.round(menuPrice / (oldSharedItem.sharedN || 2)) * oldSharedItem.qty : 0;
+        const finalTotal = oldTotal - oldSharedPrice + (newPriceEach * (oldSharedItem ? oldSharedItem.qty : 1));
+
+        todayOrdersCache[i] = { ...o, items: newItems, total: 'Rs ' + finalTotal };
+        syncOrderToSheet(todayOrdersCache[i], todayDate);
+      });
     });
   }
 
