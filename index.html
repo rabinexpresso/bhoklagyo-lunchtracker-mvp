@@ -1736,8 +1736,8 @@ function showScreen(id) {
     nameEditMode = false;
     const editBtn = document.getElementById('editNamesBtn');
     if (editBtn) { editBtn.textContent = '✏️ Edit names'; editBtn.style.color = ''; }
-    document.getElementById('startBtn').disabled = true;
-  if (document.getElementById('startFoodBtn')) document.getElementById('startFoodBtn').disabled = true;
+    if (document.getElementById('startBtn')) document.getElementById('startBtn').disabled = true;
+    if (document.getElementById('startFoodBtn')) document.getElementById('startFoodBtn').disabled = true;
     document.getElementById('userPill').classList.remove('visible');
     renderNames();
     setTimeout(showPwaHomeCard, 300);
@@ -1823,8 +1823,8 @@ function renderNames() {
       card.onclick = () => {
         state.currentUser = name;
         renderNames();
-        document.getElementById('startBtn').disabled = false;
-      document.getElementById('startFoodBtn').disabled = false;
+        if (document.getElementById('startBtn')) document.getElementById('startBtn').disabled = false;
+        document.getElementById('startFoodBtn').disabled = false;
       };
     }
     g.appendChild(card);
@@ -1849,7 +1849,7 @@ function addNewName() {
 
 function deleteName(name) {
   if (state.names.length <= 1) { toast('Need at least one name'); return; }
-  if (state.currentUser === name) { state.currentUser = null; document.getElementById('startBtn').disabled = true; document.getElementById('startFoodBtn').disabled = true; }
+  if (state.currentUser === name) { state.currentUser = null; if (document.getElementById('startBtn')) document.getElementById('startBtn').disabled = true; document.getElementById('startFoodBtn').disabled = true; }
   state.names = state.names.filter(n => n !== name);
   saveState();
   renderNames();
