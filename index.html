@@ -1673,7 +1673,7 @@ const DEFAULT_MENU = [
 
 const SHEET_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbzDASq6-9ArvcGgk6A9nVh2v3pethQRUUdCiv_UYM6Zsax_9PLlgM2aB9A4Qmy2qJW-/exec';
 
-const DEFAULT_LOCATIONS = ['Generic','Samjhana','XO Coffeepalace'];
+const DEFAULT_LOCATIONS = ['Samjhana','XO Coffeepalace'];
 
 let state = {
   names: [...DEFAULT_NAMES],
@@ -1681,8 +1681,8 @@ let state = {
   sheetUrl: SHEET_URL_DEFAULT,
   spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1Yzi1tBDwMrFx5UyU7zq67oDp9oSehEzjHIPCyNIJtco/edit', // direct Google Sheet link
   locations: [...DEFAULT_LOCATIONS],
-  activeLocation: 'Generic',
-  settingsLocation: 'Generic',
+  activeLocation: 'Samjhana',
+  settingsLocation: 'Samjhana',
   locationMenus: {},
   currentUser: null,
   cart: {},
@@ -1917,7 +1917,7 @@ function changeQty(idx, delta) {
 }
 
 function getActiveMenuForCart() {
-  const m = state.activeLocation === 'Generic' ? state.menu : (state.locationMenus[state.activeLocation] || []);
+  const m = state.locationMenus[state.activeLocation] || [];
   return [...m].sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -2004,18 +2004,18 @@ function renderLocationBar() {
   if (!bar) return;
   bar.innerHTML = state.locations.map(loc =>
     `<button class="loc-chip ${state.activeLocation === loc ? 'active' : ''}" onclick="switchLocation('${loc.replace(/'/g,"\\'")}')">
-      ${loc === 'Generic' ? '🍽️' : loc === 'Samjhana' ? '🏠' : '☕'} ${loc}
+      ${getLocationEmoji(loc)} ${loc}
     </button>`
   ).join('');
 }
 
 function getLocationEmoji(loc) {
-  const map = { 'Generic':'🍽️','Samjhana':'🏠','XO Coffeepalace':'☕' };
+  const map = { 'Samjhana':'🏠','XO Coffeepalace':'☕' };
   return map[loc] || '📍';
 }
 
 function getActiveMenu() {
-  const m = state.activeLocation === 'Generic' ? state.menu : (state.locationMenus[state.activeLocation] || []);
+  const m = state.locationMenus[state.activeLocation] || [];
   return [...m].sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -2027,11 +2027,7 @@ function switchLocation(loc) {
   renderCategoryTabs();
   renderMenuGrid(); // renders instantly from cache if available
   updateCartBar();
-  // Always fetch fresh from sheet for non-Generic locations
-  // (cache may be stale or from wrong location)
-  if (loc !== 'Generic') {
-    loadLocationMenuFromSheet(loc);
-  }
+  loadLocationMenuFromSheet(loc);
 }
 
 function addMoreItems() {
@@ -2151,7 +2147,7 @@ function switchSettingsLocation(loc) {
   renderMenuEditList();
   document.getElementById('settingsLocLabel').textContent = loc;
   // Load from sheet if not yet cached
-  if (loc !== 'Generic' && !state.locationMenus[loc]) {
+  if (!state.locationMenus[loc]) {
     loadLocationMenuFromSheet(loc);
   }
 }
@@ -2171,13 +2167,13 @@ function addLocation() {
 }
 
 async function deleteLocation(loc) {
-  if (loc === 'Generic') { toast('Cannot remove Generic menu'); return; }
   const okLoc = await showModal({ icon: '📍', title: 'Remove location?', desc: 'This will delete <strong>' + loc + '</strong> and its menu from the app and Google Sheet.', confirmLabel: 'Remove' });
   if (!okLoc) return;
   state.locations = state.locations.filter(l => l !== loc);
   delete state.locationMenus[loc];
-  state.settingsLocation = 'Generic';
-  if (state.activeLocation === loc) state.activeLocation = 'Generic';
+  const fallback = state.locations[0] || '';
+  state.settingsLocation = fallback;
+  if (state.activeLocation === loc) state.activeLocation = fallback;
   saveState();
   renderSettingsLocTabs();
   renderMenuEditList();
@@ -2330,7 +2326,6 @@ function removeName(i) {
 }
 
 function getSettingsMenu() {
-  if (state.settingsLocation === 'Generic') return state.menu;
   if (!state.locationMenus[state.settingsLocation]) state.locationMenus[state.settingsLocation] = [];
   return state.locationMenus[state.settingsLocation];
 }
@@ -2338,7 +2333,7 @@ function getSettingsMenu() {
 function renderMenuEditList() {
   const list = document.getElementById('menuEditList');
   if (!list) return;
-  const loc = state.settingsLocation || 'Generic';
+  const loc = state.settingsLocation || '';
   const label = document.getElementById('settingsLocLabel');
   if (label) label.textContent = loc;
   const menu = getSettingsMenu();
@@ -2792,7 +2787,7 @@ function openRemoveItemsModal(idx) {
   removeItemsPrices = {};
 
   // Ensure location menus are loaded for price lookup
-  state.locations.filter(l => l !== 'Generic').forEach(loc => {
+  state.locations.forEach(loc => {
     if (!state.locationMenus[loc] || state.locationMenus[loc].length === 0) {
       loadLocationMenuFromSheet(loc);
     }
@@ -3521,7 +3516,7 @@ function loadLocationMenuFromSheet(location) {
 }
 
 function loadAllLocationMenus() {
-  state.locations.filter(l => l !== 'Generic').forEach(loc => {
+  state.locations.forEach(loc => {
     loadLocationMenuFromSheet(loc);
   });
 }
@@ -3554,24 +3549,20 @@ function syncLocationsFromSheet(fromSettings) {
     }
 
     // Sheet is master — replace app locations with exactly what sheet has
-    // Always keep Generic as the first item (it has no sheet tab)
     const sheetLocs = data.locations;
 
-    // Remove location menus for locations no longer in sheet
-    // Also clear cache for existing locations so fresh data is loaded from sheet
+    // Remove cached menus for locations no longer in sheet, clear stale caches
     state.locations
-      .filter(l => l !== 'Generic' && !sheetLocs.includes(l))
+      .filter(l => !sheetLocs.includes(l))
       .forEach(l => { delete state.locationMenus[l]; });
-    // Clear all non-Generic caches so sheet data is always fresh on sync
-    sheetLocs.filter(l => l !== 'Generic').forEach(l => { delete state.locationMenus[l]; });
+    sheetLocs.forEach(l => { delete state.locationMenus[l]; });
 
-    // Set locations = Generic + whatever sheet has (exclude Generic from sheetLocs to avoid duplicate)
-    const filteredSheetLocs = sheetLocs.filter(l => l !== 'Generic');
-    state.locations = ['Generic', ...filteredSheetLocs];
+    state.locations = [...sheetLocs];
 
-    // If currently selected location was removed, reset to Generic
-    if (!state.locations.includes(state.activeLocation)) state.activeLocation = 'Generic';
-    if (!state.locations.includes(state.settingsLocation)) state.settingsLocation = 'Generic';
+    // If currently selected location was removed, reset to first available
+    const fallback = state.locations[0] || '';
+    if (!state.locations.includes(state.activeLocation)) state.activeLocation = fallback;
+    if (!state.locations.includes(state.settingsLocation)) state.settingsLocation = fallback;
 
     saveState();
     renderSettingsLocTabs();
@@ -3941,7 +3932,7 @@ function shareSummary() {
   }
   var nl = String.fromCharCode(10);
   var d = getNPTDate();
-  var menu = state.activeLocation === 'Generic' ? state.menu : (state.locationMenus[state.activeLocation] || state.menu);
+  var menu = state.locationMenus[state.activeLocation] || [];
   var lines = [];
   var total = 0;
   Object.entries(state.cart).forEach(function(entry) {
@@ -3974,7 +3965,7 @@ function shareSummary() {
 // ── Build the 3 share sections from a list of order objects + location ──
 function buildShareSections(orders, location) {
   var nl = String.fromCharCode(10);
-  // Build a combined menu from ALL menus in state — Generic + all locations
+  // Build a combined menu from ALL location menus in state
   // This ensures prices are found regardless of which screen the user is on
   var allMenuItems = [];
   var seenNames = {};
@@ -3987,7 +3978,7 @@ function buildShareSections(orders, location) {
       }
     });
   }
-  addToAllMenus(state.menu);
+  addToAllMenus([]);
   Object.values(state.locationMenus || {}).forEach(function(locMenu) { addToAllMenus(locMenu); });
 
   // Helper: get menu price for an item name (searches all menus)
@@ -4086,8 +4077,8 @@ function buildShareSections(orders, location) {
 }
 
 function buildPriceReference(itemStrings, location) {
-  var menu = location && location !== 'Generic' && state.locationMenus[location] && state.locationMenus[location].length > 0
-    ? state.locationMenus[location] : state.menu;
+  var menu = (location && state.locationMenus[location] && state.locationMenus[location].length > 0)
+    ? state.locationMenus[location] : [];
   var seen = {};
   var lines = [];
   itemStrings.forEach(function(itemsStr) {
@@ -4111,7 +4102,7 @@ function shareOrders() {
 
   // Ensure all location menus are loaded before building price list
   var unloadedLocs = state.locations.filter(function(loc) {
-    return loc !== 'Generic' && (!state.locationMenus[loc] || state.locationMenus[loc].length === 0);
+    return !state.locationMenus[loc] || state.locationMenus[loc].length === 0;
   });
 
   if (unloadedLocs.length > 0) {
@@ -4174,7 +4165,7 @@ function shareHistory() {
     : historyAllOrders.filter(function(o){ return o.name === historyActiveFilter; });
   if (filtered.length === 0) { toast('No orders to share'); return; }
 
-  var loc = state.activeLocation || 'Generic';
+  var loc = state.activeLocation || state.locations[0] || '';
   var s = buildShareSections(filtered, loc);
 
   var label = historyActiveFilter === 'All' ? 'All team' : historyActiveFilter;
@@ -4256,7 +4247,7 @@ function shareFoodOrder() {
 
   if (orders.length === 0) { toast('No assigned orders to share'); return; }
 
-  var loc = foLocation || state.activeLocation || 'Generic';
+  var loc = foLocation || state.activeLocation || state.locations[0] || '';
   var s = buildShareSections(orders, loc);
 
   var text = '🍱 Bhok Lagyo! — ' + d.day + ', ' + d.date + nl;
@@ -4288,12 +4279,12 @@ function goFoodOrder() {
   foCustomRows = [];
   foSubmittedOrders = {};
   foMode = 'menu';
-  foLocation = state.activeLocation || state.locations[0] || 'Generic';
+  foLocation = state.activeLocation || state.locations[0] || '';
   const btn = document.getElementById('foSubmitBtn');
   if (btn) { btn.textContent = 'Submit all →'; btn.disabled = true; }
   renderFoLocationBar();
   setFoMode('menu');
-  state.locations.filter(l => l !== 'Generic').forEach(loc => {
+  state.locations.forEach(loc => {
     if (!state.locationMenus[loc] || state.locationMenus[loc].length === 0) {
       loadLocationMenuFromSheet(loc);
     }
@@ -4376,7 +4367,7 @@ function renderFoLocationBar() {
 function selectFoLocation(loc) {
   foLocation = loc;
   renderFoLocationBar();
-  if (loc !== 'Generic' && (!state.locationMenus[loc] || state.locationMenus[loc].length === 0)) {
+  if (!state.locationMenus[loc] || state.locationMenus[loc].length === 0) {
     toast('Loading ' + loc + ' menu...');
     // Use the same proven function as individual ordering
     loadLocationMenuFromSheet(loc);
@@ -4395,13 +4386,8 @@ function selectFoLocation(loc) {
 }
 
 function getFoMenu() {
-  let menu;
-  if (!foLocation || foLocation === 'Generic') {
-    menu = state.menu;
-  } else {
-    const locMenu = state.locationMenus[foLocation];
-    menu = (locMenu && locMenu.length > 0) ? locMenu : [];
-  }
+  const locMenu = foLocation ? state.locationMenus[foLocation] : null;
+  const menu = (locMenu && locMenu.length > 0) ? locMenu : [];
   return [...menu].sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -4869,9 +4855,7 @@ function autoAddCustomItemsToMenu() {
   const customItems = foItems.filter(f => f.isCustom && f.item && f.item.trim());
   if (customItems.length === 0) return;
 
-  const currentMenu = foLocation === 'Generic'
-    ? state.menu
-    : (state.locationMenus[foLocation] || []);
+  const currentMenu = state.locationMenus[foLocation] || [];
   const existingNames = new Set(currentMenu.map(m => m.name.toLowerCase().trim()));
   const newItems = [];
 
@@ -4879,7 +4863,6 @@ function autoAddCustomItemsToMenu() {
     const name = f.item.trim();
     if (!existingNames.has(name.toLowerCase())) {
       existingNames.add(name.toLowerCase());
-      // Save with actual price entered by user
       newItems.push({ name: name, price: f.price || 0, cat: 'Other' });
     }
   });
@@ -4887,11 +4870,7 @@ function autoAddCustomItemsToMenu() {
   if (newItems.length === 0) return;
 
   const updatedMenu = [...currentMenu, ...newItems];
-  if (foLocation === 'Generic') {
-    state.menu = updatedMenu;
-  } else {
-    state.locationMenus[foLocation] = updatedMenu;
-  }
+  state.locationMenus[foLocation] = updatedMenu;
   saveState();
 
   if (state.sheetUrl && state.sheetUrl.includes('script.google.com')) {
@@ -5236,7 +5215,7 @@ function sendSystemNotif(title, body, tag) {
       }
 
       // Also check menus for each location
-      data.locations.filter(function(l){ return l !== 'Generic'; }).forEach(function(loc) {
+      data.locations.forEach(function(loc) {
         setTimeout(function(){ checkLocationMenu(loc); }, 500);
       });
     };
