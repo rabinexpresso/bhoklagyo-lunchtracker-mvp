@@ -1601,7 +1601,32 @@
     <button class="share-cancel" onclick="closeShareSheet()">Cancel</button>
   </div>
 
-  <!-- INLINE EDIT MODAL -->
+  <!-- ═══════════ INLINE EDIT (CUSTOM) MODAL ═══════════ -->
+  <div class="modal-overlay" id="editOrderModal" onclick="handleEditModalOverlayClick(event)">
+    <div class="modal-box" style="width:92%;max-width:420px">
+      <div class="modal-body" style="text-align:left;padding:20px 20px 12px">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:'Poppins',sans-serif">📝 Custom edit</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px;font-family:'Poppins',sans-serif" id="editOrderName"></div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:5px;font-family:'Poppins',sans-serif">Items</div>
+          <textarea id="editOrderItems" rows="4"
+            style="width:100%;border:1.5px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:13px;font-family:'Poppins',sans-serif;color:var(--text);background:var(--surface2);outline:none;resize:vertical;box-sizing:border-box;line-height:1.5"
+            placeholder="e.g. Dal Bhat x1, Black Tea x2"></textarea>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:5px;font-family:'Poppins',sans-serif">Total (Rs)</div>
+          <input id="editOrderTotal" type="number" min="0"
+            style="width:100%;border:1.5px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;font-family:'Poppins',sans-serif;color:var(--pr);background:var(--surface2);outline:none;box-sizing:border-box"
+            placeholder="0">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" onclick="closeEditOrderModal()">Cancel</button>
+        <button class="modal-btn confirm" onclick="saveEditedOrder()" style="background:var(--gold);color:#000">💾 Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════ REMOVE ITEMS MODAL ═══════════ -->
   <div class="modal-overlay" id="removeItemsModal" onclick="handleRemoveModalOverlayClick(event)">
     <div class="modal-box" style="width:92%;max-width:420px">
@@ -3832,6 +3857,10 @@ function resolveModal(result) {
 
 function handleModalOverlayClick(e) {
   if (e.target === document.getElementById('confirmModal')) resolveModal(false);
+}
+
+function handleEditModalOverlayClick(e) {
+  if (e.target === document.getElementById('editOrderModal')) closeEditOrderModal();
 }
 
 // ═══════════════════════════════════════
