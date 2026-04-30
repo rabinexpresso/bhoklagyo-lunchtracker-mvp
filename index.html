@@ -4157,53 +4157,23 @@ function shareHistory() {
   if (filtered.length === 0) { toast('No orders to share'); return; }
 
   var loc = state.activeLocation || 'Generic';
-  var grandTotal = filtered.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
-
-  // Build overall item totals for Section 1
-  var allSections = buildShareSections(filtered, loc);
-
-  // Group by date for daily breakdowns
-  var byDate = {};
-  filtered.forEach(function(o){ if(!byDate[o.date]) byDate[o.date]=[]; byDate[o.date].push(o); });
-  var dates = Object.keys(byDate).sort().reverse();
+  var s = buildShareSections(filtered, loc);
 
   var label = historyActiveFilter === 'All' ? 'All team' : historyActiveFilter;
-  var rangeLabel = (fromDate && toDate) ? fromDate + ' to ' + toDate : '';
+  var rangeLabel = (fromDate && toDate) ? fromDate + ' → ' + toDate : '';
 
-  var text = '🍱 Bhok Lagyo! Order History' + nl;
+  var text = '🍱 Bhok Lagyo! — Order History' + nl;
   text += 'Alaya HLE — ' + label + nl;
   if (rangeLabel) text += rangeLabel + nl;
   text += nl;
-
-  // ── Section 1: overall totals ──
-  text += '📊 TOTAL SUMMARY' + nl;
-  text += allSections.section1 + nl + nl;
-
-  text += '---' + nl + nl;
-
-  // ── Per day breakdown ──
-  dates.forEach(function(date) {
-    var dayOrders = byDate[date];
-    var daySections = buildShareSections(dayOrders, loc);
-    var dayTotal = dayOrders.reduce(function(s,o){ return s+(parseInt(String(o.total).replace(/[^0-9]/g,''))||0); },0);
-    var dayName = dayOrders[0].day || '';
-
-    text += '📅 ' + (dayName ? dayName + ', ' : '') + date + ' — Rs ' + dayTotal + nl;
-    // Items for this day
-    text += daySections.section1.split(nl).filter(function(l){ return !l.startsWith('Grand'); }).join(nl) + nl + nl;
-    // Per person for this day
-    text += daySections.section2 + nl + nl;
-    text += '---' + nl + nl;
-  });
-
-  // ── Price list ──
-  if (allSections.section3) {
-    text += '💰 PRICE LIST' + nl;
-    text += allSections.section3;
-  } else {
-    text += '💰 PRICE LIST' + nl;
-    text += '(prices not found in menu — check Settings)';
-  }
+  text += '📋 ORDER SUMMARY' + nl;
+  text += s.section1 + nl + nl;
+  text += '---' + nl;
+  text += '👤 PER PERSON' + nl;
+  text += s.section2 + nl + nl;
+  text += '---' + nl;
+  text += '💰 PRICE LIST' + nl;
+  text += s.section3 || '(prices not found in menu — check Settings)';
 
   openShareSheet(text);
 }
