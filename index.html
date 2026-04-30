@@ -5375,91 +5375,62 @@ if (document.readyState !== 'loading') {
 const HOW_TO_USE_STEPS = [
   {
     icon: '👤',
-    title: 'Pick your name first',
+    title: 'Step 1 — Pick your name',
     color: '#42db66',
     steps: [
-      'Tap your name from the list on the home screen',
-      'Your name lights up — this identifies who is ordering',
-      'No name yet? Add yourself under ➕ Add a team member',
+      'Tap your name from the grid on the home screen — it highlights when selected',
+      'Not in the list? Type your name in the ➕ Add a team member box at the bottom and tap Add',
+      'Once your name is selected, the blue Start ordering by food → button becomes active',
     ]
   },
   {
-    icon: '🍛',
-    title: 'Order for yourself',
-    color: 'var(--accent)',
-    steps: [
-      'Tap Start ordering individually →',
-      'Pick a location (Generic, Samjhana, XO Coffeepalace)',
-      'Browse the menu, tap items to add to cart',
-      'Adjust quantities with + and −',
-      'Tap Submit & save to sheet → when done',
-    ]
-  },
-  {
-    icon: '🧾',
-    title: 'Order by food (for a group)',
+    icon: '🍱',
+    title: 'Step 2 — Enter today\'s food order',
     color: '#00b0ff',
     steps: [
-      'Tap Start ordering by food →',
-      'Choose a location, then tap + Add food item',
-      'Select the food, set quantity, enter price',
-      'Tap ▼ to assign portions to people',
-      'Use 📝 Custom order for items not on the menu — type the name and price, it auto-saves to the menu',
-      'Tap Submit all → when everyone is assigned',
+      'Tap 🧾 Start ordering by food → on the home screen',
+      'Select your restaurant (location) from the chips at the top',
+      'Tap + Add food item, then pick a food from the menu and set the quantity',
+      'Tap the ▼ arrow on a food row to assign who is eating it — tap each person\'s name to tick them',
+      'If splitting one dish between people, toggle the Shared switch before assigning',
+      'Once all food is assigned, tap Submit all → to save everyone\'s order',
     ]
   },
   {
-    icon: '📋',
-    title: 'View & manage today\'s orders',
+    icon: '➕',
+    title: 'Add a new food item or price',
     color: '#ffc709',
     steps: [
-      'Tap the clipboard 📋 icon at the top',
-      'See all orders placed today with totals',
-      'Tap Refresh to load the latest from the sheet',
-      '🔄 Change — replace someone\'s order via the menu',
-      '📝 Custom — edit order as free text',
-      '💸 Split — split a bill equally among selected people',
-      '🗑 Del — delete a single order',
-      'Check boxes + Delete selected — bulk delete',
+      'In the food order screen, tap + Add food item then scroll to the bottom of the list',
+      'Tap 📝 Custom order — type the food name and its price',
+      'The item is saved to the menu automatically so you can reuse it next time',
+      'To update a price later, go to ⚙️ Settings → Menu & locations, find the item and edit it',
     ]
   },
   {
-    icon: '📊',
-    title: 'View order history',
+    icon: '🏠',
+    title: 'Add a new restaurant / place',
     color: '#ff0065',
     steps: [
-      'Tap the history 🗂️ icon at the top',
-      'Set a date range and tap Load',
-      'See spending by person and date',
-      'Tap 🟢 Sheet to open the full Google Sheet',
-      'Tap 📤 Share to send the summary via WhatsApp, email, etc.',
+      'Tap the ⚙️ gear icon at the top right',
+      'Scroll to Menu & locations — tap + Add location and type the restaurant name',
+      'Tap Save settings — the new place will appear as a chip when ordering',
+      'You can then add food items specific to that place the same way as above',
     ]
   },
   {
-    icon: '⚙️',
-    title: 'Settings',
-    color: 'var(--text3)',
-    steps: [
-      'Tap the gear ⚙️ icon at the top',
-      'Google Sheets connection — paste your Apps Script URL here',
-      'Team members — add or remove people',
-      'Menu & locations — manage food locations and menu items',
-      'Tap Save settings when done',
-    ]
-  },
-  {
-    icon: '💡',
-    title: 'Tips',
+    icon: '📤',
+    title: 'Share the order summary',
     color: '#a855f7',
     steps: [
-      'Orders for the same person on the same day are automatically combined',
-      'New food items added via Custom order are saved to the menu automatically',
-      'Install as a home screen app for the best experience (Settings → Add to home screen)',
-      'If Submit times out, check Today\'s Orders before retrying to avoid duplicates',
+      'After submitting, tap the 📋 Today\'s Orders icon at the top, then tap Refresh',
+      'Tap the 📤 Share button — a sheet pops up with sharing options',
+      'Tap 💬 WhatsApp to send directly to a chat, or 📋 Copy to copy the text and paste it anywhere',
+      'The shared message shows each food with quantity and price, plus a per-person breakdown',
+      'You can also share from the 🗂️ History page the same way for past orders',
     ]
   },
 ];
-
 function openHowToUse() {
   const modal = document.getElementById('howToUseModal');
   const content = document.getElementById('howToUseContent');
