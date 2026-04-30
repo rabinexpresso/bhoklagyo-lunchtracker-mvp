@@ -4018,8 +4018,10 @@ function buildShareSections(orders, location) {
   var section1 = Object.keys(itemTotals).sort().map(function(name) {
     var qty = itemTotals[name];
     var price = menuPrice(name);
-    var lineTotal = price !== null ? ' — Rs ' + (price * qty) : '';
-    return name + ' x' + qty + lineTotal;
+    if (price !== null) {
+      return name + ' x' + qty + ' x Rs ' + price + ' = Rs ' + (price * qty);
+    }
+    return name + ' x' + qty;
   }).join(nl);
   section1 += nl + 'Grand Total: Rs ' + grandTotal;
 
@@ -4054,14 +4056,7 @@ function buildShareSections(orders, location) {
     return name + ': ' + d.items.join(', ') + ' — Rs ' + d.total;
   }).join(nl + nl);
 
-  // ── Section 3: price list (alphabetical, menu price only) ──
-  var priceLines = Object.keys(itemTotals).sort().map(function(name) {
-    var price = menuPrice(name);
-    return price !== null ? name + ' — Rs ' + price : null;
-  }).filter(Boolean);
-  var section3 = priceLines.join(nl);
-
-  return { section1: section1, section2: section2, section3: section3 };
+  return { section1: section1, section2: section2 };
 }
 
 function buildPriceReference(itemStrings, location) {
@@ -4127,10 +4122,7 @@ function doShareOrders() {
   text += s.section1 + nl + nl;
   text += '---' + nl;
   text += '👤 PER PERSON' + nl;
-  text += s.section2 + nl + nl;
-  text += '---' + nl;
-  text += '💰 PRICE LIST' + nl;
-  text += s.section3 || '(prices not found in menu — check Settings)';
+  text += s.section2;
   openShareSheet(text);
 }
 
@@ -4170,10 +4162,7 @@ function shareHistory() {
   text += s.section1 + nl + nl;
   text += '---' + nl;
   text += '👤 PER PERSON' + nl;
-  text += s.section2 + nl + nl;
-  text += '---' + nl;
-  text += '💰 PRICE LIST' + nl;
-  text += s.section3 || '(prices not found in menu — check Settings)';
+  text += s.section2;
 
   openShareSheet(text);
 }
@@ -4250,10 +4239,7 @@ function shareFoodOrder() {
   text += s.section1 + nl + nl;
   text += '---' + nl;
   text += '👤 PER PERSON' + nl;
-  text += s.section2 + nl + nl;
-  text += '---' + nl;
-  text += '💰 PRICE LIST' + nl;
-  text += s.section3 || '(prices not found in menu — check Settings)';
+  text += s.section2;
 
   openShareSheet(text);
 }
