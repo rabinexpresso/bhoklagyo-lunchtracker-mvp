@@ -4224,18 +4224,26 @@ function shareFoodOrder() {
   // so we can pass it to buildShareSections
   var orders = [];
 
+  // Use todayOrdersCache for already-submitted orders (correct format, matches Today's orders share)
+  // Only fall back to foSubmittedOrders if cache isn't loaded yet
   if (hasSubmitted) {
-    Object.entries(foSubmittedOrders).forEach(function(entry) {
-      var name = entry[0], data = entry[1];
-      var itemStr = Object.entries(data.items).map(function(ie){
-        var qty = ie[1];
-        var fractions = {0.5:'½', 0.333:'⅓', 0.25:'¼', 0.667:'⅔', 0.75:'¾'};
-        var rounded = Math.round(qty * 1000) / 1000;
-        var qtyLabel = (qty % 1 === 0) ? 'x' + qty : (fractions[rounded] || 'x' + rounded);
-        return ie[0] + ' ' + qtyLabel;
-      }).join(', ');
-      orders.push({ name: name, items: itemStr, total: 'Rs ' + data.total });
+    var submittedNames = Object.keys(foSubmittedOrders);
+    var fromCache = todayOrdersCache.filter(function(o) {
+      return submittedNames.indexOf(o.name) >= 0;
     });
+    if (fromCache.length > 0) {
+      fromCache.forEach(function(o) { orders.push(o); });
+    } else {
+      // Fallback: build from foSubmittedOrders
+      Object.entries(foSubmittedOrders).forEach(function(entry) {
+        var name = entry[0], data = entry[1];
+        var itemStr = Object.entries(data.items).map(function(ie){
+          var qty = ie[1];
+          return qty % 1 === 0 ? ie[0] + ' x' + qty : ie[0] + ' x1 (shared ' + Math.round(1/qty) + ' ways)';
+        }).join(', ');
+        orders.push({ name: name, items: itemStr, total: 'Rs ' + data.total });
+      });
+    }
   }
 
   // Add any current unsubmitted assigned items
